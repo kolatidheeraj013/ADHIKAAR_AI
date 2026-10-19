@@ -1,0 +1,18 @@
+scheme_id: pm_kisan_mock
+name: "PM-Kisan (MOCK, simplified)"
+version: 1
+benefit: "INR 6,000 per year (MOCK benefit)"
+required_documents: [aadhaar, land_record, bank_passbook]
+facts:
+  - {key: land_owned_hectares, type: float, source: land_record}
+  - {key: holder_type, type: str, source: land_record}
+  - {key: is_income_tax_payer, type: bool, source: declaration, question: "Does anyone in your family pay income tax?"}
+payload_fields:
+  - {key: applicant_name, type: str, source: aadhaar}
+  - {key: aadhaar_last4, type: str, source: aadhaar}
+  - {key: bank_account_number, type: str, source: bank_passbook}
+  - {key: bank_ifsc, type: str, source: bank_passbook}
+rules:
+  - {id: owns_land, expr: "land_owned_hectares > 0", fail_reason: "No cultivable land ownership found in the land record."}
+  - {id: individual_holder, expr: "holder_type == 'individual'", fail_reason: "Land is held by an institution, which is excluded."}
+  - {id: not_tax_payer, expr: "is_income_tax_payer == False", fail_reason: "Income tax payers are excluded."}

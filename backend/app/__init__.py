@@ -1,0 +1,1 @@
+"""ADHIKAAR backend application package."""

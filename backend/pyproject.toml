@@ -1,0 +1,28 @@
+[project]
+name = "adhikaar-backend"
+version = "0.1.0"
+description = "ADHIKAAR FastAPI backend scaffold"
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi>=0.115,<1",
+  "uvicorn[standard]>=0.30,<1",
+  "pydantic>=2.8,<3",
+  "PyYAML>=6.0,<7",
+  "simpleeval>=1.0,<2",
+  "SQLAlchemy>=2.0,<3",
+  "alembic>=1.13,<2",
+  "psycopg[binary]>=3.2,<4",
+  "langgraph>=0.2,<1",
+  "langgraph-checkpoint-sqlite>=2.0.11,<3",
+]
+
+[project.optional-dependencies]
+test = [
+  "httpx>=0.27,<1",
+  "pytest>=8,<9",
+  "ruff>=0.6,<1",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

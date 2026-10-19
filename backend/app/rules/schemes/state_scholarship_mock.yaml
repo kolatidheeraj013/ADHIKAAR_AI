@@ -1,0 +1,18 @@
+scheme_id: state_scholarship_mock
+name: "State Scholarship (MOCK, simplified)"
+version: 1
+benefit: "Education scholarship (MOCK benefit)"
+required_documents: [aadhaar, income_certificate, marksheet, bonafide_certificate]
+facts:
+  - {key: family_income_annual, type: float, source: income_certificate}
+  - {key: last_exam_percentage, type: float, source: marksheet}
+  - {key: institution_recognized, type: bool, source: declaration, question: "Is your educational institution recognized?"}
+payload_fields:
+  - {key: applicant_name, type: str, source: aadhaar}
+  - {key: aadhaar_last4, type: str, source: aadhaar}
+  - {key: bank_account_number, type: str, source: bank_passbook}
+  - {key: bank_ifsc, type: str, source: bank_passbook}
+rules:
+  - {id: income_limit, expr: "family_income_annual <= 250000", fail_reason: "Annual family income exceeds the MOCK limit."}
+  - {id: marks_requirement, expr: "last_exam_percentage >= 75", fail_reason: "Last examination percentage is below the MOCK requirement."}
+  - {id: recognized_institution, expr: "institution_recognized == True", fail_reason: "The institution is not recognized."}

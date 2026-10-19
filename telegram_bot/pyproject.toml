@@ -1,0 +1,17 @@
+[project]
+name = "adhikaar-telegram-bot"
+version = "0.1.0"
+description = "ADHIKAAR Telegram channel scaffold"
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi>=0.115,<1",
+  "uvicorn[standard]>=0.30,<1",
+  "python-telegram-bot>=21,<22",
+]
+
+[project.optional-dependencies]
+test = ["httpx>=0.27,<1", "pytest>=8,<9"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

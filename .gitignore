@@ -1,0 +1,37 @@
+.env
+.env.*
+!.env.example
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.venv/
+venv/
+node_modules/
+.next/
+coverage.xml
+htmlcov/
+
+# Build & packaging artifacts
+*.egg-info/
+build/
+dist/
+
+# Tool caches
+graphify-out/
+.opencode/
+
+# Private or generated data
+data/real/
+data/synthetic_docs/*
+!data/synthetic_docs/.gitkeep
+ml_training/weights/*
+!ml_training/weights/.gitkeep
+backend/.chroma/
+*.sqlite3
+*.db
+
+# Local secrets and credentials
+*.pem
+*.key
