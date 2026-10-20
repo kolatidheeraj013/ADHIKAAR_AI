@@ -32,6 +32,7 @@ class Case(CreatedAtMixin, Base):
     status: Mapped[str] = mapped_column(String(32), default="COLLECTING")
     consent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     intent_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    voice_storage_path: Mapped[str | None] = mapped_column(String(1024), nullable=True)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 

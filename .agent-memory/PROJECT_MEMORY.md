@@ -35,12 +35,24 @@ specification is `implementation.md`.
   local training/evaluation entry points, and `DocumentClassifier` inference with
   deterministic fallback. Phase 5 tests pass; PyTorch is optional and unavailable in
   the current runner, so the model-shape test is skipped and training reports fallback.
+- Phase 6: MOCK markdown rulebooks, heading-based ingestion, ChromaDB/local
+  sentence-transformers integration when locally available, persisted lexical fallback,
+  scheme discovery, and explanation citations. RAG tests pass and rules remain separate.
+- Phase 7: HTTP `PortalClient`, deterministic mock portal application/verification
+  endpoints, required-field validation, timeout/permanent failure modes, portal audit
+  events, bounded transient retry, targeted field recovery, and escalation evidence.
+  Phase 7 and full repository tests pass.
+- Phase 8: FastAPI citizen case lifecycle, service-token active-case lookup,
+  consent/upload validation, voice and document persistence, graph start/resume,
+  sanitized SSE, delete-my-data redaction/purge, reviewer queue/evidence/resume/audit,
+  and `NoopNotifier`; Next.js citizen intake, case recovery, reviewer, and audit pages.
+  API tests, full repository tests, Ruff, and TypeScript checks pass.
 
 ## Current continuation focus
 
-- Phases 0–5 are complete and verified.
-- Next phase: Phase 6 (RAG: rulebook ingestion and retriever for scheme discovery and
-  explanation citations; never eligibility decisions).
+- Phases 0–8 are implemented and API-verified.
+- Next phase: Phase 9 (Telegram bot), after the frontend standalone build timeout is
+  resolved or explicitly accepted as an environment limitation.
 - Colab fine-tuning for Llama-3.1-8B runs asynchronously; model will plug directly into
   `ProviderLLMClient` via `LLM_BASE_URL` without backend code changes (D-009).
 - `SARVAM_API_KEY` is present in local environment; falls back cleanly to offline fixtures if unset.
@@ -67,7 +79,7 @@ specification is `implementation.md`.
 - `graphify-out/graph.json` exists and the graphify report has previously been
   refreshed; use graphify's existing-graph query path for future codebase questions
   instead of rebuilding unless an explicit update/rebuild is requested.
-- Graphify was incrementally refreshed after Phase 5 with `--code-only`; current graph
-  output is 653 nodes, 1303 edges, and 63 communities. Non-code semantic files were
+- Graphify was incrementally refreshed after Phase 8 with `--code-only`; current graph
+  output is 860 nodes, 1997 edges, and 53 communities. Non-code semantic files were
   intentionally not re-extracted because no graphify-supported semantic API key was
   available.

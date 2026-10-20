@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -79,6 +80,50 @@ def _audit_node(runtime: GraphDependencies, name: str, state: CaseState) -> None
         evidence={"node": name, "status": state.status, "scheme": state.candidate_schemes[:1]},
     )
     runtime.audit_event_ids.append(str(event.id))
+
+
+def _portal_audit(
+    runtime: GraphDependencies,
+    state: CaseState,
+    event_type: str,
+    summary: str,
+    evidence: dict[str, Any],
+) -> None:
+    if runtime.session is None:
+        return
+    event = log(
+        runtime.session,
+        case_id=state.case_id,
+        actor="agent",
+        event_type=event_type,
+        summary=summary,
+        evidence=evidence,
+    )
+    runtime.audit_event_ids.append(str(event.id))
+
+
+def _masked_fact_value(key: str, value: Any) -> Any:
+    if key == "applicant_name":
+        return "[REDACTED]"
+    if key in {"aadhaar_last4", "bank_account_number", "bank_ifsc"}:
+        digits = "".join(character for character in str(value) if character.isdigit())
+        return f"***{digits[-4:]}" if digits else "[REDACTED]"
+    return value
+
+
+def _recovery_evidence(state: CaseState, scheme_id: str, error: dict[str, Any]) -> dict[str, Any]:
+    decision = state.decisions.get(scheme_id)
+    application = state.applications.get(scheme_id)
+    return {
+        "document_ids": [document.doc_id for document in state.documents],
+        "masked_facts": {
+            key: _masked_fact_value(key, fact.value) for key, fact in state.facts.items()
+        },
+        "rule_trace": decision.rule_trace if decision else [],
+        "portal_error": error,
+        "attempts": application.attempts if application else 0,
+        "tried": dict(state.retries),
+    }
 
 
 def _node(
@@ -198,7 +243,16 @@ def extract_facts(state: CaseState, runtime: GraphDependencies) -> CaseState:
 
 def plan(state: CaseState, runtime: GraphDependencies) -> CaseState:
     results = runtime.retriever.retrieve(state.transcript_en or state.transcript or "")
-    state.candidate_schemes = [str(result["scheme_id"]) for result in results]
+    loaded_schemes = load_schemes()
+    candidates: list[str] = []
+    for result in results:
+        scheme_id = result.get("scheme_id")
+        if not scheme_id:
+            source = str(result.get("source", ""))
+            scheme_id = Path(source.split("#", 1)[0]).stem
+        if scheme_id in loaded_schemes and scheme_id not in candidates:
+            candidates.append(str(scheme_id))
+    state.candidate_schemes = candidates
     if not state.candidate_schemes:
         state.candidate_schemes = ["pm_kisan_mock"]
     return state
@@ -397,6 +451,19 @@ def act(state: CaseState, runtime: GraphDependencies) -> CaseState:
             error=error,
         )
         state.last_portal_error = error
+    _portal_audit(
+        runtime,
+        state,
+        "portal.submit.attempt",
+        "Portal submission attempt completed",
+        {
+            "scheme": scheme.scheme_id,
+            "attempt": attempts,
+            "payload_fields": sorted(payload),
+            "ok": bool(result.get("ok")),
+            "portal_error": state.last_portal_error,
+        },
+    )
     state.route = "verify_submission"
     return state
 
@@ -410,8 +477,27 @@ def verify_submission(state: CaseState, runtime: GraphDependencies) -> CaseState
             application.status = "SUBMITTED"
             state.status = "SUBMITTED"
             state.route = "explain"
+            _portal_audit(
+                runtime,
+                state,
+                "portal.verify.attempt",
+                "Portal verification attempt completed",
+                {"scheme": scheme.scheme_id, "portal_ref": application.portal_ref, "ok": True},
+            )
             return state
         state.last_portal_error = dict(result.get("error", {"kind": "unknown"}))
+        _portal_audit(
+            runtime,
+            state,
+            "portal.verify.attempt",
+            "Portal verification attempt completed",
+            {
+                "scheme": scheme.scheme_id,
+                "portal_ref": application.portal_ref,
+                "ok": False,
+                "portal_error": state.last_portal_error,
+            },
+        )
     state.route = "recover"
     return state
 
@@ -420,11 +506,12 @@ def recover(state: CaseState, runtime: GraphDependencies) -> CaseState:
     scheme = _primary_scheme(state)
     error = state.last_portal_error or {}
     kind = error.get("kind")
-    if kind == "timeout":
+    if kind in {"timeout", "transient"} or str(error.get("code", "")).startswith("http_5"):
         key = f"submit:{scheme.scheme_id}"
         retries = state.retries.get(key, 0)
         if retries < 2:
             state.retries[key] = retries + 1
+            time.sleep(0.05 * (2**retries))
             state.route = "act"
             return state
     elif kind == "validation" and error.get("code") == "missing_field":
@@ -437,6 +524,11 @@ def recover(state: CaseState, runtime: GraphDependencies) -> CaseState:
                     (document for document in state.documents if document.doc_type == field.source),
                     None,
                 )
+                existing = state.facts.get(field_name)
+                if existing is not None:
+                    state.retries[key] = 1
+                    state.route = "act"
+                    return state
                 if source_doc is not None:
                     value = runtime.llm.extract_field(
                         source_doc.ocr_text, field_name, source_doc.doc_id
@@ -453,10 +545,25 @@ def recover(state: CaseState, runtime: GraphDependencies) -> CaseState:
                         state.retries[key] = 1
                         state.route = "act"
                         return state
+    if kind == "permanent":
+        reason = (
+            "The MOCK portal permanently rejected the application "
+            f"({error.get('code', 'unknown error')})."
+        )
+    elif kind in {"timeout", "transient"} or str(error.get("code", "")).startswith("http_5"):
+        reason = (
+            "The MOCK portal remained unavailable after the initial submission "
+            "and two retries."
+        )
+    else:
+        reason = (
+            "The MOCK portal rejected the application and the one automatic field fix "
+            "did not resolve it."
+        )
     state.status = "FAILED_ESCALATED"
     state.escalation = Escalation(
-        reason="MOCK portal submission failed after recovery attempts",
-        evidence={"portal_error": error, "attempts": state.applications[scheme.scheme_id].attempts},
+        reason=f"{reason} A human reviewer needs to complete the application.",
+        evidence=_recovery_evidence(state, scheme.scheme_id, error),
     )
     state.route = "escalate"
     return state
@@ -544,6 +651,18 @@ def explain(state: CaseState, runtime: GraphDependencies) -> CaseState:
         )
     else:
         text = runtime.llm.explain(outcome, trace, state.language)
+    citation_query = " ".join(
+        [state.transcript_en or state.transcript or "", outcome]
+        + [str(item.get("reason", "")) for item in trace]
+    ).strip()
+    citations = runtime.retriever.retrieve(citation_query, k=2)
+    sources = list(
+        dict.fromkeys(
+            str(item.get("source", "")) for item in citations if item.get("source")
+        )
+    )
+    if sources:
+        text = f"{text}\n\nMOCK rulebook source: " + ", ".join(sources)
     message = CitizenMessage(kind="result", language=state.language, text=text)
     state.messages.append(message)
     runtime.notifier.notify(state.case_id, state.language, message.kind, message.text)

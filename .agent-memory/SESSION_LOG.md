@@ -92,3 +92,55 @@
   Hugging Face through the existing OpenAI-compatible `LLM_BASE_URL`; Phase 6 does
   not depend on that artifact.
 - Next phase is Phase 6 RAG; no Phase 6 code was started in this session.
+
+## 2026-10-20 — Phase 6 RAG implementation
+
+- User authorized moving to the next phase after Phase 4/5 verification.
+- Implemented Phase 6 with two clearly labeled MOCK rulebooks, heading-based chunks,
+  source/scheme metadata, ChromaDB plus locally cached sentence-transformers support,
+  and a persisted deterministic lexical fallback.
+- Wired `plan` to derive valid scheme IDs from retriever results and `explain` to append
+  rulebook source citations. Eligibility remains exclusively in the YAML rules engine.
+- Added six zero-network RAG tests covering scheme discovery, citations, `k` limits,
+  persistence, empty/missing directories, graph wiring, and rules isolation.
+- Verification: Phase 6 tests 6 passed; full backend suite 61 passed and 1 skipped;
+  Ruff passed; graphify refreshed to 700 nodes, 1423 edges, 63 communities.
+- Optional ChromaDB/sentence-transformers path was not exercised because the tests use
+  the offline lexical fallback and no vector model download was permitted.
+- Persistent memory now points to Phase 7 (mock portal and submission recovery).
+
+## 2026-10-20 — Phase 7 portal and recovery implementation
+
+- User authorized starting the next phase after Phase 6.
+- Implemented `PortalClient` with configurable mock-portal URL/timeout and structured
+  HTTP error mapping; added mock portal application submission, status verification,
+  required-field validation, and `none`/`timeout`/`reject_permanent` development modes.
+- Added portal submission/verification audit events and recovery evidence in the graph.
+  Transient/timeout failures retry twice; missing-field failures get one remap or
+  targeted extraction attempt; permanent/exhausted failures escalate.
+- Added focused tests for the HTTP client, graph recovery, and mock portal endpoints.
+- Verification: focused backend/recovery tests 12 passed; mock portal tests 6 passed
+  with system pytest; `make test` passed with 65 backend tests, 1 skipped, 1 Telegram
+  test, and 7 mock-portal tests; Ruff and `uv lock --check` passed.
+- Refreshed graphify with code-only update and clustering: 754 nodes, 1552 edges,
+  56 communities. No Phase 8 code was started.
+- Persistent memory now points to Phase 8 backend API and web UI.
+
+## 2026-10-20 — Phase 8 backend API and web UI
+
+- User authorized moving to the next phase after Phase 7.
+- Implemented the FastAPI citizen case lifecycle: consent-first case creation,
+  text/voice/document intake, magic-byte and size/duration validation, idempotent graph
+  start, question answers, missing-document re-entry, sanitized citizen case/SSE views,
+  schemes, delete-my-data purge/redaction, and service-token active-case lookup.
+- Implemented reviewer-token queue/evidence/resume/audit endpoints, masked reviewer
+  values, `NoopNotifier`, voice storage migration support, and expanded API coverage.
+- Implemented the Next.js citizen intake with consent-first uploads and optional OGG
+  MediaRecorder, case status/SSE/question/document recovery, reviewer queue/evidence
+  actions, masked identifiers, and reviewer-only audit timeline.
+- Fixed the missing `python-multipart` runtime dependency and refreshed `backend/uv.lock`.
+- Verification: `make test` passed with backend 73 passed/1 skipped, Telegram 1 passed,
+  and mock portal 7 passed; `make lint`, `npx tsc --noEmit`, `uv lock --check`, and
+  scoped `git diff --check` passed. `npm run build` compiled/generated all pages but
+  exceeded the five-minute limit while collecting standalone traces.
+- No Phase 9 Telegram implementation was started.

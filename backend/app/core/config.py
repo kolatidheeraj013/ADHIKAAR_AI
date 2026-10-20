@@ -12,6 +12,9 @@ class Settings:
     env: str = field(default_factory=lambda: os.getenv("ENV", "dev"))
     demo_mode: str = field(default_factory=lambda: os.getenv("DEMO_MODE", "offline"))
     service_token: str = field(default_factory=lambda: os.getenv("SERVICE_TOKEN", "change-me"))
+    reviewer_password: str = field(
+        default_factory=lambda: os.getenv("REVIEWER_PASSWORD", "change-me")
+    )
     database_url: str = field(
         default_factory=lambda: os.getenv(
             "DATABASE_URL", "sqlite:///./backend/adhikaar.db"
@@ -34,6 +37,13 @@ class Settings:
         default_factory=lambda: Path(
             os.getenv("CLASSIFIER_WEIGHTS_PATH", "./ml_training/weights/doc_classifier.pt")
         )
+    )
+    chroma_path: Path = field(default_factory=lambda: Path(os.getenv("CHROMA_PATH", "./.chroma")))
+    mock_portal_url: str = field(
+        default_factory=lambda: os.getenv("MOCK_PORTAL_URL", "http://localhost:8100")
+    )
+    mock_portal_timeout_seconds: float = field(
+        default_factory=lambda: float(os.getenv("MOCK_PORTAL_TIMEOUT_SECONDS", "5"))
     )
 
     # Thresholds & Limits

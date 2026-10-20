@@ -35,3 +35,13 @@ Default health endpoints are:
 
 Only synthetic data belongs in this repository. Never place real identity
 documents, credentials, or personal data in source, fixtures, logs, or tests.
+
+## Rulebook RAG (Phase 6)
+
+The two rulebooks under `data/rulebooks/` are clearly labeled `MOCK` and are
+used only for scheme discovery and explanation citations. Eligibility remains
+authoritative in the deterministic YAML rules under
+`backend/app/rules/schemes/`. Install the optional vector dependencies with
+`pip install -e 'backend[rag]'`; when ChromaDB or a local sentence-transformers
+model is unavailable, the same flow uses a deterministic lexical index and
+persists it below `CHROMA_PATH` (default `./.chroma`).

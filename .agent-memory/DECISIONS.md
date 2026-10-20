@@ -122,3 +122,33 @@
 - Related files: `backend/app/ml/model.py`, `backend/app/ml/classifier.py`,
   `ml_training/synth_data.py`, `ml_training/train.py`, `ml_training/evaluate.py`.
 - Status: accepted.
+
+## D-011 — Phase 6 RAG boundary and fallback
+
+- Date: 2026-10-20
+- Decision: Use heading-based MOCK rulebook chunks for scheme discovery and explanation
+  citations only. Prefer ChromaDB with a locally cached sentence-transformers model;
+  persist a deterministic lexical index when optional vector dependencies or the local
+  model are unavailable.
+- Reason: Keeps the flow useful offline and preserves the hard rule that RAG never
+  decides eligibility. The YAML/simpleeval rules engine remains authoritative.
+- Consequences: The current test environment exercises the lexical path; a vector
+  deployment must install `backend[rag]` and provide the embedding model locally.
+- Related files: `backend/app/rag/ingest.py`, `backend/app/rag/retriever.py`,
+  `backend/app/agents/graph.py`, `data/rulebooks/`.
+- Status: accepted.
+
+## D-012 — Phase 7 portal recovery behavior
+
+- Date: 2026-10-20
+- Decision: Use a synchronous `httpx` PortalClient behind the existing Protocol;
+  classify portal errors as `timeout`, `transient`, `validation`, or `permanent`.
+  Retry timeout/transient submission failures at most twice with bounded backoff;
+  attempt one missing-field remap/targeted extraction; escalate permanent or
+  exhausted failures with PII-safe evidence.
+- Reason: Matches implementation.md §9 and keeps recovery deterministic and auditable.
+- Consequences: The graph remains provider-agnostic; Phase 8 must wire this client
+  into the API/service dependency construction. No real government portal is used.
+- Related files: `backend/app/integrations/portal_client.py`,
+  `backend/app/agents/graph.py`, `mock_portal/app/main.py`.
+- Status: accepted.
