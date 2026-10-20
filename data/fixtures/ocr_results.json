@@ -1,0 +1,26 @@
+{
+  "aadhaar_murugan.jpg": {
+    "text": "GOVERNMENT OF INDIA\nUNIQUE IDENTIFICATION AUTHORITY OF INDIA\nName: Murugan K\nDOB: 14/08/1982\nGender: Male\nXXXX XXXX 8942\nVID: 9182 3918 2910 2918\nAddress: S/O Ramasamy, Vill Thanjavur Rural, Dist Thanjavur, Tamil Nadu - 613001",
+    "confidence": 0.96
+  },
+  "land_murugan.jpg": {
+    "text": "REVENUE DEPARTMENT - GOVT OF TAMIL NADU\nEXTRACT OF REGISTER OF RIGHTS (ROR-1B / PATTA)\nDistrict: Thanjavur | Taluk: Kumbakonam Rural\nKhata Number: 418\nSurvey/Subdivision Number: 184/2B\nPattadar Name: Murugan K\nHolder Category: Individual Cultivator\nClassification: Agricultural Wet Land\nTotal Extent: 1.40 Hectares\nStatus: Clear Title, Mutation Completed",
+    "confidence": 0.95
+  },
+  "passbook_murugan.jpg": {
+    "text": "STATE BANK OF INDIA\nBranch: Main Branch Thanjavur\nIFSC Code: SBIN0004128 | MICR: 600002041\nCustomer ID: CIF8129034\nAccount Name: Murugan K\nAccount Number: 31094819201\nAccount Type: Regular Savings Bank (SB)\nNominee Registered: YES\nPassbook Issue Date: 12-04-2023",
+    "confidence": 0.94
+  },
+  "passbook_d1_missing_ifsc.jpg": {
+    "text": "STATE BANK OF INDIA\nBranch: Main Branch Thanjavur\nCustomer ID: CIF8129034\nAccount Name: Murugan K\nAccount Number: 31094819201\nAccount Type: Regular Savings Bank (SB)\nIFSC: SBIN0004128",
+    "confidence": 0.92
+  },
+  "income_cert_student.jpg": {
+    "text": "GOVERNMENT OF TAMIL NADU\nREVENUE ADMINISTRATION - TALUK OFFICE, MADURAI\nINCOME CERTIFICATE\nCertificate Identification: INC/TN/2024/918231\nThis is to certify on careful inquiry that the annual income of K. Arumugam, residing at Ward 4, Madurai, from all legal sources is Rs. 140,000/- per annum.\nPurpose: For educational scholarship / government assistance.\nTahsildar / Authorized Revenue Officer Signature & Seal",
+    "confidence": 0.96
+  },
+  "marksheet_student.jpg": {
+    "text": "STATE BOARD OF SECONDARY & HIGHER EDUCATION - TAMIL NADU\nSENIOR SECONDARY EXAMINATION SCORE CARD\nCandidate Name: K. Arumugam\nRoll / Hall Ticket No: REG202481920\nLanguage I: 82/100\nLanguage II: 78/100\nCore Subject 1: 85/100\nCore Subject 2: 90/100\nCore Subject 3: 88/100\nAggregate Percentage: 84.6%\nResult Classification: PASSED",
+    "confidence": 0.97
+  }
+}
