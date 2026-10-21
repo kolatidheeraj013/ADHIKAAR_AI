@@ -88,9 +88,7 @@ def load_rulebook_chunks(rulebooks_dir: str | Path) -> list[dict[str, str]]:
     for path in sorted(directory.glob("*.md")):
         markdown = path.read_text(encoding="utf-8")
         source = path.relative_to(directory).as_posix()
-        chunks.extend(
-            chunk_markdown(markdown, source, path.stem)
-        )
+        chunks.extend(chunk_markdown(markdown, source, path.stem))
     return chunks
 
 
@@ -112,10 +110,7 @@ def ingest_rulebooks(
 
     from app.rag.retriever import RulebookRetriever
 
-    directory = Path(
-        rulebooks_dir
-        or os.getenv("RULEBOOKS_PATH", str(DEFAULT_RULEBOOKS_PATH))
-    )
+    directory = Path(rulebooks_dir or os.getenv("RULEBOOKS_PATH", str(DEFAULT_RULEBOOKS_PATH)))
     storage_path = Path(chroma_path or os.getenv("CHROMA_PATH", str(DEFAULT_CHROMA_PATH)))
     chunks = load_rulebook_chunks(directory)
     return RulebookRetriever(

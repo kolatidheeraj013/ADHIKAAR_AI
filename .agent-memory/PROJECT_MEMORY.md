@@ -42,17 +42,28 @@ specification is `implementation.md`.
   endpoints, required-field validation, timeout/permanent failure modes, portal audit
   events, bounded transient retry, targeted field recovery, and escalation evidence.
   Phase 7 and full repository tests pass.
-- Phase 8: FastAPI citizen case lifecycle, service-token active-case lookup,
+ - Phase 8: FastAPI citizen case lifecycle, service-token active-case lookup,
   consent/upload validation, voice and document persistence, graph start/resume,
   sanitized SSE, delete-my-data redaction/purge, reviewer queue/evidence/resume/audit,
   and `NoopNotifier`; Next.js citizen intake, case recovery, reviewer, and audit pages.
-  API tests, full repository tests, Ruff, and TypeScript checks pass.
+   API tests, full repository tests, Ruff, and TypeScript checks pass.
+  - Phase 9: Real `python-telegram-bot` v21 async service with polling/webhook
+    lifecycle, language/consent onboarding, text/voice/photo/image-document forwarding,
+    album debounce, bounded callbacks, `/status`, `/delete`, `/help`, authenticated
+    internal notifications, i18n, and backend `TelegramNotifier` delivery retries.
+    The citizen UX also includes a persistent localized menu, `/new`, `/schemes`,
+    `/language`, safe active-case replacement confirmation, backend-driven MOCK scheme
+    browsing, document guidance, and explicit separation between bot presentation and
+    backend eligibility decisions. Offline tests and lint pass; human chat acceptance
+    is pending.
 
 ## Current continuation focus
 
-- Phases 0–8 are implemented and API-verified.
-- Next phase: Phase 9 (Telegram bot), after the frontend standalone build timeout is
-  resolved or explicitly accepted as an environment limitation.
+  - Phases 0–9 are implemented; Phase 9 offline behavior is verified and Bot API
+    connectivity is verified for `@Adhikaar013bot` without exposing the token.
+  - Current checkpoint: Phase 10 is offline-verified; live Telegram chat smoke test is
+    pending because the agent cannot act as the user's Telegram account.
+  - The deterministic demo runner and runbook are now the cold-start path.
 - Colab fine-tuning for Llama-3.1-8B runs asynchronously; model will plug directly into
   `ProviderLLMClient` via `LLM_BASE_URL` without backend code changes (D-009).
 - `SARVAM_API_KEY` is present in local environment; falls back cleanly to offline fixtures if unset.
@@ -72,6 +83,12 @@ specification is `implementation.md`.
 
 - Docker is not installed in the current runner, so compose startup is unverified.
 - All services verified via isolated project `uv run` virtual environments.
+- GNU Make was initially absent from the Windows shell. It is now installed through
+  WinGet (`ezwinports.make` 4.4.1); existing shells need a PATH refresh before plain
+  `make test`/`make lint` resolve it.
+- The existing `backend/.venv` is incomplete/locked on this runner; the backend was
+  started successfully with `uv run --isolated --project backend ...`. This is an
+  environment issue, not an application failure.
 - `/persistent-project-memory` extension was unavailable; these Markdown files are
   the durable project-memory fallback.
 - Phase 3 uses `langgraph` with the compatible `langgraph-checkpoint-sqlite` 2.x
@@ -80,6 +97,54 @@ specification is `implementation.md`.
   refreshed; use graphify's existing-graph query path for future codebase questions
   instead of rebuilding unless an explicit update/rebuild is requested.
 - Graphify was incrementally refreshed after Phase 8 with `--code-only`; current graph
-  output is 860 nodes, 1997 edges, and 53 communities. Non-code semantic files were
+  output is 1018 nodes, 2476 edges, and 57 communities after Phase 9. Non-code semantic files were
   intentionally not re-extracted because no graphify-supported semantic API key was
   available.
+
+## Phase 10 demo assets
+
+- `backend/app/demo.py` runs the real graph with deterministic fakes for scenarios
+  A/B/C/D1/D2/E and returns sanitized acceptance evidence.
+- `scripts/seed.py` prints the synthetic seed inventory; `scripts/run_demo.py` runs one
+  scenario or all scenarios.
+- `docs/demo-runbook.md` documents cold start, offline web, Telegram, and cleanup.
+- `docs/deployment.md` documents compose health, migration, persistence, secrets, and
+  polling/webhook operations.
+- `docs/confidence-thresholds.md` records measured Phase 10 confidence outputs.
+
+## Latest Telegram result fix
+
+- Telegram cases always select `TelegramNotifier`, even when `DEMO_MODE=offline`;
+  offline business fakes remain enabled and web cases still use `NoopNotifier`.
+- Review entry now sends a citizen-facing result update before the reviewer interrupt.
+- Result text includes the scheme, deterministic outcome, case status, evidence
+  confidence band, rule reasons, MOCK benefit, portal state/reference, and next step.
+- Latest verification: backend `86 passed, 1 skipped`; Telegram `19 passed`; mock portal
+  `7 passed`; Ruff, compileall, and scoped `git diff --check` passed. `make` is absent in
+  this shell, so direct Make targets remain unavailable while isolated uv equivalents pass.
+
+## Local tuned model integration
+
+- `backend/app/main.py` selects `ProviderLLMClient` when `LLM_BASE_URL` is set; this
+  applies to fact extraction and targeted field re-extraction. With no endpoint, the
+  deterministic `_OfflineLLM` remains active.
+- Recommended LM Studio environment:
+  `LLM_PROVIDER=lm_studio`,
+  `LLM_BASE_URL=http://127.0.0.1:1234/v1`,
+  `LLM_MODEL=dheeraj013/adhikaar-llama3.1-8b-fact-extractor-GGUF`, and empty
+  `LLM_API_KEY`.
+- LM Studio live connectivity is not verified here because the local `/v1/models`
+  endpoint refused the connection. The user must start the local server and load the
+  model before runtime acceptance.
+- Telegram `text_handler` recognizes typed/localized Done and calls the same backend
+  start route as the inline Done button; ordinary text remains citizen intent.
+
+## Local LM Studio fact extractor
+
+- The backend runtime selects `ProviderLLMClient` when `LLM_BASE_URL` is configured;
+  otherwise it keeps `_OfflineLLM` deterministic behavior.
+- Local OpenAI-compatible endpoints may omit `LLM_API_KEY`. The supported example is
+  `http://127.0.0.1:1234/v1` with model
+  `dheeraj013/adhikaar-llama3.1-8b-fact-extractor-GGUF`.
+- The same provider client serves normal extraction and targeted `extract_field`
+  recovery. Eligibility remains in the deterministic rules engine.

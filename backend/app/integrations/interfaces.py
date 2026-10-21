@@ -65,4 +65,5 @@ class Notifier(Protocol):
         kind: str,
         text: str,
         options: list[dict[str, Any]] | None = None,
-    ) -> None: ...
+        message_id: str | None = None,
+    ) -> bool | None: ...

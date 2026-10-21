@@ -181,18 +181,24 @@ def test_missing_document_reentry_and_reviewer_evidence(client: TestClient) -> N
     )
     sample = b"\x89PNG\r\n\x1a\nSAMPLE"
     for name in ("aadhaar.png", "bank_passbook.png"):
-        assert client.post(
-            f"/cases/{case_id}/documents", files={"file": (name, sample, "image/png")}
-        ).status_code == 200
+        assert (
+            client.post(
+                f"/cases/{case_id}/documents", files={"file": (name, sample, "image/png")}
+            ).status_code
+            == 200
+        )
 
     first = client.post(f"/cases/{case_id}/start")
     assert first.status_code == 200
     assert client.get(f"/cases/{case_id}").json()["status"] == "NEEDS_DOCUMENTS"
 
-    assert client.post(
-        f"/cases/{case_id}/documents",
-        files={"file": ("land_record.png", sample, "image/png")},
-    ).status_code == 200
+    assert (
+        client.post(
+            f"/cases/{case_id}/documents",
+            files={"file": ("land_record.png", sample, "image/png")},
+        ).status_code
+        == 200
+    )
     assert client.post(f"/cases/{case_id}/start").status_code == 200
     assert client.get(f"/cases/{case_id}").json()["status"] == "COMPLETED"
 
@@ -204,14 +210,15 @@ def test_missing_document_reentry_and_reviewer_evidence(client: TestClient) -> N
         == 200
     )
     for name in ("aadhaar.png", "land_record_blurry.png", "bank_passbook.png"):
-        assert client.post(
-            f"/cases/{blurry_id}/documents", files={"file": (name, sample, "image/png")}
-        ).status_code == 200
+        assert (
+            client.post(
+                f"/cases/{blurry_id}/documents", files={"file": (name, sample, "image/png")}
+            ).status_code
+            == 200
+        )
     assert client.post(f"/cases/{blurry_id}/start").status_code == 200
 
-    evidence = client.get(
-        f"/reviewer/{blurry_id}", headers={"X-Reviewer-Token": "reviewer-test"}
-    )
+    evidence = client.get(f"/reviewer/{blurry_id}", headers={"X-Reviewer-Token": "reviewer-test"})
     assert evidence.status_code == 200
     assert all(item["ocr_confidence"] == 0.95 for item in evidence.json()["documents"])
     assert "SYNTHETIC-ACCOUNT" not in evidence.text
@@ -231,8 +238,6 @@ def test_delete_purges_all_case_upload_metadata_but_keeps_audit(client: TestClie
     assert not any(path.startswith(f"{case_id}/") for path in service.upload_metadata)
     case_storage = service.storage.root / case_id
     assert not case_storage.exists() or not any(case_storage.iterdir())
-    audit = client.get(
-        f"/reviewer/{case_id}/audit", headers={"X-Reviewer-Token": "reviewer-test"}
-    )
+    audit = client.get(f"/reviewer/{case_id}/audit", headers={"X-Reviewer-Token": "reviewer-test"})
     assert audit.status_code == 200
     assert any(item["event_type"] == "case.deleted" for item in audit.json())

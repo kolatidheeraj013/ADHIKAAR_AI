@@ -102,6 +102,44 @@ def _portal_audit(
     runtime.audit_event_ids.append(str(event.id))
 
 
+def _notify(
+    runtime: GraphDependencies,
+    state: CaseState,
+    message: CitizenMessage,
+) -> None:
+    """Persist an outgoing message before handing it to the notifier.
+
+    Telegram callbacks use this database ID for answer correlation. A queued
+    Telegram delivery remains ``delivered=False`` until its worker reports
+    success; local/fake notifiers return ``True`` immediately.
+    """
+    message_id: str | None = None
+    message_row: Message | None = None
+    if runtime.session is not None:
+        message_row = Message(
+            case_id=UUID(state.case_id),
+            direction="out",
+            kind=message.kind,
+            language=message.language,
+            text=str(message.text),
+            payload={"options": message.options},
+            delivered=False,
+        )
+        runtime.session.add(message_row)
+        runtime.session.flush()
+        message_id = str(message_row.id)
+    delivered = runtime.notifier.notify(
+        state.case_id,
+        state.language,
+        message.kind,
+        message.text,
+        message.options,
+        message_id=message_id,
+    )
+    if message_row is not None and delivered is True:
+        message_row.delivered = True
+
+
 def _masked_fact_value(key: str, value: Any) -> Any:
     if key == "applicant_name":
         return "[REDACTED]"
@@ -281,6 +319,7 @@ def _primary_scheme(state: CaseState):
 def eligibility(state: CaseState, runtime: GraphDependencies) -> CaseState:
     scheme = _primary_scheme(state)
     decision = evaluate(scheme, state.facts)
+    state.confidence = _confidence(state)
     state.decisions[scheme.scheme_id] = Decision(
         scheme_id=scheme.scheme_id,
         outcome=decision.outcome.value,
@@ -294,11 +333,7 @@ def eligibility(state: CaseState, runtime: GraphDependencies) -> CaseState:
         state.route = "verify"
         return state
 
-    missing = {
-        fact.key: fact
-        for fact in scheme.facts
-        if fact.key not in state.facts
-    }
+    missing = {fact.key: fact for fact in scheme.facts if fact.key not in state.facts}
     declaration_missing = [fact for fact in missing.values() if fact.source == "declaration"]
     document_missing = [fact for fact in missing.values() if fact.source != "declaration"]
     if declaration_missing and not document_missing and state.questions_asked < 3:
@@ -345,13 +380,7 @@ def ask_info(state: CaseState, runtime: GraphDependencies) -> CaseState:
         options=state.pending_question.options,
     )
     state.messages.append(question_message)
-    runtime.notifier.notify(
-        state.case_id,
-        state.language,
-        question_message.kind,
-        question_message.text,
-        question_message.options,
-    )
+    _notify(runtime, state, question_message)
     answer = interrupt(state.pending_question.model_dump(mode="json"))
     if isinstance(answer, dict):
         value = answer.get("value", answer.get("option"))
@@ -552,8 +581,7 @@ def recover(state: CaseState, runtime: GraphDependencies) -> CaseState:
         )
     elif kind in {"timeout", "transient"} or str(error.get("code", "")).startswith("http_5"):
         reason = (
-            "The MOCK portal remained unavailable after the initial submission "
-            "and two retries."
+            "The MOCK portal remained unavailable after the initial submission and two retries."
         )
     else:
         reason = (
@@ -569,9 +597,107 @@ def recover(state: CaseState, runtime: GraphDependencies) -> CaseState:
     return state
 
 
+def _citizen_outcome(state: CaseState, decision: Decision | None) -> str:
+    """Return the deterministic rule outcome without hiding review status."""
+    if decision is not None:
+        return decision.outcome
+    return "UNDETERMINED"
+
+
+def _confidence_summary(
+    confidence: float | None,
+    runtime: GraphDependencies,
+) -> str | None:
+    if confidence is None:
+        return None
+    if confidence >= runtime.auto_submit_threshold:
+        band = "HIGH band"
+    elif confidence >= runtime.review_threshold:
+        band = "REVIEW band"
+    else:
+        band = "LOW band"
+    return f"Confidence: {confidence:.1%} ({band})"
+
+
+def _rule_reasons(trace: list[dict[str, Any]]) -> str:
+    if not trace:
+        return (
+            "Rule reasons: eligibility rules have not run because required information "
+            "or documents are missing."
+        )
+    failed = [
+        str(item.get("reason", "Rule failed.")) for item in trace if item.get("status") == "failed"
+    ]
+    unknown = [
+        str(item.get("reason", "More information is required."))
+        for item in trace
+        if item.get("status") == "unknown"
+    ]
+    reasons = failed or unknown
+    if not reasons:
+        return "Rule reasons: all recorded rules passed."
+    label = "Rule reasons" if failed else "Rule reasons needing review"
+    return label + ":\n" + "\n".join(f"- {reason}" for reason in reasons)
+
+
+def _result_text(state: CaseState, runtime: GraphDependencies) -> str:
+    scheme_id = state.candidate_schemes[0] if state.candidate_schemes else "pm_kisan_mock"
+    scheme = load_scheme(Path(__file__).parents[1] / "rules" / "schemes" / f"{scheme_id}.yaml")
+    decision = state.decisions.get(scheme_id)
+    outcome = _citizen_outcome(state, decision)
+    trace = decision.rule_trace if decision else []
+    confidence = _confidence_summary(state.confidence, runtime)
+    sections = [
+        "MOCK / synthetic case result",
+        f"Scheme: {scheme.name} ({scheme.scheme_id})",
+        f"Outcome: {outcome}",
+        f"Case status: {state.status}",
+        f"MOCK benefit: {scheme.benefit}",
+        _rule_reasons(trace),
+        _portal_summary(state, scheme_id),
+        _next_step(state, scheme_id, outcome),
+    ]
+    if confidence:
+        sections.insert(4, confidence)
+    if state.status == "COMPLETED":
+        application = state.applications.get(scheme_id)
+        if application and application.status == "SUBMITTED" and application.portal_ref:
+            sections.append(f"Submitted successfully. MOCK reference: {application.portal_ref}")
+    return "\n".join(sections)
+
+
+def _portal_summary(state: CaseState, scheme_id: str) -> str:
+    application = state.applications.get(scheme_id)
+    if application is None:
+        return "Portal submission: NOT_ATTEMPTED."
+    if application.status == "SUBMITTED" and application.portal_ref:
+        return f"Portal submission: SUBMITTED (MOCK reference: {application.portal_ref})"
+    if application.status == "PENDING":
+        return "Portal submission: PENDING at the MOCK portal."
+    return "Portal submission: FAILED at the MOCK portal."
+
+
+def _next_step(state: CaseState, scheme_id: str, outcome: str) -> str:
+    if state.status == "NEEDS_DOCUMENTS":
+        missing = state.missing_documents.get(scheme_id, [])
+        documents = ", ".join(missing) if missing else "the required document(s)"
+        return f"Next step: upload the missing or clearer MOCK document(s): {documents}."
+    if state.status == "FAILED_ESCALATED":
+        return "Next step: a human reviewer must complete this MOCK application."
+    if state.status == "NEEDS_REVIEW":
+        return "Next step: a human reviewer must review this MOCK case."
+    if outcome == "NEEDS_REVIEW":
+        return "Next step: a human reviewer must review this MOCK case."
+    if outcome == "NOT_ELIGIBLE":
+        return "Next step: no portal submission was made because the rules found an exclusion."
+    return "Next step: keep the MOCK portal reference for follow-up."
+
+
 def escalate(state: CaseState, runtime: GraphDependencies) -> CaseState:
     terminal_portal_failure = state.status == "FAILED_ESCALATED"
-    if state.escalation is None:
+    first_escalation = state.escalation is None
+    send_review_update = first_escalation or terminal_portal_failure
+    if first_escalation:
         state.escalation = Escalation(
             reason=(
                 "Confidence is in the review band"
@@ -584,11 +710,21 @@ def escalate(state: CaseState, runtime: GraphDependencies) -> CaseState:
                 "scheme": state.candidate_schemes[:1],
             },
         )
+    escalation = state.escalation
+    assert escalation is not None
     state.status = "NEEDS_REVIEW"
+    if send_review_update:
+        review_message = CitizenMessage(
+            kind="result",
+            language=state.language,
+            text=_result_text(state, runtime),
+        )
+        state.messages.append(review_message)
+        _notify(runtime, state, review_message)
     answer = interrupt(
         {
-            "reason": state.escalation.reason,
-            "evidence": state.escalation.evidence,
+            "reason": escalation.reason,
+            "evidence": escalation.evidence,
             "options": ["approve", "reject", "request_docs"],
         }
     )
@@ -609,17 +745,17 @@ def escalate(state: CaseState, runtime: GraphDependencies) -> CaseState:
                 conf=1.0,
             )
         state.human_approved = True
-        state.escalation.status = "RESOLVED"
-        state.escalation.resolution = "approved"
+        escalation.status = "RESOLVED"
+        escalation.resolution = "approved"
         state.status = "PROCESSING"
         state.route = "eligibility" if edited_facts else "act"
     elif action_name == "reject":
-        state.escalation.status = "RESOLVED"
-        state.escalation.resolution = "rejected"
+        escalation.status = "RESOLVED"
+        escalation.resolution = "rejected"
         state.status = "FAILED_ESCALATED" if terminal_portal_failure else "NOT_ELIGIBLE"
         state.route = "explain"
     elif action_name == "request_docs":
-        state.escalation.resolution = "request_docs"
+        escalation.resolution = "request_docs"
         state.status = "NEEDS_DOCUMENTS"
         state.route = "explain"
     else:
@@ -630,54 +766,24 @@ def escalate(state: CaseState, runtime: GraphDependencies) -> CaseState:
 def explain(state: CaseState, runtime: GraphDependencies) -> CaseState:
     scheme_id = state.candidate_schemes[0] if state.candidate_schemes else "pm_kisan_mock"
     decision = state.decisions.get(scheme_id)
-    outcome = decision.outcome if decision else "UNDETERMINED"
+    outcome = _citizen_outcome(state, decision)
     trace = decision.rule_trace if decision else []
-    if state.status == "NEEDS_DOCUMENTS":
-        missing = state.missing_documents.get(scheme_id, [])
-        text = "Please provide a clearer or missing MOCK document: " + ", ".join(
-            missing or ["required document"]
-        )
-    elif state.status == "NEEDS_REVIEW":
-        text = "A volunteer is reviewing your MOCK application."
-    elif state.status == "SUBMITTED":
-        portal_ref = state.applications.get(scheme_id)
-        reference = portal_ref.portal_ref if portal_ref else "pending"
-        text = f"Your MOCK application was submitted. Reference: {reference}"
+    if state.status == "SUBMITTED":
         state.status = "COMPLETED"
-    elif state.status == "FAILED_ESCALATED":
-        text = (
-            "The MOCK portal could not accept the application. "
-            "A human reviewer must complete it."
-        )
-    else:
-        text = runtime.llm.explain(outcome, trace, state.language)
+    text = _result_text(state, runtime)
     citation_query = " ".join(
         [state.transcript_en or state.transcript or "", outcome]
         + [str(item.get("reason", "")) for item in trace]
     ).strip()
     citations = runtime.retriever.retrieve(citation_query, k=2)
     sources = list(
-        dict.fromkeys(
-            str(item.get("source", "")) for item in citations if item.get("source")
-        )
+        dict.fromkeys(str(item.get("source", "")) for item in citations if item.get("source"))
     )
     if sources:
         text = f"{text}\n\nMOCK rulebook source: " + ", ".join(sources)
     message = CitizenMessage(kind="result", language=state.language, text=text)
     state.messages.append(message)
-    runtime.notifier.notify(state.case_id, state.language, message.kind, message.text)
-    if runtime.session is not None:
-        runtime.session.add(
-            Message(
-                case_id=UUID(state.case_id),
-                direction="out",
-                kind=message.kind,
-                language=message.language,
-                text=message.text,
-                payload={"options": message.options},
-                delivered=True,
-            )
-        )
+    _notify(runtime, state, message)
     state.route = "end"
     return state
 

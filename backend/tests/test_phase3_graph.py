@@ -106,7 +106,8 @@ def _state(case_id: str, documents: list[str], *, voice: bool = True) -> CaseSta
 
 def test_scenario_a_auto_submits_with_full_audit(graph_context) -> None:
     session, case_id = graph_context
-    runtime = _runtime(session)
+    notifier = FakeNotifier()
+    runtime = _runtime(session, notifier=notifier)
     graph = build_graph(runtime, checkpointer=InMemorySaver())
 
     result = run_case(graph, _state(case_id, _documents()), thread_id=case_id)
@@ -116,18 +117,36 @@ def test_scenario_a_auto_submits_with_full_audit(graph_context) -> None:
     assert result.state.decisions["pm_kisan_mock"].outcome == "ELIGIBLE"
     assert result.state.confidence is not None and result.state.confidence >= 0.85
     assert result.state.applications["pm_kisan_mock"].status == "SUBMITTED"
+    result_text = notifier.messages[-1]["text"]
+    assert "Scheme: PM-Kisan (MOCK, simplified) (pm_kisan_mock)" in result_text
+    assert "Outcome: ELIGIBLE" in result_text
+    assert "Confidence: 91.7% (HIGH band)" in result_text
+    assert "MOCK benefit: INR 6,000 per year (MOCK benefit)" in result_text
+    assert "Rule reasons: all recorded rules passed." in result_text
+    assert "Portal submission: SUBMITTED (MOCK reference: MOCK-PORTAL-001)" in result_text
+    assert "Submitted successfully. MOCK reference: MOCK-PORTAL-001" in result_text
+    assert "Synthetic Farmer" not in result_text
+    assert "SYNTHETIC-ACCOUNT" not in result_text
     assert session.scalar(select(func.count(AuditEvent.id))) >= 12
 
 
 def test_scenario_b_missing_document_then_reentry_submits(graph_context) -> None:
     session, case_id = graph_context
-    runtime = _runtime(session)
+    portal = FakePortalClient()
+    notifier = FakeNotifier()
+    runtime = _runtime(session, portal=portal, notifier=notifier)
     graph = build_graph(runtime, checkpointer=InMemorySaver())
 
     first = run_case(graph, _state(case_id, _documents(include_land=False)), thread_id=case_id)
     assert first.state.status == "NEEDS_DOCUMENTS"
     assert first.state.missing_documents["pm_kisan_mock"] == ["land_record"]
-    assert not runtime.portal.submissions
+    assert not portal.submissions
+    first_text = notifier.messages[-1]["text"]
+    assert "Outcome: UNDETERMINED" in first_text
+    assert "MOCK benefit: INR 6,000 per year (MOCK benefit)" in first_text
+    assert "land_record" in first_text
+    assert "Next step: upload the missing or clearer MOCK document(s): land_record." in first_text
+    assert "Portal submission: NOT_ATTEMPTED." in first_text
 
     resumed = first.state.model_copy(deep=True)
     resumed.status = "NEEDS_DOCUMENTS"
@@ -139,7 +158,8 @@ def test_scenario_b_missing_document_then_reentry_submits(graph_context) -> None
 
 def test_scenario_c_blurry_document_escalates_then_reviewer_approves(graph_context) -> None:
     session, case_id = graph_context
-    runtime = _runtime(session)
+    notifier = FakeNotifier()
+    runtime = _runtime(session, notifier=notifier)
     graph = build_graph(runtime, checkpointer=InMemorySaver())
 
     first = run_case(graph, _state(case_id, _documents(blurry=True)), thread_id=case_id)
@@ -147,6 +167,11 @@ def test_scenario_c_blurry_document_escalates_then_reviewer_approves(graph_conte
     assert first.state.status == "NEEDS_REVIEW"
     assert first.state.confidence is not None
     assert 0.60 <= first.state.confidence < 0.85
+    review_text = notifier.messages[-1]["text"]
+    assert "Outcome: ELIGIBLE" in review_text
+    assert "Case status: NEEDS_REVIEW" in review_text
+    assert "Confidence: 76.0% (REVIEW band)" in review_text
+    assert "Next step: a human reviewer must review this MOCK case." in review_text
 
     second = resume_case(graph, case_id, {"action": "approve"})
     assert second.state.status == "COMPLETED"
@@ -177,13 +202,18 @@ def test_scenario_d1_targeted_extraction_recovers_missing_ifsc(graph_context) ->
 def test_scenario_d2_permanent_portal_rejection_escalates(graph_context) -> None:
     session, case_id = graph_context
     portal = FakePortalClient(fail_mode="reject_permanent")
-    runtime = _runtime(session, portal=portal)
+    notifier = FakeNotifier()
+    runtime = _runtime(session, portal=portal, notifier=notifier)
     graph = build_graph(runtime, checkpointer=InMemorySaver())
 
     first = run_case(graph, _state(case_id, _documents()), thread_id=case_id)
     assert first.interrupts
     assert first.state.status == "NEEDS_REVIEW"
     assert portal.submit_calls == 1
+    review_text = notifier.messages[-1]["text"]
+    assert "Outcome: ELIGIBLE" in review_text
+    assert "Case status: NEEDS_REVIEW" in review_text
+    assert "Portal submission: FAILED at the MOCK portal." in review_text
 
     second = resume_case(graph, case_id, {"action": "reject"})
     assert second.state.status == "FAILED_ESCALATED"
@@ -220,6 +250,25 @@ def test_scenario_e_missing_declaration_asks_and_resumes(graph_context) -> None:
     assert second.state.status == "COMPLETED"
     assert second.state.applications["pm_kisan_mock"].status == "SUBMITTED"
     assert second.state.questions_asked <= 3
+
+
+def test_not_eligible_result_has_explicit_outcome_and_rule_reason(graph_context) -> None:
+    session, case_id = graph_context
+    llm = FakeLLMClient(declaration_facts={"is_income_tax_payer": True})
+    notifier = FakeNotifier()
+    runtime = _runtime(session, llm=llm, notifier=notifier)
+    graph = build_graph(runtime, checkpointer=InMemorySaver())
+
+    result = run_case(graph, _state(case_id, _documents()), thread_id=case_id)
+
+    assert result.state.status == "NOT_ELIGIBLE"
+    result_text = notifier.messages[-1]["text"]
+    assert "Outcome: NOT_ELIGIBLE" in result_text
+    assert "Confidence: 67.7% (REVIEW band)" in result_text
+    assert "Rule reasons:\n- Income tax payers are excluded." in result_text
+    assert "Portal submission: NOT_ATTEMPTED." in result_text
+    assert "Next step: no portal submission was made" in result_text
+    assert "MOCK benefit: INR 6,000 per year (MOCK benefit)" in result_text
 
 
 def test_sqlite_checkpointer_survives_graph_rebuild(graph_context, tmp_path: Path) -> None:

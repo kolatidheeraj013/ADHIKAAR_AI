@@ -26,6 +26,7 @@ SYSTEM_EXTRACTION_PROMPT = (
 
 def mask_identifiers(text: str) -> str:
     """Mask 12-digit Aadhaar or long account numbers to last 4 digits."""
+
     # Match 12-digit numbers with optional spaces/hyphens: 1234 5678 9012 or 123456789012
     def replace_12_digit(m: re.Match[str]) -> str:
         digits = re.sub(r"\D", "", m.group(0))
@@ -51,7 +52,9 @@ class ProviderLLMClient(LLMClient):
         self.provider = provider or settings.llm_provider
         self.api_key = api_key if api_key is not None else settings.llm_api_key
         self.model = model or settings.llm_model
-        self.base_url = (base_url or settings.llm_base_url or "https://api.openai.com/v1").rstrip("/")
+        configured_base_url = base_url if base_url is not None else settings.llm_base_url
+        self._endpoint_configured = bool(configured_base_url)
+        self.base_url = (configured_base_url or "https://api.openai.com/v1").rstrip("/")
         self.demo_mode = (demo_mode or settings.demo_mode).lower()
         self.fixtures_path = fixtures_path or Path("data/fixtures/llm_facts.json")
         self._fixtures: dict[str, dict[str, Any]] = {}
@@ -77,12 +80,21 @@ class ProviderLLMClient(LLMClient):
             "messages": messages,
             "temperature": 0.0,
         }
-        if json_mode:
+        # Local endpoints like LM Studio enforce json format via prompt instruction
+        if json_mode and self.provider.lower() not in ("lmstudio", "ollama", "local"):
             payload["response_format"] = {"type": "json_object"}
 
         with httpx.Client(timeout=45.0) as client:
-            response = client.post(url, headers=headers, json=payload)
-            response.raise_for_status()
+            try:
+                response = client.post(url, headers=headers, json=payload)
+                response.raise_for_status()
+            except httpx.HTTPStatusError as err:
+                if err.response.status_code == 400 and "response_format" in payload:
+                    payload.pop("response_format", None)
+                    response = client.post(url, headers=headers, json=payload)
+                    response.raise_for_status()
+                else:
+                    raise
             data = response.json()
             return str(data["choices"][0]["message"]["content"]).strip()
 
@@ -94,7 +106,11 @@ class ProviderLLMClient(LLMClient):
             return {}
 
         # 1. Offline fixture replay mode
-        if self.demo_mode == "offline" or not self.api_key:
+        # A configured OpenAI-compatible endpoint may be local (for example,
+        # LM Studio) and intentionally require no API key.  The service runtime
+        # opts into live provider use only when an endpoint is configured; direct
+        # clients without either an endpoint or key retain deterministic fallback.
+        if self.demo_mode == "offline" or (not self.api_key and not self._endpoint_configured):
             return self._extract_from_fixtures_or_heuristics(text, source_type, target_keys)
 
         # 2. Live LLM Extraction with 1 retry on JSON failure
@@ -183,6 +199,10 @@ class ProviderLLMClient(LLMClient):
                 extracted["is_income_tax_payer"] = False
             elif "pays annual income tax" in lowered or "we pay income tax" in lowered:
                 extracted["is_income_tax_payer"] = True
+            elif "not" in lowered and "tax" in lowered:
+                extracted["is_income_tax_payer"] = False
+            elif any(w in lowered for w in ("farmer", "kisan", "cultivat", "agriculture", "land")):
+                extracted["is_income_tax_payer"] = False
 
         if "institution_recognized" in target_keys:
             if "recognized" in lowered or "approved" in lowered:

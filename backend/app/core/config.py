@@ -6,6 +6,18 @@ import os
 from dataclasses import dataclass, field
 from pathlib import Path
 
+try:
+    from dotenv import load_dotenv
+
+    _root_dir = Path(__file__).resolve().parents[3]
+    if (_root_dir / ".env").is_file():
+        load_dotenv(_root_dir / ".env", override=False)
+    if (_root_dir / ".env.local").is_file():
+        load_dotenv(_root_dir / ".env.local", override=False)
+    load_dotenv(override=False)
+except Exception:
+    pass
+
 
 @dataclass
 class Settings:
@@ -16,9 +28,7 @@ class Settings:
         default_factory=lambda: os.getenv("REVIEWER_PASSWORD", "change-me")
     )
     database_url: str = field(
-        default_factory=lambda: os.getenv(
-            "DATABASE_URL", "sqlite:///./backend/adhikaar.db"
-        )
+        default_factory=lambda: os.getenv("DATABASE_URL", "sqlite:///./backend/adhikaar.db")
     )
 
     # Sarvam AI
@@ -44,6 +54,12 @@ class Settings:
     )
     mock_portal_timeout_seconds: float = field(
         default_factory=lambda: float(os.getenv("MOCK_PORTAL_TIMEOUT_SECONDS", "5"))
+    )
+    bot_internal_url: str = field(
+        default_factory=lambda: os.getenv("BOT_INTERNAL_URL", "http://localhost:8200")
+    )
+    notifier_timeout_seconds: float = field(
+        default_factory=lambda: float(os.getenv("NOTIFIER_TIMEOUT_SECONDS", "3"))
     )
 
     # Thresholds & Limits

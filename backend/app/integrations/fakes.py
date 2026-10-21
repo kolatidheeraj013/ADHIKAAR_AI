@@ -161,7 +161,8 @@ class FakeNotifier:
         kind: str,
         text: str,
         options: list[dict[str, Any]] | None = None,
-    ) -> None:
+        message_id: str | None = None,
+    ) -> bool:
         self.messages.append(
             {
                 "case_id": case_id,
@@ -171,6 +172,7 @@ class FakeNotifier:
                 "options": options or [],
             }
         )
+        return True
 
 
 class FakeStorageBackend:

@@ -144,3 +144,166 @@
   scoped `git diff --check` passed. `npm run build` compiled/generated all pages but
   exceeded the five-minute limit while collecting standalone traces.
 - No Phase 9 Telegram implementation was started.
+
+## 2026-10-20 — Phase 9 real Telegram bot
+
+- User requested a true real-chat Telegram bot and indicated a token would be supplied.
+- Implemented a real async `python-telegram-bot` v21 service: polling for development,
+  webhook endpoint/secret validation for production, language and consent onboarding,
+  text/voice/photo/image-document forwarding, voice duration and upload guards,
+  best-effort Telegram message deletion, album debounce, Done/start flow, question
+  callbacks, `/status`, `/delete`, `/help`, and localized strings for English, Tamil,
+  Telugu, and Hindi.
+- Implemented backend `TelegramNotifier` posting to the bot's authenticated
+  `/internal/notify` endpoint with bounded retries and sanitized delivery failures.
+- Added Phase 9 tests for notification payloads/retries, callback length, album debounce,
+  PDF rejection, voice limit rejection, question callbacks, webhook auth, and internal
+  notification rendering.
+- Verification: `make test` passed with backend 75 passed/1 skipped, Telegram 8 passed,
+  mock portal 7 passed; `make lint`, both uv lock checks, compileall, and scoped diff
+  checks passed.
+- Live acceptance remains pending until the user configures `TELEGRAM_BOT_TOKEN` in a
+  local environment. No token was read, printed, stored, or committed.
+
+## 2026-10-21 — Telegram UX continuation and verification
+
+- Recovered the interrupted Phase 9 follow-up from the existing working tree; no
+  completed implementation was repeated or discarded.
+- Confirmed the Telegram extension is present: persistent localized reply menu,
+  `/new`, `/schemes`, `/language`, safe active-case replacement confirmation,
+  backend-driven MOCK scheme catalog, richer document guidance, and explicit
+  no-bot-side-eligibility wording.
+- Verification: focused Telegram tests passed (19), direct Ruff passed, compileall and
+  scoped diff checks passed. Existing full-suite result remains 75 backend passed / 1
+  skipped, 19 Telegram passed, and 7 mock-portal passed.
+- Started local services successfully using isolated environments; backend and Telegram
+  health endpoints returned `status: ok`. Read-only Telegram Bot API checks succeeded
+  for `@Adhikaar013bot` with webhook unset and zero pending updates. No token contents
+  were printed or written to project files.
+- Remaining work: user must perform the real Telegram chat flow; Phase 10 remains
+  intentionally unstarted pending that acceptance and explicit approval.
+
+## 2026-10-21 — Phase 10 demo polish
+
+- Implemented the deterministic Phase 10 cold-start demo without changing the thin
+  Telegram architecture: `backend/app/demo.py`, `scripts/seed.py`, and
+  `scripts/run_demo.py` now cover A/B/C/D1/D2/E with synthetic evidence.
+- Added Phase 10 tests, Makefile uv-environment fixes, README run steps, demo runbook,
+  deployment notes, and final measured confidence thresholds.
+- Verification: backend 83 passed/1 skipped, Telegram 19 passed, mock portal 7 passed;
+  Ruff, compileall, and scoped diff checks passed. `make test`/`make lint` were attempted
+  and failed with exit 127 only because `make` is not installed; isolated uv equivalents
+  passed. Frontend build was attempted and could not start because dependencies are not
+  installed (`next` not recognized).
+- Phase 10 is complete for the offline/demo deliverables. Remaining manual acceptance
+  is the live Telegram conversation using synthetic data.
+
+## 2026-10-21 — Telegram result delivery repair
+
+- After the user's live Telegram test, traced the missing main output to two concrete
+  defects: offline mode incorrectly disabled Telegram notification delivery, and the
+  review interrupt had no citizen-facing message before waiting for a reviewer.
+- Fixed notifier selection, added review-entry notifications, and expanded result text
+  to show the scheme, explicit deterministic outcome, case status, confidence band,
+  rule reasons, MOCK benefit, portal state/reference, and next step. Confidence is now
+  computed for NOT_ELIGIBLE as well as eligible cases.
+- Full isolated verification passed: backend `86 passed, 1 skipped`, Telegram `19
+  passed`, mock portal `7 passed`; Ruff, compileall, and diff checks passed. Direct
+  `make test`/`make lint` attempts still fail with exit 127 because `make` is absent.
+- Next action: user should repeat the Telegram happy path and a blurry/review path and
+  confirm the visible final result; do not claim live acceptance until that re-test.
+
+## 2026-10-21 — LM Studio connection and Done handling
+
+- Inspected the user-provided `FT-backend.md`; it is empty. Implemented the intended
+  connection from the repository's existing OpenAI-compatible boundary instead of
+  inventing a separate backend architecture.
+- `LLM_BASE_URL` is now the opt-in switch for `ProviderLLMClient` in the real backend
+  runtime. Recommended local configuration uses LM Studio at
+  `http://127.0.0.1:1234/v1` with model
+  `dheeraj013/adhikaar-llama3.1-8b-fact-extractor-GGUF` and an empty API key. The rules
+  engine remains the only eligibility decision-maker.
+- Fixed the exact screenshot behavior: typed `Done` was being sent as ordinary text,
+  so the case stayed `COLLECTING`. The bot now starts the case for English, Tamil,
+  Telugu, and Hindi Done labels; ordinary text is unchanged.
+- Verification passed: backend `89 passed, 1 skipped`; Telegram `24 passed`; mock portal
+  `7 passed`; Ruff, compileall, and diff checks passed. `make test`/`make lint` remain
+  unavailable because `make` is not installed. LM Studio was not running at
+  `127.0.0.1:1234`, so the live endpoint/model call still needs a user-side smoke test.
+
+## 2026-10-21 — Local LM Studio fact extractor wiring
+
+- Added opt-in runtime selection for the existing OpenAI-compatible `ProviderLLMClient`:
+  `LLM_BASE_URL` selects the provider, `LLM_MODEL` selects the requested GGUF model,
+  and an empty `LLM_API_KEY` is allowed for local LM Studio.
+- Normal fact extraction and targeted portal-recovery re-extraction use the same provider
+  client. Unconfigured runtimes continue using deterministic `_OfflineLLM` behavior, and
+  eligibility remains in the rules engine.
+- Added zero-network runtime/provider tests and documented the exact environment variables
+  in README, `.env.example`, `implementation.md`, and deployment notes.
+- Verification at that point: full backend `89 passed, 1 skipped`; backend Ruff passed;
+  focused provider and runtime tests passed; `git diff --check` passed. GNU Make was still
+  unavailable in the shell at that time.
+
+## 2026-10-21 — Make alternative resolved
+
+- Investigated alternatives to manually installing GNU Make. WSL Ubuntu was available but
+  also lacked `make`; no `nmake` or `gmake` executable was available.
+- Installed GNU Make 4.4.1 through WinGet (`ezwinports.make`) without changing project code.
+- Verified the installed binary by running the real Makefile targets with the refreshed
+  binary on PATH: `make test` passed with backend `89 passed, 1 skipped`, Telegram `24
+  passed`, mock portal `7 passed`; `make lint` passed.
+- Existing app/terminal processes may need a restart to observe the updated PATH. Live
+  LM Studio and human Telegram acceptance remain separate pending items.
+
+## 2026-10-21 — LM Studio wiring assessment
+
+- Reviewed the live-model changes against the original fine-tune integration boundary.
+  The implementation is intentionally a small OpenAI-compatible adapter: it preserves
+  deterministic eligibility and uses the existing `ProviderLLMClient` for extraction.
+- Reproduced the current failure boundary: the worker has no `.env` and no `LLM_*` values,
+  so the backend selects `_OfflineLLM`; the local LM Studio `/v1/models` probe is refused.
+- Decided not to roll back. Returning to the pre-wiring state would make the backend
+  permanently use `_OfflineLLM`. The remaining fix is runtime configuration: load the env
+  file, use the correct loopback/host endpoint for the chosen process topology, and verify
+  the loaded model id before claiming live integration.
+
+## 2026-10-21 — Live LM Studio fine-tuned model verified
+
+- Loaded `dheeraj013/adhikaar-llama3.1-8b-fact-extractor-GGUF` in LM Studio on port 1234
+  (registered locally as `adhikaar-llama3.1-8b-fact-extractor`).
+- Fixed `.env` / `.env.local` auto-loading in `backend/app/core/config.py` with `override=False`
+  so that runtime gets live config while tests retain offline zero-network isolation.
+- Enhanced `_call_chat_completion` in `backend/app/integrations/llm.py` to strip OpenAI's
+  legacy `response_format={"type": "json_object"}` for LM Studio/local providers, preventing HTTP 400 errors.
+- Executed live extraction smoke tests via `scratch/test_lmstudio.py`:
+  - Aadhaar test extracted: `{"applicant_name": "Murugan K", "aadhaar_last4": "8942"}`
+  - Targeted single-field recovery extracted: `"SBIN0004128"`
+- Full backend suite: 89 passed, 1 skipped. Formalized in `DECISIONS.md` under D-013.
+- Independent follow-up verification also confirmed `/v1/models` HTTP 200, live synthetic
+  applicant extraction, and targeted IFSC extraction (`SBIN0004128`) through the current
+  `ProviderLLMClient`.
+
+## 2026-10-21 — Telegram Bot UX Overhaul & Outcome Pipeline Repair
+
+- User reported Telegram bot 1/10 rating: 1) confusion, 2) unstructured, 3) outcome does not appear after uploading images.
+- Diagnosed root causes directly from SQLite case history (`f57c7c6717af4937b16288c7c03bed7c`):
+  1. Citizen typed `"Done"`/`"done"`, but bot performed strict exact-string match against localized `t(lang, "done")`. Non-matching text was passed to `send_text`, overwriting intent with `"Done"` and leaving the case permanently in `COLLECTING`.
+  2. Telegram photo uploads do not provide file names (`"photo.jpg"`). `_doc_type` classified them as `"other"`. When evaluated, `check_docs` saw 0 recognized documents, marked them as missing, and halted before rules engine evaluation, leaving citizen with no outcome.
+  3. No persistent "Done" or "Checklist" buttons were available in the citizen keyboard during collection.
+  4. Silent DPDP image deletion panicked users without feedback.
+- Backend fixes (`backend/app/main.py`):
+  - Added smart sequential fallback in `_runtime`: maps unclassified `"other"` photos to candidate scheme requirements (`aadhaar`, `land_record`, `bank_passbook`), allowing fact extraction and rules engine to evaluate.
+  - Added `doc_type` query parameter to `POST /cases/{case_id}/documents` and added `POST /cases/{case_id}/documents/{document_id}/classify`.
+  - In `start_case`, if citizen uploads documents without typing an intent text, supplies a friendly default intent instead of HTTP 422.
+  - Included `documents` array in `_safe_case`.
+- Telegram bot fixes (`telegram_bot/app/`):
+  - Dynamic persistent `ReplyKeyboardMarkup` now shows `[ ✅ Submit / Done ]`, `[ 📋 Document Checklist ]`, and `[ ❌ Cancel Case ]` during `COLLECTING` / `NEEDS_DOCUMENTS`.
+  - Added `/checklist` command displaying attached documents and status.
+  - Case-insensitive & multilingual `done_triggers` (`{"done", "Done", "DONE", "submit", "apply", "/done", ...}`) immediately trigger `backend.start_case(case_id)` and progress messages.
+  - Caption and filename keyword parsing auto-tags uploaded documents (`aadhaar`, `land_record`, `bank_passbook`, `income_certificate`, `marksheet`).
+  - Interactive inline tagging buttons allow citizens to tag photos with one tap (`[ 🪪 Aadhaar Card ]`, `[ 🌾 Land Record ]`, etc.).
+  - Added DPDP privacy reassurance message on photo upload explaining why chat copies are removed.
+- Verification:
+  - `telegram_bot` test suite: 28 passed, 0 failed (including 4 new tests for checklist, case-insensitive done, photo tagging, and callback classification).
+  - `backend` test suite: 89 passed, 1 skipped. All 100% green.

@@ -53,9 +53,7 @@ if nn is not None:
             self.bn2 = nn.BatchNorm2d(out_channels)
             self.shortcut = (
                 nn.Sequential(
-                    nn.Conv2d(
-                        in_channels, out_channels, kernel_size=1, stride=stride, bias=False
-                    ),
+                    nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=stride, bias=False),
                     nn.BatchNorm2d(out_channels),
                 )
                 if stride != 1 or in_channels != out_channels
@@ -67,7 +65,6 @@ if nn is not None:
             x = self.relu(self.bn1(self.conv1(x)))
             x = self.bn2(self.conv2(x))
             return self.relu(x + residual)
-
 
     class DualHeadResNet18(nn.Module):
         """ResNet-18-style backbone with document type and quality heads.

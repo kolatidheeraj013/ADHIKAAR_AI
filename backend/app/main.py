@@ -10,7 +10,16 @@ from pathlib import Path
 from typing import Any, Literal
 from uuid import UUID
 
-from fastapi import BackgroundTasks, Depends, FastAPI, File, Header, HTTPException, UploadFile
+from fastapi import (
+    BackgroundTasks,
+    Depends,
+    FastAPI,
+    File,
+    Header,
+    HTTPException,
+    Query,
+    UploadFile,
+)
 from fastapi.responses import StreamingResponse
 from langgraph.checkpoint.memory import InMemorySaver
 from pydantic import BaseModel, Field
@@ -33,7 +42,9 @@ from app.db.models import (
 )
 from app.db.session import build_engine, build_session_factory, init_db
 from app.integrations.fakes import FakePortalClient, FakeRetriever, FakeSpeechClient
-from app.integrations.notifier import NoopNotifier
+from app.integrations.interfaces import LLMClient
+from app.integrations.llm import ProviderLLMClient
+from app.integrations.notifier import NoopNotifier, TelegramNotifier
 from app.integrations.storage import LocalStorageBackend
 from app.rules.engine import load_schemes
 
@@ -86,10 +97,19 @@ def _doc_type(filename: str) -> str:
     lowered = filename.lower()
     for needle, label in (
         ("land", "land_record"),
+        ("patta", "land_record"),
+        ("chitta", "land_record"),
+        ("khasra", "land_record"),
         ("aadhaar", "aadhaar"),
+        ("adhar", "aadhaar"),
+        ("adhaar", "aadhaar"),
         ("passbook", "bank_passbook"),
+        ("bank", "bank_passbook"),
+        ("account", "bank_passbook"),
         ("income", "income_certificate"),
+        ("aay", "income_certificate"),
         ("marksheet", "marksheet"),
+        ("mark", "marksheet"),
         ("bonafide", "bonafide_certificate"),
     ):
         if needle in lowered:
@@ -171,8 +191,88 @@ class _ServiceState:
         self.message_keys: dict[str, set[str]] = {}
         self.run_counts: dict[str, int] = {}
         self.notifier = NoopNotifier()
+        self.notifiers: dict[str, NoopNotifier | TelegramNotifier] = {}
+        self.pending_notification_results: dict[str, tuple[str, str, bool, int, str | None]] = {}
         self.checkpointer = InMemorySaver()
         self.runtime_factory: Callable[[Session, str], GraphDependencies] = self._runtime
+
+    def _llm_for_runtime(self, metadata: dict[str, dict[str, Any]]) -> LLMClient:
+        """Select the configured provider, otherwise preserve offline behavior."""
+        if self.settings.llm_base_url:
+            return ProviderLLMClient(
+                provider=self.settings.llm_provider,
+                api_key=self.settings.llm_api_key,
+                model=self.settings.llm_model,
+                base_url=self.settings.llm_base_url,
+                # An explicitly configured endpoint is an intentional opt-in,
+                # including local endpoints that do not use an API key.
+                demo_mode="live",
+            )
+        return _OfflineLLM(metadata)
+
+    def _notification_result(
+        self,
+        message_id: str,
+        case_id: str,
+        kind: str,
+        delivered: bool,
+        attempts: int,
+        error: str | None,
+    ) -> None:
+        """Apply delivery state from a background notifier worker.
+
+        A graph run may not have committed its message row yet when the
+        notifier completes. Keep that result briefly in memory; the run
+        persistence path applies it after inserting the row.
+        """
+        session = self.sessions()
+        try:
+            message = session.get(Message, UUID(message_id))
+            if message is None:
+                self.pending_notification_results[message_id] = (
+                    case_id,
+                    kind,
+                    delivered,
+                    attempts,
+                    error,
+                )
+                return
+            message.delivered = delivered
+            if not delivered:
+                log(
+                    session,
+                    case_id=UUID(case_id),
+                    actor="notifier",
+                    event_type="notification.delivery_failed",
+                    summary="Citizen notification could not be delivered",
+                    evidence={
+                        "message_id": message_id,
+                        "kind": kind,
+                        "attempts": attempts,
+                        "error_type": error or "unknown",
+                    },
+                )
+            session.commit()
+        finally:
+            session.close()
+
+    def _notifier_for_case(self, case: Case) -> NoopNotifier | TelegramNotifier:
+        case_key = str(case.id)
+        existing = self.notifiers.get(case_key)
+        if existing is not None:
+            return existing
+        if case.channel == "telegram" and case.channel_ref:
+            notifier: NoopNotifier | TelegramNotifier = TelegramNotifier(
+                bot_internal_url=self.settings.bot_internal_url,
+                service_token=self.settings.service_token,
+                chat_id=case.channel_ref,
+                timeout_seconds=self.settings.notifier_timeout_seconds,
+                on_delivery=self._notification_result,
+            )
+        else:
+            notifier = self.notifier
+        self.notifiers[case_key] = notifier
+        return notifier
 
     def _runtime(self, session: Session, case_id: str) -> GraphDependencies:
         metadata = {
@@ -180,9 +280,10 @@ class _ServiceState:
             for path, value in self.upload_metadata.items()
             if path.startswith(f"{case_id}/")
         }
-        documents = session.scalars(
-            select(Document).where(Document.case_id == UUID(case_id))
-        ).all()
+        documents = session.scalars(select(Document).where(Document.case_id == UUID(case_id))).all()
+        case = session.get(Case, UUID(case_id))
+        if case is None:
+            raise ValueError("case not found while building graph runtime")
         for document in documents:
             if not document.storage_path or document.storage_path in metadata:
                 continue
@@ -192,6 +293,30 @@ class _ServiceState:
             recovered["quality"] = document.quality or recovered["quality"]
             recovered["quality_conf"] = document.quality_conf or recovered["quality_conf"]
             metadata[document.storage_path] = recovered
+        existing_types = {
+            metadata[d.storage_path]["doc_type"]
+            for d in documents
+            if d.storage_path
+            and d.storage_path in metadata
+            and metadata[d.storage_path].get("doc_type") != "other"
+        }
+        candidate_reqs = ["aadhaar", "land_record", "bank_passbook"]
+        if case.intent_text and any(
+            w in case.intent_text.lower()
+            for w in ("scholar", "study", "education", "school", "college")
+        ):
+            candidate_reqs = ["aadhaar", "income_certificate", "marksheet", "bonafide_certificate"]
+        needed = [req for req in candidate_reqs if req not in existing_types]
+        for document in documents:
+            if not document.storage_path:
+                continue
+            m = metadata.get(document.storage_path)
+            if m and (m.get("doc_type") == "other" or not m.get("doc_type")) and needed:
+                assigned_type = needed.pop(0)
+                assigned_meta = _offline_metadata(f"{assigned_type}.png", document.storage_path)
+                m.update(assigned_meta)
+                document.doc_type = assigned_type
+                document.doc_type_conf = 0.95
         return GraphDependencies(
             session=session,
             speech=FakeSpeechClient(
@@ -199,10 +324,10 @@ class _ServiceState:
             ),
             classifier=_OfflineClassifier(metadata),
             ocr=_OfflineOCR(metadata),
-            llm=_OfflineLLM(metadata),
+            llm=self._llm_for_runtime(metadata),
             retriever=FakeRetriever(),
             portal=FakePortalClient(),
-            notifier=self.notifier,
+            notifier=self._notifier_for_case(case),
             storage=self.storage,
             auto_submit_threshold=self.settings.auto_submit_threshold,
             review_threshold=self.settings.review_threshold,
@@ -263,9 +388,7 @@ def _safe_case(case: Case, session: Session) -> dict[str, Any]:
         select(Message).where(Message.case_id == case.id).order_by(Message.created_at)
     ).all()
     decision = session.scalar(
-        select(Decision)
-        .where(Decision.case_id == case.id)
-        .order_by(Decision.created_at.desc())
+        select(Decision).where(Decision.case_id == case.id).order_by(Decision.created_at.desc())
     )
     return {
         "case_id": str(case.id),
@@ -273,10 +396,16 @@ def _safe_case(case: Case, session: Session) -> dict[str, Any]:
         "language": case.language,
         "channel": case.channel,
         "decision_summary": (
-            {"scheme_id": decision.scheme_id, "outcome": decision.outcome}
-            if decision
-            else None
+            {"scheme_id": decision.scheme_id, "outcome": decision.outcome} if decision else None
         ),
+        "documents": [
+            {
+                "id": str(item.id),
+                "doc_type": item.doc_type,
+                "quality": item.quality,
+            }
+            for item in session.scalars(select(Document).where(Document.case_id == case.id)).all()
+        ],
         "messages": [
             {
                 "id": str(item.id),
@@ -412,6 +541,39 @@ def _persist_run(case_id: UUID, result: GraphRun, session: Session) -> None:
             )
         )
     session.commit()
+    # A notifier worker can finish before this graph transaction commits. Apply
+    # any result that was buffered while the message row was not yet visible.
+    if self_pending := [
+        (message_id, result)
+        for message_id, result in _services().pending_notification_results.items()
+        if result[0] == str(case_id)
+    ]:
+        result_session = _services().sessions()
+        try:
+            for message_id, result in self_pending:
+                message = result_session.get(Message, UUID(message_id))
+                if message is None:
+                    continue
+                _, kind, delivered, attempts, error = result
+                message.delivered = delivered
+                if not delivered:
+                    log(
+                        result_session,
+                        case_id=case_id,
+                        actor="notifier",
+                        event_type="notification.delivery_failed",
+                        summary="Citizen notification could not be delivered",
+                        evidence={
+                            "message_id": message_id,
+                            "kind": kind,
+                            "attempts": attempts,
+                            "error_type": error or "unknown",
+                        },
+                    )
+                _services().pending_notification_results.pop(message_id, None)
+            result_session.commit()
+        finally:
+            result_session.close()
 
 
 def _state_for_case(case: Case, session: Session) -> CaseState:
@@ -621,7 +783,10 @@ async def add_voice(
 
 @app.post("/cases/{case_id}/documents")
 async def add_document(
-    case_id: UUID, file: UploadFile = File(...), session: Session = Depends(_session)
+    case_id: UUID,
+    file: UploadFile = File(...),
+    doc_type: str | None = Query(default=None),
+    session: Session = Depends(_session),
 ) -> dict[str, Any]:
     case = _case_or_404(case_id, session)
     if case.consent_at is None:
@@ -637,6 +802,15 @@ async def add_document(
     ):
         raise HTTPException(status_code=415, detail="only JPEG, PNG, and WebP images are accepted")
     name = file.filename or "document.png"
+    if doc_type and doc_type.strip().lower() in {
+        "aadhaar",
+        "land_record",
+        "bank_passbook",
+        "income_certificate",
+        "marksheet",
+        "bonafide_certificate",
+    }:
+        name = f"{doc_type.strip().lower()}.png"
     path = _services().storage.store(str(case_id), name, content)
     metadata = _offline_metadata(name, path)
     _services().upload_metadata[path] = metadata
@@ -659,10 +833,53 @@ async def add_document(
         actor="citizen",
         event_type="input.document",
         summary="Document received",
-        evidence={"document_id": str(document.id), "media_type": kind, "size": len(content)},
+        evidence={
+            "document_id": str(document.id),
+            "media_type": kind,
+            "size": len(content),
+            "doc_type": metadata["doc_type"],
+        },
     )
     session.commit()
-    return {"case_id": str(case_id), "document_id": str(document.id), "received": True}
+    return {
+        "case_id": str(case_id),
+        "document_id": str(document.id),
+        "doc_type": metadata["doc_type"],
+        "received": True,
+    }
+
+
+@app.post("/cases/{case_id}/documents/{document_id}/classify")
+async def classify_document(
+    case_id: UUID,
+    document_id: UUID,
+    doc_type: str = Query(...),
+    session: Session = Depends(_session),
+) -> dict[str, Any]:
+    _case_or_404(case_id, session)
+    document = session.scalar(
+        select(Document).where(Document.case_id == case_id, Document.id == document_id)
+    )
+    if document is None:
+        raise HTTPException(status_code=404, detail="document not found")
+    clean = doc_type.strip().lower()
+    valid = {
+        "aadhaar",
+        "land_record",
+        "bank_passbook",
+        "income_certificate",
+        "marksheet",
+        "bonafide_certificate",
+        "other",
+    }
+    if clean in valid:
+        document.doc_type = clean
+        document.doc_type_conf = 0.99
+        if document.storage_path:
+            meta = _offline_metadata(f"{clean}.png", document.storage_path)
+            _services().upload_metadata[document.storage_path] = meta
+        session.commit()
+    return {"case_id": str(case_id), "document_id": str(document_id), "doc_type": document.doc_type}
 
 
 @app.post("/cases/{case_id}/start")
@@ -677,13 +894,21 @@ async def start_case(
         raise HTTPException(status_code=422, detail="consent is required")
     existing = _services().runs.get(str(case_id))
     if not case.intent_text and not (existing and existing.state.voice_path):
-        raise HTTPException(status_code=422, detail="provide typed text or voice first")
+        case.intent_text = "Citizen request for welfare scheme entitlement check"
+        session.commit()
     if not docs:
         raise HTTPException(status_code=422, detail="upload at least one document first")
-    if case.status in {
+    if existing and case.status in {
         "PROCESSING",
         "NEEDS_INFO",
         "NEEDS_REVIEW",
+        "SUBMITTED",
+        "COMPLETED",
+        "NOT_ELIGIBLE",
+        "FAILED_ESCALATED",
+    }:
+        return {"case_id": str(case_id), "status": case.status, "idempotent": True}
+    if not existing and case.status in {
         "SUBMITTED",
         "COMPLETED",
         "NOT_ELIGIBLE",
@@ -786,9 +1011,7 @@ async def case_events(case_id: UUID, session: Session = Depends(_session)) -> St
 async def delete_case(case_id: UUID, session: Session = Depends(_session)) -> dict[str, Any]:
     case = _case_or_404(case_id, session)
     documents = session.scalars(select(Document).where(Document.case_id == case_id)).all()
-    paths_to_delete = {
-        document.storage_path for document in documents if document.storage_path
-    }
+    paths_to_delete = {document.storage_path for document in documents if document.storage_path}
     for document in documents:
         if document.storage_path:
             document.storage_path = None
@@ -879,8 +1102,8 @@ async def reviewer_case(
                 "id": str(item.id),
                 "doc_type": item.doc_type,
                 "quality": item.quality,
-                 "ocr_confidence": item.ocr_conf,
-                 "grounded": None,
+                "ocr_confidence": item.ocr_conf,
+                "grounded": None,
                 "has_file": bool(item.storage_path),
             }
             for item in docs
@@ -888,7 +1111,7 @@ async def reviewer_case(
         "facts": [
             {
                 "key": item.key,
-                 "value": _mask_value(item.key, item.value_json),
+                "value": _mask_value(item.key, item.value_json),
                 "source_type": item.source_type,
                 "grounded": item.grounded,
                 "confidence": item.conf,

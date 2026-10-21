@@ -94,9 +94,9 @@ class DocumentClassifier:
         try:
             image = Image.open(path).convert("RGB").resize((224, 224))
             values = list(image.getdata())
-            tensor = torch.tensor(
-                values, dtype=torch.float32, device=self.device
-            ).reshape(224, 224, 3)
+            tensor = torch.tensor(values, dtype=torch.float32, device=self.device).reshape(
+                224, 224, 3
+            )
             tensor = tensor.permute(2, 0, 1).div(255.0).unsqueeze(0)
             mean = torch.tensor([0.485, 0.456, 0.406], device=self.device).reshape(1, 3, 1, 1)
             std = torch.tensor([0.229, 0.224, 0.225], device=self.device).reshape(1, 3, 1, 1)
@@ -162,8 +162,7 @@ def _grayscale_pixels(path: Path) -> list[float]:
             if header_end != -1:
                 raw = data[header_end + len(b"\n255\n") :]
                 return [
-                    float((raw[i] + raw[i + 1] + raw[i + 2]) / 3)
-                    for i in range(0, len(raw) - 2, 3)
+                    float((raw[i] + raw[i + 1] + raw[i + 2]) / 3) for i in range(0, len(raw) - 2, 3)
                 ]
     except (OSError, ValueError, IndexError):
         pass

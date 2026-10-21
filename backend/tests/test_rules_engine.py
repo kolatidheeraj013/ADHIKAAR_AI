@@ -125,14 +125,10 @@ def test_mock_scheme_loads_with_declared_inputs_and_mock_labels(
     assert "MOCK" in _field(scheme, "name").upper()
     assert "MOCK" in _field(scheme, "benefit").upper()
     assert set(_field(scheme, "required_documents")) == required_documents
-    assert {
-        _field(field, "key") for field in _field(scheme, "payload_fields")
-    } == payload_fields
+    assert {_field(field, "key") for field in _field(scheme, "payload_fields")} == payload_fields
 
     declaration_facts = [
-        fact
-        for fact in _field(scheme, "facts")
-        if _field(fact, "source") == "declaration"
+        fact for fact in _field(scheme, "facts") if _field(fact, "source") == "declaration"
     ]
     assert len(declaration_facts) == 1
     declaration = declaration_facts[0]
@@ -205,9 +201,7 @@ def test_missing_declaration_fact_is_undetermined(scheme_id: str) -> None:
         ("state_scholarship_mock", "family_income_annual"),
     ],
 )
-def test_missing_document_fact_is_undetermined(
-    scheme_id: str, missing_fact: str
-) -> None:
+def test_missing_document_fact_is_undetermined(scheme_id: str, missing_fact: str) -> None:
     facts = _facts_for(scheme_id)
     facts.pop(missing_fact)
 

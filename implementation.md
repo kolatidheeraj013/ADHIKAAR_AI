@@ -603,6 +603,7 @@ SARVAM_API_KEY=
 LLM_PROVIDER=                   # e.g. sarvam | gemini | openai
 LLM_API_KEY=
 LLM_MODEL=
+LLM_BASE_URL=                  # OpenAI-compatible /v1 endpoint; empty keeps deterministic offline LLM
 STORAGE_BACKEND=local           # local | supabase
 SUPABASE_URL=                   # only if STORAGE_BACKEND=supabase
 SUPABASE_SERVICE_KEY=

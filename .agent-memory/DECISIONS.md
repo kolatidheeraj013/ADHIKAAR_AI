@@ -152,3 +152,18 @@
 - Related files: `backend/app/integrations/portal_client.py`,
   `backend/app/agents/graph.py`, `mock_portal/app/main.py`.
 - Status: accepted.
+
+## D-013 — live local LM Studio fine-tuned model integration
+
+- Date: 2026-10-21
+- Context: User fine-tuned Llama-3.1-8B on synthetic ADHIKAAR data, exported to GGUF,
+  and loaded it into LM Studio on localhost port 1234.
+- Decision: Configure ADHIKAAR's `ProviderLLMClient` to communicate directly with
+  LM Studio (`http://127.0.0.1:1234/v1`, model `adhikaar-llama3.1-8b-fact-extractor`).
+  Enhanced `_call_chat_completion` to gracefully handle local server `response_format`
+  behavior without 400 errors. Maintained strict zero-network invariant in tests via
+  `conftest.py` setting `DEMO_MODE=offline`.
+- Invariants preserved: LLM extracts and explains only; deterministic YAML rules engine
+  decides eligibility; 100% offline DPDP data privacy for citizen document facts.
+- Status: accepted and live verified.
+

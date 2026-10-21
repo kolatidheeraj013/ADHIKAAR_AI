@@ -1,5 +1,10 @@
+import os
 import sys
 from pathlib import Path
+
+# Enforce zero-network offline mode and clean base url during test runs
+os.environ["DEMO_MODE"] = "offline"
+os.environ["LLM_BASE_URL"] = ""
 
 BACKEND_ROOT = Path(__file__).parents[1]
 PROJECT_ROOT = BACKEND_ROOT.parent

@@ -46,8 +46,11 @@ def mask_identifier(value: str) -> str:
 def sanitize_evidence(value: Any, *, key: str | None = None) -> Any:
     """Return JSON-safe evidence with raw identifiers and OCR removed."""
     normalized_key = key.lower() if key else ""
-    if normalized_key and "masked" not in normalized_key and "last4" not in normalized_key and any(
-        marker in normalized_key for marker in _SENSITIVE_KEYS
+    if (
+        normalized_key
+        and "masked" not in normalized_key
+        and "last4" not in normalized_key
+        and any(marker in normalized_key for marker in _SENSITIVE_KEYS)
     ):
         return "[REDACTED]"
     if isinstance(value, Mapping):

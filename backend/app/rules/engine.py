@@ -200,9 +200,7 @@ def _expression_names(expression: str) -> list[str]:
     names: list[str] = []
     for node in ast.walk(tree):
         if not isinstance(node, _ALLOWED_AST_NODES):
-            raise ValueError(
-                f"unsupported syntax in rule expression: {type(node).__name__}"
-            )
+            raise ValueError(f"unsupported syntax in rule expression: {type(node).__name__}")
         if isinstance(node, ast.Name):
             if node.id.startswith("_"):
                 raise ValueError("private names are not allowed in rule expressions")
@@ -254,9 +252,7 @@ def evaluate(scheme: Scheme, facts: Mapping[str, Any]) -> DecisionResult:
 
     for rule in scheme.rules:
         fact_names = _expression_names(rule.expr)
-        normalized = {
-            name: _normalize_fact(facts[name]) for name in fact_names if name in facts
-        }
+        normalized = {name: _normalize_fact(facts[name]) for name in fact_names if name in facts}
         missing = [name for name in fact_names if name not in normalized]
         source_doc_ids = _source_doc_ids(normalized.values())
         if missing:

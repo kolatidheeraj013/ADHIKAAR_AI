@@ -230,6 +230,36 @@ def test_llm_extract_facts_mocked_http():
         assert "unrelated_hallucination" not in facts
 
 
+def test_llm_local_endpoint_can_run_without_api_key():
+    """LM Studio-style endpoints are live when configured without a secret."""
+    client = ProviderLLMClient(
+        api_key="",
+        model="dheeraj013/adhikaar-llama3.1-8b-fact-extractor-GGUF",
+        base_url="http://127.0.0.1:1234/v1",
+        demo_mode="live",
+    )
+
+    def fake_post(url, *args, **kwargs):
+        assert url == "http://127.0.0.1:1234/v1/chat/completions"
+        assert kwargs["json"]["model"] == "dheeraj013/adhikaar-llama3.1-8b-fact-extractor-GGUF"
+        assert "Authorization" not in kwargs["headers"]
+        return httpx.Response(
+            200,
+            json={"choices": [{"message": {"content": '{"applicant_name": "Local Model"}'}}]},
+            request=httpx.Request("POST", url),
+        )
+
+    with patch.object(httpx.Client, "post", side_effect=fake_post):
+        facts = client.extract_facts(
+            text="Name: Local Model",
+            source_type="document",
+            source_doc_id="doc1",
+            target_keys=["applicant_name"],
+        )
+
+    assert facts == {"applicant_name": "Local Model"}
+
+
 def test_llm_extract_facts_json_retry():
     """Verify client retries on malformed JSON on first attempt and succeeds on second."""
     client = ProviderLLMClient(api_key="mock-key", demo_mode="live")

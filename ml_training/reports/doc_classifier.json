@@ -1,0 +1,13 @@
+{
+  "status": "trained",
+  "synthetic_only": true,
+  "epochs": 5,
+  "best_val_loss": 2.9946295079730807,
+  "doc_type_accuracy": null,
+  "quality_accuracy": null,
+  "confusion_matrices": {
+    "doc_type": [],
+    "quality": []
+  },
+  "weights": "ml_training\\weights\\doc_classifier.pt"
+}

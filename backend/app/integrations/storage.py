@@ -22,13 +22,18 @@ class LocalStorageBackend:
 
     def store(self, case_id: str, filename: str, content: bytes) -> str:
         suffix = Path(filename).suffix.lower()
-        if suffix and not suffix.isalnum() and suffix not in {
-            ".jpg",
-            ".jpeg",
-            ".png",
-            ".webp",
-            ".ogg",
-        }:
+        if (
+            suffix
+            and not suffix.isalnum()
+            and suffix
+            not in {
+                ".jpg",
+                ".jpeg",
+                ".png",
+                ".webp",
+                ".ogg",
+            }
+        ):
             suffix = ".bin"
         if not suffix:
             suffix = ".bin"

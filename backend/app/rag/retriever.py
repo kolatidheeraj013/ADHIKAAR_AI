@@ -176,9 +176,7 @@ class RulebookRetriever:
 
     @staticmethod
     def _chunk_id(chunk: dict[str, str]) -> str:
-        identity = "\x1f".join(
-            (chunk["source"], chunk["heading"], chunk["text"])
-        )
+        identity = "\x1f".join((chunk["source"], chunk["heading"], chunk["text"]))
         return hashlib.sha256(identity.encode("utf-8")).hexdigest()
 
     def _retrieve_chroma(self, query: str, k: int) -> list[dict[str, Any]]:
@@ -211,8 +209,7 @@ class RulebookRetriever:
             )
             document_tokens = Counter(_tokens(searchable))
             overlap = sum(
-                min(count, document_tokens.get(token, 0))
-                for token, count in query_tokens.items()
+                min(count, document_tokens.get(token, 0)) for token, count in query_tokens.items()
             )
             if not overlap:
                 continue
