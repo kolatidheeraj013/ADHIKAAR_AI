@@ -96,10 +96,9 @@ specification is `implementation.md`.
 - `graphify-out/graph.json` exists and the graphify report has previously been
   refreshed; use graphify's existing-graph query path for future codebase questions
   instead of rebuilding unless an explicit update/rebuild is requested.
-- Graphify was incrementally refreshed after Phase 8 with `--code-only`; current graph
-  output is 1018 nodes, 2476 edges, and 57 communities after Phase 9. Non-code semantic files were
-  intentionally not re-extracted because no graphify-supported semantic API key was
-  available.
+- Graphify was incrementally refreshed with `--update --code-only` and `cluster-only`:
+  graph output is now 1160 nodes, 2837 edges, and 62 communities in `graphify-out/`.
+  Non-code semantic files were intentionally not re-extracted because no graphify-supported semantic API key was available.
 
 ## Phase 10 demo assets
 
@@ -112,39 +111,21 @@ specification is `implementation.md`.
   polling/webhook operations.
 - `docs/confidence-thresholds.md` records measured Phase 10 confidence outputs.
 
-## Latest Telegram result fix
+## Telegram result delivery and UX modernization
 
-- Telegram cases always select `TelegramNotifier`, even when `DEMO_MODE=offline`;
-  offline business fakes remain enabled and web cases still use `NoopNotifier`.
-- Review entry now sends a citizen-facing result update before the reviewer interrupt.
-- Result text includes the scheme, deterministic outcome, case status, evidence
-  confidence band, rule reasons, MOCK benefit, portal state/reference, and next step.
-- Latest verification: backend `86 passed, 1 skipped`; Telegram `19 passed`; mock portal
-  `7 passed`; Ruff, compileall, and scoped `git diff --check` passed. `make` is absent in
-  this shell, so direct Make targets remain unavailable while isolated uv equivalents pass.
+- Telegram cases select `TelegramNotifier` for push delivery to citizen chats.
+- Streamlined dynamic reply keyboard: active collection displays only `[ ✅ Submit / Done ]` and `[ ❌ Cancel Case ]`; active questions/processing displays only `[ ❌ Cancel Case ]`. Idle states provide localized menu options without cluttering mobile screens.
+- Restart recovery in `backend/app/main.py`: allows un-resumable cases with no active in-memory run to restart cleanly rather than throwing 409 Conflict.
+- Result text includes the scheme, deterministic outcome, case status, evidence confidence band, rule reasons, MOCK benefit, portal state/reference, and next step.
 
-## Local tuned model integration
+## Local LM Studio fact extractor (Live Verified)
 
-- `backend/app/main.py` selects `ProviderLLMClient` when `LLM_BASE_URL` is set; this
-  applies to fact extraction and targeted field re-extraction. With no endpoint, the
-  deterministic `_OfflineLLM` remains active.
-- Recommended LM Studio environment:
-  `LLM_PROVIDER=lm_studio`,
-  `LLM_BASE_URL=http://127.0.0.1:1234/v1`,
-  `LLM_MODEL=dheeraj013/adhikaar-llama3.1-8b-fact-extractor-GGUF`, and empty
-  `LLM_API_KEY`.
-- LM Studio live connectivity is not verified here because the local `/v1/models`
-  endpoint refused the connection. The user must start the local server and load the
-  model before runtime acceptance.
-- Telegram `text_handler` recognizes typed/localized Done and calls the same backend
-  start route as the inline Done button; ordinary text remains citizen intent.
+- `ProviderLLMClient` wired to local LM Studio endpoint `http://127.0.0.1:1234/v1` serving model `adhikaar-llama3.1-8b-fact-extractor`.
+- Live Pydantic-validated JSON fact extraction and targeted `extract_field` verified against actual local LLM.
+- Real Telegram case `2c19f77c` extracted facts, asked qualification question, received `No`, evaluated to `ELIGIBLE` under PM-Kisan, and auto-submitted to mock portal (`MOCK-PORTAL-001`).
 
-## Local LM Studio fact extractor
+## Frontend & ML Classifier Status
 
-- The backend runtime selects `ProviderLLMClient` when `LLM_BASE_URL` is configured;
-  otherwise it keeps `_OfflineLLM` deterministic behavior.
-- Local OpenAI-compatible endpoints may omit `LLM_API_KEY`. The supported example is
-  `http://127.0.0.1:1234/v1` with model
-  `dheeraj013/adhikaar-llama3.1-8b-fact-extractor-GGUF`.
-- The same provider client serves normal extraction and targeted `extract_field`
-  recovery. Eligibility remains in the deterministic rules engine.
+- Frontend: Next.js 15 App Router, TypeScript, Tailwind production build (`npm run build`) verified cleanly for all 5 static/dynamic routes.
+- Classifier: `DualHeadResNet18` trained for 5 epochs on synthetic documents (`ml_training/weights/doc_classifier.pt`, 44.8 MB) and evaluated via `ml_training/evaluate.py`.
+- Release: Commit `v1` pushed to GitHub (`main -> origin/main`). Zero regressions across all 124 tests and `make lint`.

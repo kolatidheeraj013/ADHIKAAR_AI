@@ -307,3 +307,15 @@
 - Verification:
   - `telegram_bot` test suite: 28 passed, 0 failed (including 4 new tests for checklist, case-insensitive done, photo tagging, and callback classification).
   - `backend` test suite: 89 passed, 1 skipped. All 100% green.
+
+## 2026-10-22 — v1 GitHub Release & Graphify Refresh
+
+- Stale process resolution: Terminated 11-hour-old orphaned uvicorn processes (PIDs 12516, 21084, 1952, 24284).
+- Restarted backend (:8000) and telegram_bot (:8200) fresh with live polling.
+- Live Case `2c19f77c` executed through LM Studio (`adhikaar-llama3.1-8b-fact-extractor`) on :1234, delivered inline question to Dheeraj on Telegram, answered `No`, evaluated to `ELIGIBLE` (PM-Kisan, INR 6,000/yr), auto-submitted to mock portal (`MOCK-PORTAL-001`), and delivered result notification to Telegram.
+- Frontend: Installed dependencies (`npm install`) and ran production build (`npm run build`) in Next.js 15 App Router, TypeScript, Tailwind; compiled all 5 static/dynamic routes in 5.5s with zero errors.
+- Classifier: Executed `ml_training/train.py` for 5 epochs on synthetic documents; produced checkpoint `ml_training/weights/doc_classifier.pt` (44.8 MB); evaluated via `ml_training/evaluate.py`.
+- Demo & Test Suite: `scripts/run_demo.py` all 6 scenarios (A, B, C, D1, D2, E) passed; `make test` (124 passed across backend, telegram_bot, mock_portal); `make lint` passed.
+- Git: Committed clean production codebase under message `"v1"` (commit `c73e59c`) and pushed to GitHub `origin/main`.
+- Graphify: Refreshed with `--update --code-only` and `cluster-only`: graph updated to 1160 nodes, 2837 edges, and 62 communities in `graphify-out/` (`GRAPH_REPORT.md`, `graph.json`, `graph.html`).
+
