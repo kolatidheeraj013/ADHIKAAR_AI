@@ -2,6 +2,8 @@
 ### Autonomous Multi-Modal Welfare Entitlement Agent
 
 [![CI](https://github.com/kolatidheeraj013/ADHIKAAR_AI/actions/workflows/ci.yml/badge.svg)](https://github.com/kolatidheeraj013/ADHIKAAR_AI/actions/workflows/ci.yml)
+[![Coverage: 83%](https://img.shields.io/badge/Coverage-83%25-brightgreen.svg)](docs/coverage_report.md)
+[![Security Audit](https://img.shields.io/badge/Security_Audit-0_Vulnerabilities-success.svg)](docs/security_audit.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python: 3.11+](https://img.shields.io/badge/Python-3.11+-brightgreen.svg)](pyproject.toml)
 [![Architecture: LangGraph](https://img.shields.io/badge/Agent-LangGraph_20--Node-orange.svg)](backend/app/agents/graph.py)

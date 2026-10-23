@@ -12,7 +12,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-test = ["pytest>=8,<9", "ruff>=0.6,<1"]
+test = ["pytest>=8,<9", "pytest-cov>=5,<7", "ruff>=0.6,<1"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

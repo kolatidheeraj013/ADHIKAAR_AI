@@ -20,7 +20,7 @@ from fastapi import (
     Query,
     UploadFile,
 )
-from fastapi.responses import StreamingResponse
+from fastapi.responses import PlainTextResponse, StreamingResponse
 from langgraph.checkpoint.memory import InMemorySaver
 from pydantic import BaseModel, Field
 from sqlalchemy import delete, select
@@ -690,15 +690,38 @@ async def health(session: Session = Depends(_session)) -> dict[str, str]:
 
 @app.get("/stats")
 @app.get("/metrics")
-async def system_stats(session: Session = Depends(_session)) -> dict[str, Any]:
+async def system_stats(
+    format: str | None = None,
+    session: Session = Depends(_session),
+) -> Any:
     cases = session.scalars(select(Case)).all()
     total_cases = len(cases)
     by_status: dict[str, int] = {}
+    resolution_times: list[float] = []
+
+    terminal_statuses = {"COMPLETED", "SUBMITTED", "NOT_ELIGIBLE", "FAILED_ESCALATED"}
     for c in cases:
         by_status[c.status] = by_status.get(c.status, 0) + 1
+        if c.status in terminal_statuses and c.created_at and c.updated_at:
+            delta = (c.updated_at - c.created_at).total_seconds()
+            resolution_times.append(max(0.0, delta))
 
     escalations = session.scalars(select(Escalation)).all()
     open_escalations = sum(1 for e in escalations if e.status == "OPEN")
+    total_escalations = len(escalations)
+
+    auto_submits = by_status.get("SUBMITTED", 0) + by_status.get("COMPLETED", 0)
+    auto_submit_rate = (
+        round((auto_submits / total_cases) * 100.0, 1) if total_cases > 0 else 0.0
+    )
+    escalation_rate = (
+        round((total_escalations / total_cases) * 100.0, 1) if total_cases > 0 else 0.0
+    )
+    avg_resolution_seconds = (
+        round(sum(resolution_times) / len(resolution_times), 2)
+        if resolution_times
+        else 0.0
+    )
 
     events = session.scalars(select(AuditEvent)).all()
     latencies = [
@@ -710,14 +733,42 @@ async def system_stats(session: Session = Depends(_session)) -> dict[str, Any]:
     ]
     avg_latency_ms = round(sum(latencies) / len(latencies), 2) if latencies else 0.0
 
-    return {
+    payload = {
         "total_cases": total_cases,
         "by_status": by_status,
-        "submitted_count": by_status.get("SUBMITTED", 0) + by_status.get("COMPLETED", 0),
+        "auto_submitted_count": auto_submits,
+        "submitted_count": auto_submits,
         "escalated_count": open_escalations,
+        "total_escalations": total_escalations,
+        "auto_submit_rate_pct": auto_submit_rate,
+        "escalation_rate_pct": escalation_rate,
+        "average_resolution_time_seconds": avg_resolution_seconds,
+        "avg_resolution_time_seconds": avg_resolution_seconds,
         "total_audit_events": len(events),
         "avg_node_latency_ms": avg_latency_ms,
     }
+
+    if format == "prometheus":
+        lines = [
+            "# HELP adhikaar_total_cases Total number of citizen cases processed",
+            "# TYPE adhikaar_total_cases counter",
+            f"adhikaar_total_cases {total_cases}",
+            "# HELP adhikaar_auto_submitted Total number of auto-submitted cases",
+            "# TYPE adhikaar_auto_submitted counter",
+            f"adhikaar_auto_submitted {auto_submits}",
+            "# HELP adhikaar_escalated Total number of escalated cases",
+            "# TYPE adhikaar_escalated counter",
+            f"adhikaar_escalated {total_escalations}",
+            "# HELP adhikaar_avg_resolution_seconds Average time to resolution in seconds",
+            "# TYPE adhikaar_avg_resolution_seconds gauge",
+            f"adhikaar_avg_resolution_seconds {avg_resolution_seconds}",
+            "# HELP adhikaar_avg_node_latency_ms Average execution latency per node in ms",
+            "# TYPE adhikaar_avg_node_latency_ms gauge",
+            f"adhikaar_avg_node_latency_ms {avg_latency_ms}",
+        ]
+        return PlainTextResponse("\n".join(lines) + "\n")
+
+    return payload
 
 
 @app.post("/cases")

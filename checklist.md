@@ -224,7 +224,7 @@ Sources considered: **myScheme.gov.in** (national discovery platform: eligibilit
 - [ ] **PS-09** [P1] CORS restricted to the frontend origin; HTTPS on the deployed build.
 - [ ] **PS-10** [P1] Telegram privacy notice shown (bot chats are not end-to-end encrypted); the bot's message deletion is best-effort and documented.
 - [ ] **PS-11** [P1] No real PII in fixtures, samples or tests. Synthetic documents carry the SAMPLE mark.
-- [ ] **PS-12** [P2] Dependency audit run (`pip-audit`, `npm audit`); findings noted.
+- [x] **PS-12** [P2] Dependency audit run (`pip-audit`, `npm audit`); findings noted (see `docs/security_audit.md`).
 
 ---
 
@@ -241,8 +241,8 @@ Sources considered: **myScheme.gov.in** (national discovery platform: eligibilit
 - [ ] **TE-09** [P1] Telegram handler tests with fake updates: `callback_data` size, album debounce, PDF rejection, over-long voice rejected before download.
 - [ ] **TE-10** [P1] No test makes a real network call.
 - [ ] **TE-11** [P1] **Agent eval set:** 20–30 synthetic cases with ground-truth outcomes run through the pipeline. Report: outcome agreement, auto-submit vs escalation rate, average end-to-end time → `docs/eval_report.md`. This is the strongest evidence for "AI that works".
-- [ ] **TE-12** [P1] CI (GitHub Actions) runs lint + tests on every push.
-- [ ] **TE-13** [P2] Coverage report generated.
+- [x] **TE-12** [P1] CI (GitHub Actions) runs lint + tests on every push.
+- [x] **TE-13** [P2] Coverage report generated (see `docs/coverage_report.md`).
 
 ---
 
@@ -251,7 +251,7 @@ Sources considered: **myScheme.gov.in** (national discovery platform: eligibilit
 - [ ] **OB-01** [P1] Structured logs carry `case_id`, node, duration, outcome; no PII.
 - [ ] **OB-02** [P1] `/health` on backend, mock_portal, telegram_bot; backend reports DB and checkpointer status.
 - [ ] **OB-03** [P1] Per-node latency is visible (in audit events or logs) so slow steps can be found before the demo.
-- [ ] **OB-04** [P2] Basic metrics endpoint or page: cases processed, auto-submitted vs escalated, average time to resolution.
+- [x] **OB-04** [P2] Basic metrics endpoint or page: cases processed, auto-submitted vs escalated, average time to resolution (`/stats`, `/metrics`).
 
 ---
 

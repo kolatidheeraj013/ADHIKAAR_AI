@@ -12,6 +12,8 @@ node_modules/
 .next/
 coverage.xml
 htmlcov/
+.coverage
+.coverage.*
 
 # Build & packaging artifacts
 *.egg-info/

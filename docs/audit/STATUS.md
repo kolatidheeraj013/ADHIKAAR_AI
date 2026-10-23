@@ -39,11 +39,11 @@
 - **Implemented:** `POST /cases/{id}/track` and `GET /cases/{id}/track` in `backend/app/main.py`; polls `mock_portal` `GET /applications/{ref}`; detects `stalled` SLA breaches; creates `portal_sla_stalled` escalation; notifies citizen.
 - **Evidence:** Tested in `backend/tests/test_backend_health.py::test_track_case_normal_and_stalled`.
 
-### 6. `OB-02`, `OB-03`, `OB-04` [P1] Observability, Health & Node Latency
+### 6. `OB-02`, `OB-03`, `OB-04` [P1/P2] Observability, Health, Latency & Metrics
 - **Implemented:** 
   - `GET /health` reports `{"service": "backend", "status": "ok", "db": "healthy", "checkpointer": "ready"}`.
   - Every node measures `duration_ms` using `time.perf_counter()` and logs to `AuditEvent.evidence["duration_ms"]`.
-  - Added `GET /stats` and `GET /metrics` aggregating case counts, status breakdowns, and average node latency.
+  - Added `GET /stats` and `GET /metrics` reporting total cases, auto-submitted vs. escalated counts and percentages, average resolution time, node latencies, and Prometheus plaintext export (`?format=prometheus`).
 - **Evidence:** Tested in `backend/tests/test_backend_health.py`.
 
 ### 7. `TE-11` [P1] 25-Case Synthetic Agent Evaluation Suite (`docs/eval_report.md`)
@@ -69,11 +69,20 @@
   - `docs/impact.md`: Quantified economic model showing ₹1,850 saved per citizen, 100% in-person visits eliminated, and ₹22.8 crore unlocked per 100k cohort.
 - **Evidence:** `docs/demo_script.md`, `docs/impact.md`.
 
+### 11. `TE-13` [P2] Test Coverage Report (`docs/coverage_report.md`)
+- **Implemented:** `pytest --cov` integrated across all packages; 83% backend coverage achieved with detailed component breakdowns and coverage badge.
+- **Evidence:** `docs/coverage_report.md`.
+
+### 12. `PS-12` [P2] Dependency Security Audit Report (`docs/security_audit.md`)
+- **Implemented:** `pip-audit` scan verified 0 vulnerabilities across all Python packages; `npm audit` log analyzed with mitigation posture; DPDP Act 2023 compliance documented.
+- **Evidence:** `docs/security_audit.md`.
+
 ---
 
 ## 3. Current Test Suite Status (100% Pass)
-- **Backend Tests:** 92 passed, 1 skipped (0 failures)
-- **Telegram Bot Tests:** 47 passed (0 failures)
-- **Mock Portal Tests:** 7 passed (0 failures)
+- **Backend Tests:** 92 passed, 1 skipped (0 failures, 83% coverage)
+- **Telegram Bot Tests:** 47 passed (0 failures, 59% coverage)
+- **Mock Portal Tests:** 7 passed (0 failures, 87% coverage)
 - **Rules Engine Tests:** 18 passed (0 failures)
 - **Total Tests Passing:** 146 passed offline with zero network calls.
+

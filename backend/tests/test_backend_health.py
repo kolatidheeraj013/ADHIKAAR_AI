@@ -30,8 +30,21 @@ def test_backend_stats_and_metrics() -> None:
     assert "total_cases" in data
     assert "by_status" in data
     assert "submitted_count" in data
+    assert "auto_submitted_count" in data
     assert "escalated_count" in data
+    assert "total_escalations" in data
+    assert "auto_submit_rate_pct" in data
+    assert "escalation_rate_pct" in data
+    assert "average_resolution_time_seconds" in data
     assert "avg_node_latency_ms" in data
+
+    prom_res = client.get("/metrics?format=prometheus")
+    assert prom_res.status_code == 200
+    assert "adhikaar_total_cases" in prom_res.text
+    assert "adhikaar_auto_submitted" in prom_res.text
+    assert "adhikaar_escalated" in prom_res.text
+    assert "adhikaar_avg_resolution_seconds" in prom_res.text
+
 
 
 def test_track_case_normal_and_stalled() -> None:
