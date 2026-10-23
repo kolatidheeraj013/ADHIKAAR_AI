@@ -1,13 +1,12 @@
 # ADHIKAAR Continuation Checkpoint
 
-- Objective: All engineering phases (0–10) verified. Ready for comprehensive testing / code review.
+- Objective: Validate Telegram bot UX rewrite with live human chat testing on `@Adhikaar013bot`.
 - Completed Deliverables:
-  1. LM Studio local model endpoint verified (`http://127.0.0.1:1234/v1`, model `adhikaar-llama3.1-8b-fact-extractor`); live JSON fact extraction tested and verified.
-  2. Real Telegram end-to-end test completed: qualification question answered, outcome evaluated to ELIGIBLE (PM-Kisan, INR 6,000/yr), auto-submitted to mock portal (`MOCK-PORTAL-001`), and final result delivered directly to Dheeraj on Telegram.
-  3. Frontend dependencies installed (`npm install`) and production build verified (`npm run build`) with Next.js 15 App Router, TypeScript, and Tailwind across all 5 routes.
-  4. DualHeadResNet18 document classifier trained for 5 epochs on synthetic documents (`ml_training/weights/doc_classifier.pt`, 44.8 MB) and evaluated via `ml_training/evaluate.py`.
-  5. Docker status documented: Docker Desktop CLI 29.7.2 is installed; daemon requires interactive GUI/WSL2 service initialization on Windows.
-  6. Demo & test suites: `scripts/run_demo.py` all 6 scenarios (A, B, C, D1, D2, E) passed; `scripts/seed.py` passed; `make test` (124 passed across backend, telegram_bot, mock_portal); `make lint` clean.
+  1. Fixed Outcome Delivery Flow: Identified that answering "No" to the interactive declaration question ("Does anyone in your family pay income tax?") was incorrectly intercepted by `_resolve_callback_action` as `consent:no` (due to unconstrained button text matching for "no" without verifying consent context), causing `consent_declined` to clear onboarding and abort the case. Added early guard for `a:` callbacks, prioritized answer execution in `callback_handler`, and required explicit consent keywords before treating generic buttons as consent.
+  2. Fixed backend message UUID comparison in `backend/app/main.py:971` using `.replace("-", "")` normalization.
+  3. Added prominent "🏛️ Browse Govt Schemes & Benefits" option to both `/start` inline action keyboards and main menu handlers.
+  4. Implemented live government welfare scheme extraction with automatic fallback in `telegram_bot/app/live_schemes.py`: attempts live retrieval from `https://www.myscheme.gov.in/` and `https://www.india.gov.in/my-government/schemes`; if extraction fails or encounters CSR/403/timeouts, explicitly presents: "⚠️ Oh we can't able extract the data from the websites (https://www.myscheme.gov.in/, https://www.india.gov.in/my-government/schemes)" followed by the verified catalog of live government welfare benefits (PM-Kisan, PMAY, Ayushman Bharat, PM Ujjwala, PM SVANidhi, APY) with direct links to official live portals.
+  5. 100% test pass rate: 47/47 passed in `telegram_bot`, 90/90 passed in `backend`. Both daemons restarted and verified healthy on ports 8000 and 8200.
 - Files to inspect first: this file, `implementation.md`, `telegram_bot/app/bot.py`, `backend/app/main.py`.
 - Phase 4 outcome:
   - `backend/app/integrations/sarvam.py`: ffmpeg 16 kHz mono WAV normalization, duration validation (<=30s), language mapping (`ta|te|hi|en` -> `ta-IN|te-IN|hi-IN|en-IN`), live translation/STT, and offline fixture fallback.
@@ -92,10 +91,35 @@
   - Fixed root cause of missing outcomes after photo upload (sequential fallback for unclassified `"other"` photos, `doc_type` parameter in `/documents`, caption/filename detection, interactive tagging keyboard).
   - Replaced silent photo deletion with DPDP privacy reassurance message.
   - Added `/checklist` command and dynamic `ReplyKeyboardMarkup` state-switching.
-  - Full suite verified: `telegram_bot` (28 passed), `backend` (89 passed, 1 skipped).
+   - Full suite verified: `telegram_bot` (28 passed), `backend` (89 passed, 1 skipped).
+
+- Telegram UX v3 (2026-10-23):
+  - Rebuilt the visible flow around explicit steps and one primary action: `Check eligibility`.
+  - Upload acknowledgements now offer `Add another document` or `Check eligibility`; the
+    persistent keyboard is limited to `What I uploaded` and `Cancel application` while collecting.
+  - Added `/submit`, `/cancel`, terminal `/status` recovery through `/cases/latest`, and a
+    persisted-case result watcher to recover missing/delayed push notifications.
+  - Same bot identity/token boundary retained; no token was read or stored in memory.
+- Verification: `make test` passed with backend 90 passed/1 skipped, Telegram 31 passed,
+  mock portal 7 passed; `make lint`, compileall, and diff checks passed.
+
+- Telegram reliability debugging (2026-10-23):
+  - Confirmed the current runner's default ports 8000/8200 were not listening; isolated
+    services had been started on 18000/18200 instead. Bot API `getMe` still succeeds for
+    `@Adhikaar013bot`, with no webhook and zero pending updates.
+  - Fixed the consent callback's invalid `ReplyKeyboardMarkup` edit, `/submit` error path,
+    result fallback after answering a question, restart recovery for pending question buttons,
+    duplicate notification race, cross-chat answer callbacks, locale key parity, and runtime
+    service configuration.
+  - Added `/ready` and explicit Compose service URLs; declared `python-dotenv` dependencies.
+  - Verification: backend 90 passed/1 skipped, Telegram 38 passed, mock portal 7 passed,
+    `make lint` passed, `uv lock --check` passed for backend and Telegram.
 
 ## Exact first action for the next coding session
 
-Do not paste a Telegram bot token into chat or commit it. With LM Studio active on port 1234
-and local services running, run the live end-to-end flow or perform a real `/start` → language
-→ consent → text/voice/photo → Done → `/status` smoke test with synthetic data.
+Do not paste a Telegram bot token into chat or commit it. Start the backend and Telegram
+services with the same `SERVICE_TOKEN`, verify backend `/health` and Telegram `/ready` return
+HTTP 200 on the configured ports, then perform a fresh real flow with synthetic data:
+`/start` → language → consent → one text/voice message → upload images → `Check eligibility`
+→ wait for the result → `/status`. Confirm that the result appears once, includes the outcome,
+and that `/checklist` and `/cancel` are understandable on mobile.

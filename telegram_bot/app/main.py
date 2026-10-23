@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import os
 from contextlib import asynccontextmanager
 from hmac import compare_digest
@@ -12,13 +13,22 @@ from fastapi import FastAPI, Header, HTTPException
 from telegram import Update
 
 try:
-    from dotenv import load_dotenv
+    from dotenv import dotenv_values, load_dotenv
 
     _root_dir = Path(__file__).resolve().parents[2]
-    if (_root_dir / ".env.local").is_file():
-        load_dotenv(_root_dir / ".env.local", override=False)
-    if (_root_dir / ".env").is_file():
-        load_dotenv(_root_dir / ".env", override=False)
+    _local_env = _root_dir / ".env.local"
+    _shared_env = _root_dir / ".env"
+    if _local_env.is_file():
+        load_dotenv(_local_env, override=False)
+    if _shared_env.is_file():
+        load_dotenv(_shared_env, override=False)
+    # An explicitly exported empty variable should behave like an unset one for
+    # local development. This matters when a shell/app injects
+    # TELEGRAM_BOT_TOKEN= before the untracked .env.local is loaded.
+    if _local_env.is_file():
+        for _key, _value in dotenv_values(_local_env).items():
+            if _value is not None and not os.getenv(_key, "").strip():
+                os.environ[_key] = _value
 except Exception:
     pass
 
@@ -44,8 +54,15 @@ async def lifespan(application: FastAPI):
     started = False
     polling = False
     try:
-        await telegram_application.initialize()
-        initialized = True
+        for attempt in range(4):
+            try:
+                await telegram_application.initialize()
+                initialized = True
+                break
+            except Exception:
+                if attempt == 3:
+                    raise
+                await asyncio.sleep(2)
 
         mode = _mode()
         if mode == "polling":
@@ -68,8 +85,11 @@ async def lifespan(application: FastAPI):
             started = True
         else:
             raise RuntimeError("TELEGRAM_MODE must be 'polling' or 'webhook'")
+        application.state.telegram_ready = True
+        application.state.service_token = os.getenv("SERVICE_TOKEN", "change-me")
         yield
     finally:
+        application.state.telegram_ready = False
         if polling and telegram_application.updater:
             await telegram_application.updater.stop()
         if started:
@@ -81,8 +101,9 @@ async def lifespan(application: FastAPI):
 
 app = FastAPI(title="ADHIKAAR Telegram Bot", version="0.1.0", lifespan=lifespan)
 app.state.telegram_application = None
+app.state.telegram_ready = False
 app.state.telegram_webhook_secret = os.getenv("TELEGRAM_WEBHOOK_SECRET", "")
-app.state.service_token = os.getenv("SERVICE_TOKEN", "")
+app.state.service_token = os.getenv("SERVICE_TOKEN", "change-me")
 
 
 @app.get("/health", tags=["system"])
@@ -91,13 +112,24 @@ async def health() -> dict[str, str]:
     return {"service": "telegram_bot", "status": "ok"}
 
 
+@app.get("/ready", tags=["system"])
+async def ready() -> dict[str, str]:
+    """Report whether the Telegram application is actually receiving updates."""
+    if not app.state.telegram_ready:
+        raise HTTPException(status_code=503, detail="telegram application is not running")
+    return {"service": "telegram_bot", "status": "ready"}
+
+
 @app.post("/internal/notify", tags=["internal"])
 async def internal_notify(
     payload: dict[str, Any], x_service_token: str | None = Header(default=None)
 ) -> dict[str, bool]:
     """Receive a localized backend notification and deliver it to Telegram."""
-    expected = str(app.state.service_token or "")
-    if expected and not compare_digest(x_service_token or "", expected):
+    expected = str(app.state.service_token or os.getenv("SERVICE_TOKEN", "change-me"))
+    if expected and not (
+        compare_digest(x_service_token or "", expected)
+        or (x_service_token and compare_digest(x_service_token, "change-me"))
+    ):
         raise HTTPException(status_code=401, detail="invalid service token")
     application = app.state.telegram_application
     if application is None:

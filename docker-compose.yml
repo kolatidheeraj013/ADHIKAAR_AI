@@ -13,6 +13,9 @@ services:
   backend:
     build: ./backend
     env_file: .env
+    environment:
+      MOCK_PORTAL_URL: http://mock_portal:8100
+      BOT_INTERNAL_URL: http://telegram_bot:8200
     ports:
       - "8000:8000"
     depends_on:
@@ -28,6 +31,8 @@ services:
   telegram_bot:
     build: ./telegram_bot
     env_file: .env
+    environment:
+      BACKEND_URL: http://backend:8000
     ports:
       - "8200:8200"
     depends_on:

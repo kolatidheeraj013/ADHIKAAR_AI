@@ -1,0 +1,94 @@
+{
+  "synthetic_only": true,
+  "watermark": "SAMPLE \u2014 NOT A REAL DOCUMENT",
+  "description": "Pre-staged sample pack for live Telegram & Web demo presentations.",
+  "scenarios": {
+    "Scenario_A": {
+      "title": "PM-KISAN Auto-Submit (Tamil Voice + All Documents)",
+      "voice": "voice_sample_ta.wav",
+      "documents": [
+        "aadhaar_sample.png",
+        "land_record_sample.png",
+        "bank_passbook_sample.png"
+      ],
+      "expected_outcome": "AUTO_SUBMIT"
+    },
+    "Scenario_B": {
+      "title": "PM-KISAN Missing Land Record (Re-entry flow)",
+      "voice": "voice_sample_en.wav",
+      "documents": [
+        "aadhaar_sample.png",
+        "bank_passbook_sample.png"
+      ],
+      "expected_outcome": "NEEDS_DOCUMENTS"
+    },
+    "Scenario_C": {
+      "title": "PM-KISAN Blurry Land Record (Reviewer Escalation)",
+      "voice": "voice_sample_ta.wav",
+      "documents": [
+        "aadhaar_sample.png",
+        "land_record_blurry.png",
+        "bank_passbook_sample.png"
+      ],
+      "expected_outcome": "NEEDS_REVIEW"
+    },
+    "Scenario_D1": {
+      "title": "PM-KISAN Missing IFSC in primary OCR (Auto-Recovery)",
+      "voice": "voice_sample_hi.wav",
+      "documents": [
+        "aadhaar_sample.png",
+        "land_record_sample.png",
+        "passbook_missing_ifsc.png"
+      ],
+      "expected_outcome": "AUTO_RECOVERY_THEN_SUBMIT"
+    },
+    "Scenario_D2": {
+      "title": "PM-KISAN Portal 500/Permanent Reject (Reviewer Escalation)",
+      "voice": "voice_sample_te.wav",
+      "documents": [
+        "aadhaar_sample.png",
+        "land_record_sample.png",
+        "bank_passbook_sample.png"
+      ],
+      "expected_outcome": "ESCALATED_TO_REVIEWER"
+    },
+    "Scenario_E": {
+      "title": "PM-KISAN Missing Tax Declaration (Interactive Citizen Question)",
+      "voice": "voice_sample_ta.wav",
+      "documents": [
+        "aadhaar_sample.png",
+        "land_record_sample.png",
+        "bank_passbook_sample.png"
+      ],
+      "expected_outcome": "INTERACTIVE_QUESTION_THEN_SUBMIT"
+    },
+    "Scholarship": {
+      "title": "Post-Matric Scholarship (Student)",
+      "voice": "voice_scholarship_en.wav",
+      "documents": [
+        "aadhaar_sample.png",
+        "income_cert_sample.png",
+        "marksheet_sample.png"
+      ],
+      "expected_outcome": "ELIGIBILITY_ASSESSED"
+    }
+  },
+  "files": {
+    "documents": [
+      "aadhaar_sample.png",
+      "land_record_sample.png",
+      "land_record_blurry.png",
+      "bank_passbook_sample.png",
+      "passbook_missing_ifsc.png",
+      "income_cert_sample.png",
+      "marksheet_sample.png"
+    ],
+    "audio": [
+      "voice_sample_ta.wav",
+      "voice_sample_te.wav",
+      "voice_sample_hi.wav",
+      "voice_sample_en.wav",
+      "voice_scholarship_en.wav"
+    ]
+  }
+}

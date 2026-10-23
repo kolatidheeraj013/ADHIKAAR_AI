@@ -70,14 +70,24 @@ def _return(state: CaseState) -> dict[str, Any]:
     return state.model_dump(mode="json")
 
 
-def _audit_node(runtime: GraphDependencies, name: str, state: CaseState) -> None:
+def _audit_node(
+    runtime: GraphDependencies,
+    name: str,
+    state: CaseState,
+    duration_ms: float = 0.0,
+) -> None:
     event = log(
         runtime.session,
         case_id=state.case_id,
         actor="agent",
         event_type=f"node.{name}",
-        summary=f"{name} node executed",
-        evidence={"node": name, "status": state.status, "scheme": state.candidate_schemes[:1]},
+        summary=f"{name} node executed in {duration_ms}ms" if duration_ms > 0 else f"{name} node executed",
+        evidence={
+            "node": name,
+            "status": state.status,
+            "scheme": state.candidate_schemes[:1],
+            "duration_ms": duration_ms,
+        },
     )
     runtime.audit_event_ids.append(str(event.id))
 
@@ -171,8 +181,11 @@ def _node(
 ):
     def wrapped(value: CaseState | dict[str, Any]) -> dict[str, Any]:
         state = _as_state(value)
-        _audit_node(runtime, name, state)
-        return _return(function(state, runtime))
+        start_time = time.perf_counter()
+        next_state = function(state, runtime)
+        duration_ms = round((time.perf_counter() - start_time) * 1000.0, 2)
+        _audit_node(runtime, name, next_state, duration_ms=duration_ms)
+        return _return(next_state)
 
     return wrapped
 

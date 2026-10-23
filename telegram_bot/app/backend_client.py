@@ -74,6 +74,17 @@ class BackendClient:
             return dict(payload["case"])
         return dict(payload) if isinstance(payload, Mapping) else None
 
+    async def latest_case(self, chat_id: int | str) -> dict[str, Any] | None:
+        """Return the most recent case, including a completed terminal case."""
+        payload = await self._request(
+            "GET", "/cases/latest", params={"channel": "telegram", "channel_ref": str(chat_id)}
+        )
+        if not payload:
+            return None
+        if isinstance(payload, Mapping) and payload.get("case") is not None:
+            return dict(payload["case"])
+        return dict(payload) if isinstance(payload, Mapping) else None
+
     async def create_case(self, language: str, chat_id: int | str) -> dict[str, Any]:
         return await self._request(
             "POST",

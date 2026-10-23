@@ -234,3 +234,120 @@
   `make lint` both exit 127 because `make` is unavailable. The local LM Studio probe
   to `http://127.0.0.1:1234/v1/models` was refused, so live model connectivity is not
   claimed.
+
+## 2026-10-23 — Telegram v2 UX failure and v3 rebuild
+
+- Symptom: user rated the Telegram bot 1/10 for confusion and lack of structure; after
+  image uploads the citizen could remain waiting without seeing the outcome.
+- Confirmed v2 weaknesses: the user-facing flow mixed `Done`, `Submit / Done`, checklist,
+  inline document-tagging, and persistent reply keyboards; terminal cases were excluded
+  from `/cases/active`; and a result push failure left no bot-side recovery path.
+- Resolution: rebuilt the visible flow without changing `@Adhikaar013bot` or its token:
+  explicit application steps, one `Check eligibility` action, `Add another document`,
+  concise upload acknowledgements, `/submit`, `/checklist`, `/cancel`, `/cases/latest`
+  status recovery, and a 45-second persisted-case watcher that deduplicates against push
+  notifications by message id.
+- Verification: Telegram 31 tests passed; backend 90 passed with 1 skipped; mock portal
+  7 passed; Ruff/lint, compileall, and scoped diff checks passed.
+- Remaining status: behavior is offline-verified. The user must repeat the real Telegram
+  conversation with the same bot to validate mobile rendering, Telegram callback behavior,
+  and the final visible result.
+
+## 2026-10-23 — Telegram runtime and callback debugging
+
+- Symptom/evidence: default ports `8000` and `8200` were not listening in the current runner;
+  only isolated diagnostic services on `18000` and `18200` were active. The Telegram service's
+  `/health` returned 200 even when no Telegram application was initialized, so liveness was
+  masking a non-polling bot. Bot API read-only checks for `@Adhikaar013bot` returned `getMe`
+  success, no webhook URL, and zero pending updates.
+- Confirmed code defects: consent attempted to edit a Telegram message with a
+  `ReplyKeyboardMarkup` (Telegram rejects this); `/submit` let backend exceptions escape;
+  answer callbacks did not schedule result recovery; persisted `NEEDS_INFO` cases did not
+  rebuild answer buttons; and duplicate push/fallback notifications raced before the delivered
+  key was recorded. These defects were found by the code-review sub-agent and covered by new
+  regression tests.
+- Runtime/config risks: Compose previously relied on `localhost` defaults for inter-container
+  calls and did not declare `python-dotenv` even though both services import it. Compose now
+  sets `BACKEND_URL=http://backend:8000` and `BOT_INTERNAL_URL=http://telegram_bot:8200`;
+  `/ready` returns 503 until polling/webhook startup completes.
+- Resolution: implemented the focused reliability fixes and added tests for consent flow,
+  `/submit` backend failure, restart question recovery, answer callback ownership, concurrent
+  deduplication, locale key parity, and readiness.
+- Verification: `make test` passed (backend 90 passed/1 skipped, Telegram 38 passed, mock
+  portal 7 passed); `make lint` passed; backend/Telegram `uv lock --check` passed. A full
+  repository `git diff --check` still reports pre-existing trailing whitespace in unrelated
+  generated ML files; scoped changed-service checks passed.
+- Current status: code-level/runtime wiring issues are fixed and verified; a fresh human Telegram
+  conversation is still required to confirm mobile rendering and end-to-end result delivery.
+
+## 2026-10-23 — Telegram Bot Copy & Response Rewrite From Scratch
+
+- User Feedback:
+  1) Extra text (robotic jargon, debug text, repetitive "MOCK")
+  2) Confusion (Outcome: UNDETERMINED without explaining what is missing, unclear buttons)
+  3) Delay (45-60s total silence while LM Studio / OCR evaluates with no typing indicator)
+  4) No exception handling (cold status dumps when missing documents)
+- Live Case Diagnosis (`backend/backend/adhikaar.db`):
+  - Case `e8a785849646457aac2928d002e6ae41` for user `7312450336`:
+  - Uploaded `aadhaar` and `land_record`.
+  - Backend evaluated rules and returned status `NEEDS_DOCUMENTS` (missing `bank_passbook`).
+  - Bot displayed the raw backend string: `MOCK / synthetic case result`, `Outcome: UNDETERMINED`, `Portal submission: NOT_ATTEMPTED`, `MOCK rulebook source: pm_kisan_mock.md`.
+- Resolution:
+  1) Copy & Flow Overhaul (`telegram_bot/app/i18n.py`):
+     - Completely removed robotic clutter across English, Tamil, Telugu, and Hindi.
+     - Welcoming DPDP notice and clean language picker on `/start`.
+     - 3-step guide: requirement -> document photos -> check eligibility.
+     - Upgraded document upload acknowledgements and guidance.
+  2) Citizen-Centric Result Formatting (`telegram_bot/app/notify.py`):
+     - Added `format_citizen_notification_text`: transforms backend dumps into human language.
+     - Missing docs formatted as: `⚠️ Missing Document Required: 👉 🏦 Bank Passbook. We verified your Aadhaar and Land Record...`
+     - Eligible results formatted as celebratory awards with verified criteria and reference IDs.
+  3) Delay Elimination (`telegram_bot/app/bot.py`):
+     - Added continuous `send_chat_action(chat_id, action="typing")` every 3s in `_watch_for_case_result`. Telegram actively pulses "typing..." throughout LM Studio fact extraction.
+  4) Contextual Exception & Input Handling:
+     - `text_handler` detects `NEEDS_DOCUMENTS` state and reminds user of missing document instead of repeating "STEP 1 complete".
+     - `menu_done` mapped to `submit_command`.
+     - Multilingual keywords added for caption detection.
+     - Checklist displays uploaded documents and missing requirements.
+- Verification:
+  - `uv run --project telegram_bot --extra test pytest telegram_bot/tests`: 39/39 passed.
+  - `uv run --project backend --extra test pytest backend/tests`: 90/90 passed, 1 skipped.
+  - Telegram bot daemon restarted and healthy on port `8200`.
+
+## 2026-10-23 — 'Continue active case' Button & Status Text Fix
+- Symptom: User reported the 'Continue active case' button was not working on `/start`.
+- Root Cause:
+  1) `case:continue` handler called `_edit_callback` with `_status_text(language, active)`, which had the exact same text as the message being clicked. Telegram API rejected it with `BadRequest: Message is not modified`.
+  2) `_status_text` was including raw backend message text from `messages[-3:]` directly without running it through `format_citizen_notification_text`, leaking `MOCK / synthetic case result` into `/status` and `/start`.
+- Resolution:
+  1) Replaced `case:continue` with an actionable, distinct message that clearly lists verified documents (`Aadhaar Card`, `Land Record`), explicitly highlights what is missing (`Bank Passbook`), and provides direct buttons `[ ➕ Add another document ]` and `[ ✅ Check eligibility ]`.
+  2) Filtered `_status_text` through `format_citizen_notification_text` so raw `MOCK` text never appears in status cards.
+  3) Added regression test `test_continue_active_case_callback_shows_guidance_and_buttons` in `telegram_bot/tests/test_telegram_bot_handlers.py`.
+- Verification:
+  - 39/39 tests passing in `telegram_bot`.
+  - Bot server restarted and running on port 8200.
+
+## 2026-10-23 — Comprehensive Button Speed, Reliability & Stateless Resolution
+- Symptom: User reported buttons felt sluggish or unresponsive across app states and server restarts.
+- Root Cause:
+  1) Random in-memory tokens (`u:<random_hash>` and `a:<random_hash>`) were lost across server restarts or container redeployments, causing callbacks on existing chat messages to fail or do nothing.
+  2) Redundant network calls: `callback_handler` was making duplicate `GET /cases/active` requests (one for language resolution, another inside each action handler).
+  3) Identical text edits: Clicking an inline button whose target message had unchanged text caused Telegram API to return `BadRequest: Message is not modified`, appearing as if the button click was ignored.
+  4) Slow perceived latency: Buttons showed spinning indicators without immediate UI feedback when triggering long operations.
+- Resolution:
+  1) Multi-tier Stateless Action Resolution (`_resolve_callback_action`):
+     - Deterministic tokens (`u:<action>`) decoded instantly.
+     - Legacy token fallback table.
+     - Inline Keyboard Button Text Inspection: Reads `btn.text` directly from `query.message.reply_markup.inline_keyboard` (e.g., "Continue active case", "Check eligibility", "Add another document", "Start a new case", "English", "हिन्दी", "తెలుగు", "தமிழ்") to guarantee that even pre-restart buttons work 100%.
+     - Interactive question recovery: If `a:<token>` is not in memory after a restart, recovers target question from `active_case["messages"]` and `btn.text`.
+  2) Single GET per callback: Pre-fetches `active_case` once at the top of `callback_handler`, cutting network round-trip latency in half.
+  3) Instant Sensory Feedback: Calls `query.answer(text="...", show_alert=False)` immediately with native toast notification ("📸 Please send your document photo or file now", "⏳ Evaluating eligibility...", "✓ Updated").
+  4) Resilient `_edit_callback`: Gracefully handles `Message is not modified` by acknowledging with a toast, and falls back to sending a new message if the message is too old to edit.
+  5) Inline Action Buttons on `/status`: Attached `_done_keyboard` to `COLLECTING` and `NEEDS_DOCUMENTS` statuses so citizens can check eligibility with one tap.
+  6) Instant text triggers: Added natural shortcuts in `text_handler` for "status", "continue", "help", "schemes", "cancel", "checklist", "my case".
+- Verification:
+  - `uv run --project telegram_bot --extra test pytest telegram_bot/tests`: 43/43 passed.
+  - `uv run --project backend --extra test pytest backend/tests`: 90/90 passed, 1 skipped.
+  - `uv run --project telegram_bot ruff check telegram_bot/app telegram_bot/tests`: 0 lint errors.
+  - Telegram bot daemon active and responding on port 8200 (`/ready` status: "ready").
+

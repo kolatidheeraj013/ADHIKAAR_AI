@@ -76,6 +76,18 @@ class RuleSpec(BaseModel):
     fail_reason: str = Field(min_length=1)
 
 
+class ProvenanceSpec(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    source_urls: list[str] = Field(default_factory=list)
+    retrieved_at: str | None = None
+    version: str | None = None
+    verified_by: str | None = None
+    source_priority: str | None = None
+    compliance_label: str | None = None
+    notes: str | None = None
+
+
 class Scheme(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -83,6 +95,7 @@ class Scheme(BaseModel):
     name: str = Field(min_length=1)
     version: int = Field(ge=1)
     benefit: str = Field(min_length=1)
+    provenance: ProvenanceSpec | None = None
     required_documents: list[str]
     facts: list[FactSpec]
     payload_fields: list[PayloadField]

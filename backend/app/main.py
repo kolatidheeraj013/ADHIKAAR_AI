@@ -395,6 +395,7 @@ def _safe_case(case: Case, session: Session) -> dict[str, Any]:
         "status": case.status,
         "language": case.language,
         "channel": case.channel,
+        "channel_ref": case.channel_ref,
         "decision_summary": (
             {"scheme_id": decision.scheme_id, "outcome": decision.outcome} if decision else None
         ),
@@ -669,8 +670,51 @@ def _audio_duration_seconds(content: bytes, kind: str) -> float | None:
 
 
 @app.get("/health")
-async def health() -> dict[str, str]:
-    return {"service": "backend", "status": "ok"}
+async def health(session: Session = Depends(_session)) -> dict[str, str]:
+    db_status = "healthy"
+    try:
+        session.execute(select(1))
+    except Exception:
+        db_status = "unhealthy"
+
+    checkpointer_status = "ready" if _services().checkpointer is not None else "not_ready"
+    overall_status = "ok" if db_status == "healthy" and checkpointer_status == "ready" else "degraded"
+    return {
+        "service": "backend",
+        "status": overall_status,
+        "db": db_status,
+        "checkpointer": checkpointer_status,
+    }
+
+
+@app.get("/stats")
+@app.get("/metrics")
+async def system_stats(session: Session = Depends(_session)) -> dict[str, Any]:
+    cases = session.scalars(select(Case)).all()
+    total_cases = len(cases)
+    by_status: dict[str, int] = {}
+    for c in cases:
+        by_status[c.status] = by_status.get(c.status, 0) + 1
+
+    escalations = session.scalars(select(Escalation)).all()
+    open_escalations = sum(1 for e in escalations if e.status == "OPEN")
+
+    events = session.scalars(select(AuditEvent)).all()
+    latencies = [
+        e.evidence.get("duration_ms")
+        for e in events
+        if e.evidence and isinstance(e.evidence.get("duration_ms"), (int, float)) and e.evidence.get("duration_ms") > 0
+    ]
+    avg_latency_ms = round(sum(latencies) / len(latencies), 2) if latencies else 0.0
+
+    return {
+        "total_cases": total_cases,
+        "by_status": by_status,
+        "submitted_count": by_status.get("SUBMITTED", 0) + by_status.get("COMPLETED", 0),
+        "escalated_count": open_escalations,
+        "total_audit_events": len(events),
+        "avg_node_latency_ms": avg_latency_ms,
+    }
 
 
 @app.post("/cases")
@@ -714,6 +758,24 @@ async def active_case(
                 Case.channel_ref == channel_ref,
                 Case.status.not_in(["COMPLETED", "NOT_ELIGIBLE", "FAILED_ESCALATED"]),
             )
+            .order_by(Case.created_at.desc())
+        )
+        return {"case": _safe_case(case, session) if case else None}
+    finally:
+        session.close()
+
+
+@app.get("/cases/latest")
+async def latest_case(
+    channel: str, channel_ref: str, x_service_token: str | None = Header(default=None)
+) -> dict[str, Any]:
+    """Return the latest case for status/recovery, including terminal results."""
+    _require_service(x_service_token)
+    session = _services().sessions()
+    try:
+        case = session.scalar(
+            select(Case)
+            .where(Case.channel == channel, Case.channel_ref == channel_ref)
             .order_by(Case.created_at.desc())
         )
         return {"case": _safe_case(case, session) if case else None}
@@ -949,7 +1011,9 @@ async def answer_case(
             )
             .order_by(Message.created_at.desc())
         )
-        if question_message is None or str(question_message.id) != payload.message_id:
+        if question_message is None or str(question_message.id).replace("-", "") != str(
+            payload.message_id
+        ).replace("-", ""):
             raise HTTPException(status_code=409, detail="question is no longer current")
     option = payload.option
     if isinstance(option, str):
@@ -1005,6 +1069,77 @@ async def case_events(case_id: UUID, session: Session = Depends(_session)) -> St
         yield f"event: status\ndata: {json.dumps({'status': case.status})}\n\n"
 
     return StreamingResponse(stream(), media_type="text/event-stream")
+
+
+@app.post("/cases/{case_id}/track")
+@app.get("/cases/{case_id}/track")
+async def track_case(case_id: UUID, session: Session = Depends(_session)) -> dict[str, Any]:
+    case = _case_or_404(case_id, session)
+    app_record = session.scalar(
+        select(Application).where(Application.case_id == case_id)
+    )
+    if app_record is None or not app_record.portal_ref:
+        return {
+            "case_id": str(case_id),
+            "status": case.status,
+            "message": "No submitted portal application found for this case",
+        }
+
+    portal_ref = app_record.portal_ref
+    scheme_id = app_record.scheme_id
+
+    portal = _services().runtime_factory(session, str(case_id)).portal
+    verification = portal.verify(portal_ref)
+
+    portal_status = verification.get("status", "unknown")
+    sla_escalated = False
+
+    if portal_status == "stalled":
+        sla_escalated = True
+        escalation = session.scalar(
+            select(Escalation).where(Escalation.case_id == case_id)
+        )
+        if escalation is None:
+            escalation = Escalation(
+                case_id=case_id,
+                reason="portal_sla_stalled",
+                evidence={"portal_ref": portal_ref, "days_stalled": 45, "action": "nudge_portal"},
+                status="OPEN",
+            )
+            session.add(escalation)
+        else:
+            escalation.status = "OPEN"
+            escalation.reason = "portal_sla_stalled"
+
+        case.status = "NEEDS_REVIEW"
+
+        log(
+            session,
+            case_id=str(case_id),
+            actor="agent",
+            event_type="tracking.sla_stalled",
+            summary=f"Portal application {portal_ref} stalled past SLA; escalated to reviewer",
+            evidence={"portal_ref": portal_ref, "days_stalled": 45, "status": "stalled"},
+        )
+        session.commit()
+    else:
+        log(
+            session,
+            case_id=str(case_id),
+            actor="agent",
+            event_type="tracking.status_checked",
+            summary=f"Polled portal status for {portal_ref}: {portal_status}",
+            evidence={"portal_ref": portal_ref, "status": portal_status},
+        )
+        session.commit()
+
+    return {
+        "case_id": str(case_id),
+        "portal_ref": portal_ref,
+        "scheme_id": scheme_id,
+        "portal_status": portal_status,
+        "sla_escalated": sla_escalated,
+    }
 
 
 @app.delete("/cases/{case_id}")

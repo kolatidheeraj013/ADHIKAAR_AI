@@ -34,8 +34,17 @@ def client(tmp_path: Path):
     app.state.services.engine.dispose()
 
 
-def _create(client: TestClient, text: str = "farmer PM-Kisan nobody pays tax") -> str:
-    case_id = client.post("/cases", json={"language": "en", "consent": True}).json()["case_id"]
+def _create(
+    client: TestClient,
+    text: str = "farmer PM-Kisan nobody pays tax",
+    *,
+    channel: str = "web",
+    channel_ref: str | None = None,
+) -> str:
+    payload = {"language": "en", "consent": True, "channel": channel}
+    if channel_ref is not None:
+        payload["channel_ref"] = channel_ref
+    case_id = client.post("/cases", json=payload).json()["case_id"]
     assert client.post(f"/cases/{case_id}/text", json={"text": text}).status_code == 200
     sample = b"\x89PNG\r\n\x1a\nSAMPLE"
     for name in ("aadhaar.png", "land_record.png", "bank_passbook.png"):
@@ -109,6 +118,31 @@ def test_question_resume_and_active_service_case(client: TestClient) -> None:
     )
     assert active.status_code == 200
     assert active.json()["case"]["case_id"] == active_case_id
+
+
+def test_latest_service_case_includes_terminal_result(client: TestClient) -> None:
+    case_id = _create(client, "farmer PM-Kisan", channel="telegram", channel_ref="chat-latest")
+    assert client.post(f"/cases/{case_id}/start").status_code == 200
+    question = next(
+        message
+        for message in client.get(f"/cases/{case_id}").json()["messages"]
+        if message["kind"] == "question"
+    )
+    assert (
+        client.post(
+            f"/cases/{case_id}/answers",
+            json={"message_id": question["id"], "option": "No"},
+        ).status_code
+        == 200
+    )
+    latest = client.get(
+        "/cases/latest",
+        params={"channel": "telegram", "channel_ref": "chat-latest"},
+        headers={"X-Service-Token": "service-test"},
+    )
+    assert latest.status_code == 200
+    assert latest.json()["case"]["case_id"] == case_id
+    assert latest.json()["case"]["status"] == "COMPLETED"
 
 
 def test_reviewer_can_resume_blurry_case(client: TestClient) -> None:

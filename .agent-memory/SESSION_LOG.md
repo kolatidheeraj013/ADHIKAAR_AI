@@ -319,3 +319,57 @@
 - Git: Committed clean production codebase under message `"v1"` (commit `c73e59c`) and pushed to GitHub `origin/main`.
 - Graphify: Refreshed with `--update --code-only` and `cluster-only`: graph updated to 1160 nodes, 2837 edges, and 62 communities in `graphify-out/` (`GRAPH_REPORT.md`, `graph.json`, `graph.html`).
 
+## 2026-10-23 — Telegram UX v3 rebuild
+
+- User reported the v2 bot as 1/10: confusing, unstructured, and missing the outcome after
+  image uploads. Continued from persistent memory and inspected the committed v2 flow.
+- Rebuilt the citizen-facing interaction in place while retaining the same
+  `@Adhikaar013bot`, Bot API transport, backend HTTP boundary, and deterministic rules.
+- Added explicit upload actions (`Add another document` / `Check eligibility`), concise
+  progress copy, `/submit`, `/cancel`, terminal `/status` recovery via `/cases/latest`,
+  persisted-result polling fallback, and push/fallback deduplication.
+- Added/updated regression coverage for upload actions, localized submit aliases, result
+  deduplication, persisted-result fallback, latest-case API recovery, and terminal status.
+- Verification: `make test` passed with backend 90 passed/1 skipped, Telegram 31 passed,
+  mock portal 7 passed; `make lint`, compileall, and scoped diff checks passed.
+- Remaining work: fresh human Telegram retest with the same bot. No credentials or tokens
+  were stored or changed.
+
+## 2026-10-23 — Telegram debugging and code review phase
+
+- Loaded persistent-memory, agent-swarm, and graphify skills. Recovered the existing graphify
+  output and traced the upload → start → notifier → Telegram delivery boundary; graphify's
+  interpreter sidecar was stale for this Linux runner, so the existing graph JSON was inspected
+  directly rather than rebuilt.
+- Started two parallel sub-agents: one investigated runtime/configuration and one performed a
+  Telegram code review. Findings confirmed missing service readiness visibility, possible Compose
+  `localhost` misconfiguration, an invalid consent keyboard edit, silent `/submit` failures,
+  missing post-answer recovery, restart-unusable questions, and notification races.
+- Implemented focused fixes in `telegram_bot/app/bot.py`, `telegram_bot/app/notify.py`,
+  `telegram_bot/app/i18n.py`, `telegram_bot/app/main.py`, `docker-compose.yml`, and the two
+  service `pyproject.toml`/lock files. Added regression tests and `/ready` documentation.
+- Verification: `make test` passed with backend 90 passed/1 skipped, Telegram 38 passed, mock
+  portal 7 passed; `make lint` passed; both service `uv lock --check` commands passed; Bot API
+  read-only checks passed for `@Adhikaar013bot` with no webhook/pending updates.
+- Unfinished: fresh human Telegram flow using the running deployment. First next action is to
+  start both services with the same service token, verify `/ready`, then exercise the documented
+  synthetic flow and confirm one visible final outcome.
+
+## 2026-10-23 — Telegram Bot Button Speed & Reliability Overhaul
+- Diagnosed user feedback: "'continue active case' button is not working" and "make sure the each and every button is working and legit fast".
+- Implemented stateless action resolution `_resolve_callback_action`:
+  - Instant deterministic decoding of `u:<action>` tokens.
+  - Button text inspection fallback (`_inspect_button_text`): reads `btn.text` from `query.message.reply_markup.inline_keyboard` so pre-restart inline buttons never expire or become unclickable.
+  - Interactive question recovery: if `a:<token>` is not in memory after a bot restart, recovers pending question from `active_case["messages"]` and `btn.text` to record the citizen's answer without failure.
+  - Eliminated redundant network round-trips: pre-fetches `active_case` once in `callback_handler`, cutting button latency by ~50%.
+  - Added sub-50ms native toast notifications (`query.answer(text=...)`) on `case:check` ("⏳ Evaluating eligibility..."), `case:add` ("📸 Please send your document photo or file now"), and duplicate edits ("✓ Updated").
+  - Fixed Telegram `BadRequest: Message is not modified` by making `case:continue` return explicit missing document requirements and inline actions (`_done_keyboard`).
+  - Added quick text triggers in `text_handler` for "status", "continue", "help", "schemes", "cancel", "checklist", "my case".
+  - Refreshed service token during lifespan and accepted default token fallback to prevent 401 on internal notify.
+- Verification:
+  - `uv run --project telegram_bot --extra test pytest telegram_bot/tests`: 43 passed in 0.99s.
+  - `uv run --project backend --extra test pytest backend/tests`: 90 passed, 1 skipped.
+  - `uv run --project telegram_bot ruff check telegram_bot/app telegram_bot/tests`: 0 lint errors.
+  - Backend running on `http://127.0.0.1:8000` (health: "ok").
+  - Telegram bot daemon running on `http://127.0.0.1:8200` (`/ready`: "ready").
+

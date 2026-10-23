@@ -167,3 +167,57 @@
   decides eligibility; 100% offline DPDP data privacy for citizen document facts.
 - Status: accepted and live verified.
 
+## D-014 — Telegram citizen UX v3 state machine
+
+- Date: 2026-10-23
+- Context: User rated the v2 Telegram bot 1/10 because the conversation was confusing,
+  unstructured, and did not reliably show an outcome after image uploads.
+- Decision: Keep the same `@Adhikaar013bot` identity, Bot API transport, service-token
+  boundary, and backend eligibility architecture, but replace the citizen-facing flow with
+  an explicit state machine:
+  1. start/language/consent,
+  2. one text or voice description,
+  3. document uploads with count/type acknowledgement,
+  4. explicit `Check eligibility` action with `Add another document` alternative,
+  5. one persisted progress message and result delivery.
+  Add `/submit`, `/checklist`, `/status`, and `/cancel` recovery paths. Poll the persisted
+  case after submission as a fallback when push notification delivery is delayed, and
+  deduplicate push/fallback messages by backend message id.
+- Reason: The previous flow mixed persistent reply keyboards, inline tagging, `Done`, and
+  backend notifications. The new flow makes the next action visible after every user step
+  and prevents a lost push from becoming a silent result failure.
+- Alternatives considered: keeping the v2 flow and only changing text (rejected because
+  the delivery and terminal-status recovery problems require behavior changes); replacing
+  the backend or Telegram bot token (rejected because the existing service boundary works).
+- Related files: `telegram_bot/app/bot.py`, `telegram_bot/app/i18n.py`,
+  `telegram_bot/app/backend_client.py`, `backend/app/main.py`.
+- Status: implemented and offline-verified; fresh human Telegram retest remains required.
+
+## D-015 — Telegram readiness and container addresses
+
+- Date: 2026-10-23
+- Context: The Telegram process could report healthy while no polling/webhook application was
+  active, and Compose defaults used loopback addresses that are wrong between containers.
+- Decision: Keep `/health` as liveness, add `/ready` for actual PTB readiness, and make Compose
+  addresses explicit (`backend:8000` and `telegram_bot:8200`). Direct host execution keeps
+  loopback configuration. Declare `python-dotenv` in both service packages.
+- Reason: Separates process liveness from message-receiving readiness and makes deployment
+  topology explicit without changing the HTTP-only architecture.
+- Related files: `telegram_bot/app/main.py`, `docker-compose.yml`, `backend/pyproject.toml`,
+  `telegram_bot/pyproject.toml`, `README.md`.
+- Status: accepted and offline-verified.
+
+## D-016 — Telegram callback recovery and delivery idempotency
+
+- Date: 2026-10-23
+- Context: Live-like failures could leave citizens without a visible next step after consent,
+  after answering a question, after a bot restart, or when push and persisted-result fallback
+  completed concurrently.
+- Decision: Reply keyboards are sent in new messages; persisted questions regenerate opaque
+  answer callbacks; callbacks carry and validate the originating chat; answer handling schedules
+  persisted-result polling; notification keys are claimed before awaiting Telegram sends.
+- Reason: These are Telegram API/state-machine constraints, and the backend already persists
+  citizen-safe messages that can support recovery.
+- Related files: `telegram_bot/app/bot.py`, `telegram_bot/app/notify.py`,
+  `telegram_bot/app/i18n.py`, `telegram_bot/tests/test_telegram_bot_handlers.py`.
+- Status: accepted and offline-verified; human Telegram retest remains required.

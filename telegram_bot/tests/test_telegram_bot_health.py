@@ -10,6 +10,20 @@ def test_telegram_bot_health() -> None:
     assert response.json() == {"service": "telegram_bot", "status": "ok"}
 
 
+def test_telegram_bot_readiness_is_not_green_without_a_running_application() -> None:
+    previous_application = app.state.telegram_application
+    previous_ready = app.state.telegram_ready
+    app.state.telegram_application = None
+    app.state.telegram_ready = False
+    try:
+        response = TestClient(app).get("/ready")
+    finally:
+        app.state.telegram_application = previous_application
+        app.state.telegram_ready = previous_ready
+
+    assert response.status_code == 503
+
+
 def test_telegram_webhook_requires_secret_before_application_dispatch() -> None:
     app.state.telegram_webhook_secret = "test-webhook-secret"
     app.state.telegram_application = None

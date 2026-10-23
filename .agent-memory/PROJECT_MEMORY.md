@@ -114,9 +114,23 @@ specification is `implementation.md`.
 ## Telegram result delivery and UX modernization
 
 - Telegram cases select `TelegramNotifier` for push delivery to citizen chats.
-- Streamlined dynamic reply keyboard: active collection displays only `[ ✅ Submit / Done ]` and `[ ❌ Cancel Case ]`; active questions/processing displays only `[ ❌ Cancel Case ]`. Idle states provide localized menu options without cluttering mobile screens.
+- Streamlined dynamic reply keyboard: active collection displays only `[ 📋 What I uploaded ]` and `[ ❌ Cancel application ]`; upload acknowledgements provide inline `[ ➕ Add another document ]` and `[ ✅ Check eligibility ]` actions. Active questions/processing displays only the relevant recovery action. Idle states provide localized menu options without cluttering mobile screens.
 - Restart recovery in `backend/app/main.py`: allows un-resumable cases with no active in-memory run to restart cleanly rather than throwing 409 Conflict.
 - Result text includes the scheme, deterministic outcome, case status, evidence confidence band, rule reasons, MOCK benefit, portal state/reference, and next step.
+
+### Telegram UX v3 (2026-10-23)
+
+- Citizen flow is now intentionally linear: consent → one text/voice need description →
+  document uploads → `Check eligibility`.
+- After each upload, the bot shows the count and offers only `Add another document` or
+  `Check eligibility`; the old mixed `Done`/tagging presentation is no longer the primary
+  path.
+- `/submit`, `/checklist`, `/status`, and `/cancel` are explicit recovery actions.
+- Backend exposes `/cases/latest` for terminal status recovery. After submission the bot
+  polls the persisted case as a fallback if the asynchronous Telegram notification is late,
+  and deduplicates fallback/push results by message id.
+- This keeps the same `TELEGRAM_BOT_TOKEN`/`@Adhikaar013bot` identity and HTTP-only bot
+  boundary. Eligibility remains exclusively in the deterministic backend rules engine.
 
 ## Local LM Studio fact extractor (Live Verified)
 
@@ -129,3 +143,19 @@ specification is `implementation.md`.
 - Frontend: Next.js 15 App Router, TypeScript, Tailwind production build (`npm run build`) verified cleanly for all 5 static/dynamic routes.
 - Classifier: `DualHeadResNet18` trained for 5 epochs on synthetic documents (`ml_training/weights/doc_classifier.pt`, 44.8 MB) and evaluated via `ml_training/evaluate.py`.
 - Release: Commit `v1` pushed to GitHub (`main -> origin/main`). Zero regressions across all 124 tests and `make lint`.
+
+## Telegram reliability debugging (2026-10-23)
+
+- The codebase now treats `/health` as liveness only and exposes `/ready` on the Telegram
+  service; `/ready` is HTTP 503 until the polling/webhook application is actually running.
+- Compose service-to-service addresses are explicit: bot → `http://backend:8000` and
+  backend → `http://telegram_bot:8200`. Direct host runs may use loopback addresses.
+- `python-dotenv` is declared by both backend and Telegram packages because both services
+  load the repository `.env`/`.env.local` files at runtime.
+- Telegram callback reliability was hardened: consent sends a new message for reply-keyboard
+  controls, pending questions rebuild after restart/status recovery, answer callbacks are
+  bound to chat IDs, answer-result fallback polling is scheduled, and concurrent duplicate
+  notifications are claimed before awaiting Telegram delivery.
+- Verification after the debugging pass: backend 90 passed/1 skipped, Telegram 38 passed,
+  mock portal 7 passed, `make lint` passed, and both service lock checks passed. Live Bot API
+  read-only checks for `@Adhikaar013bot` returned `getMe` success and no webhook/pending updates.

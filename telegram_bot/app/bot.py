@@ -25,7 +25,8 @@ from telegram.ext import (
 
 from .backend_client import BackendClient, BackendHTTPError, BackendUnavailableError
 from .i18n import t
-from .notify import AnswerTarget, CallbackStore, render_notification
+from .live_schemes import fetch_live_government_schemes
+from .notify import AnswerTarget, CallbackStore, question_keyboard, render_notification
 from .onboarding import OnboardingStore
 
 MAX_VOICE_SECONDS = int(os.getenv("MAX_VOICE_SECONDS", "30"))
@@ -107,7 +108,7 @@ def _menu_keyboard(language: str = "en", *, active_state: str | None = None) -> 
     if active_state in {"COLLECTING", "NEEDS_DOCUMENTS"}:
         return ReplyKeyboardMarkup(
             [
-                [t(language, "menu_done")],
+                [t(language, "menu_checklist")],
                 [t(language, "menu_cancel")],
             ],
             resize_keyboard=True,
@@ -153,15 +154,54 @@ def _status_text(language: str, case: dict[str, Any]) -> str:
     status = str(case.get("status") or "active")
     messages = case.get("messages") or []
     recent_lines: list[str] = []
+    decision = case.get("decision_summary")
+    if isinstance(decision, dict) and decision.get("outcome"):
+        recent_lines.append(
+            f"• Outcome: {decision.get('outcome')}"
+            + (f" ({decision.get('scheme_id')})" if decision.get("scheme_id") else "")
+        )
+    documents = case.get("documents") or []
+    if documents:
+        recent_lines.append(f"• Documents uploaded: {len(documents)}")
+    if status.upper() == "NEEDS_DOCUMENTS":
+        uploaded_types = {d.get("doc_type") for d in documents if isinstance(d, dict)}
+        type_labels = {
+            "aadhaar": t(language, "doc_tag_aadhaar"),
+            "land_record": t(language, "doc_tag_land"),
+            "bank_passbook": t(language, "doc_tag_passbook"),
+            "income_certificate": t(language, "doc_tag_income"),
+            "marksheet": t(language, "doc_tag_marksheet"),
+            "other": t(language, "doc_tag_other"),
+        }
+        missing = [
+            dt for dt in ("aadhaar", "land_record", "bank_passbook")
+            if dt not in uploaded_types
+        ]
+        if missing:
+            missing_names = [type_labels.get(dt, dt) for dt in missing]
+            recent_lines.append(f"• ⚠️ Missing Document Required: {', '.join(missing_names)}")
     for message in messages[-3:]:
         if not isinstance(message, dict):
             continue
-        if message.get("kind") not in {"info", "question", "result"}:
+        kind = message.get("kind")
+        if kind not in {"info", "question", "result"}:
             continue
         text = str(message.get("text") or "").strip()
         if text:
-            recent_lines.append(f"• {text[:500]}")
-    recent = "\n".join(recent_lines) or t(language, "no_recent_updates")
+            from .notify import format_citizen_notification_text
+
+            formatted = format_citizen_notification_text(
+                text, language=language, kind=str(kind or "info")
+            )
+            summary = formatted.split("\n\n")[0].strip()
+            recent_lines.append(f"• {summary[:300]}")
+    seen: set[str] = set()
+    deduped_lines: list[str] = []
+    for line in recent_lines:
+        if line not in seen:
+            seen.add(line)
+            deduped_lines.append(line)
+    recent = "\n".join(deduped_lines) or t(language, "no_recent_updates")
     return t(
         language,
         "status",
@@ -191,6 +231,149 @@ async def _active_case(update: Update, context: ContextTypes.DEFAULT_TYPE) -> di
     if backend is None:
         return None
     return await backend.active_case(_chat_id(update))
+
+
+async def _latest_case(update: Update, context: ContextTypes.DEFAULT_TYPE) -> dict[str, Any] | None:
+    backend: BackendClient = _data(context, "backend")
+    if backend is None:
+        return None
+    return await backend.latest_case(_chat_id(update))
+
+
+def _case_message_ids(case: dict[str, Any] | None) -> set[str]:
+    if not case:
+        return set()
+    return {
+        str(message.get("id"))
+        for message in (case.get("messages") or [])
+        if isinstance(message, dict) and message.get("id")
+    }
+
+
+def _pending_question_keyboard(
+    case: dict[str, Any] | None, callbacks: CallbackStore
+) -> InlineKeyboardMarkup | None:
+    """Rebuild answer buttons from persisted state after a bot restart."""
+    if not case:
+        return None
+    messages = case.get("messages") or []
+    for message in reversed(messages):
+        if not isinstance(message, dict) or message.get("kind") != "question":
+            continue
+        options = message.get("options") or []
+        if not options:
+            continue
+        return question_keyboard(
+            options,
+            case_id=_case_id(case) or "",
+            message_id=str(message.get("id") or ""),
+            chat_id=case.get("channel_ref"),
+            callbacks=callbacks,
+        )
+    return None
+
+
+def _status_markup(
+    language: str, case: dict[str, Any], callbacks: CallbackStore
+) -> InlineKeyboardMarkup | ReplyKeyboardMarkup:
+    if str(case.get("status") or "").upper() == "NEEDS_INFO":
+        question = _pending_question_keyboard(case, callbacks)
+        if question is not None:
+            return question
+    return _menu_keyboard(language, active_state=case.get("status"))
+
+
+def _notification_key(payload: dict[str, Any]) -> str:
+    if payload.get("message_id"):
+        return str(payload["message_id"])
+    return ":".join(str(payload.get(key, "")) for key in ("case_id", "kind", "text"))
+
+
+def _schedule_result_watch(
+    context: ContextTypes.DEFAULT_TYPE,
+    case_id: str,
+    language: str,
+    baseline_ids: set[str],
+) -> None:
+    create_task = getattr(context.application, "create_task", None)
+    backend: BackendClient | None = _data(context, "backend")
+    if backend is None or not callable(create_task):
+        return
+    create_task(
+        _watch_for_case_result(
+            context.application,
+            backend,
+            case_id,
+            language,
+            baseline_ids,
+        )
+    )
+
+
+async def _watch_for_case_result(
+    application: Application,
+    backend: BackendClient,
+    case_id: str,
+    language: str,
+    baseline_ids: set[str],
+    *,
+    attempts: int = 80,
+) -> None:
+    """Fallback delivery path when the backend push callback is delayed or lost."""
+    chat_ref = None
+    for attempt in range(attempts):
+        await asyncio.sleep(0.75)
+        try:
+            case = await backend.get_case(case_id)
+        except Exception:
+            continue
+        chat_ref = case.get("channel_ref") or chat_ref
+        if chat_ref and attempt % 4 == 0:
+            try:
+                if hasattr(application.bot, "send_chat_action"):
+                    await application.bot.send_chat_action(chat_id=chat_ref, action="typing")
+            except Exception:
+                pass
+        messages = case.get("messages") or []
+        new_messages = [
+            item
+            for item in messages
+            if isinstance(item, dict)
+            and str(item.get("id")) not in baseline_ids
+            and item.get("kind") in {"question", "result", "info"}
+        ]
+        if new_messages:
+            for message in new_messages:
+                await handle_notification(
+                    {
+                        "chat_id": case.get("channel_ref") or "",
+                        "case_id": case_id,
+                        "kind": message.get("kind", "info"),
+                        "language": language,
+                        "text": message.get("text", ""),
+                        "options": message.get("options") or [],
+                        "message_id": message.get("id"),
+                    },
+                    application,
+                )
+            return
+        status = str(case.get("status") or "").upper()
+        if status in {
+            "NEEDS_DOCUMENTS",
+            "NEEDS_REVIEW",
+            "COMPLETED",
+            "NOT_ELIGIBLE",
+            "FAILED_ESCALATED",
+        }:
+            # The persisted case is still useful even when a notification row was
+            # not created. Send a compact status/outcome fallback rather than leave
+            # the citizen staring at a spinner.
+            await application.bot.send_message(
+                chat_id=case.get("channel_ref") or "",
+                text=_status_text(language, case),
+                reply_markup=_menu_keyboard(language, active_state=status),
+            )
+            return
 
 
 def _language_keyboard(callbacks: CallbackStore, *, active: bool = False) -> InlineKeyboardMarkup:
@@ -237,7 +420,12 @@ def _done_keyboard(language: str, callbacks: CallbackStore) -> InlineKeyboardMar
         [
             [
                 InlineKeyboardButton(
-                    t(language, "menu_done"), callback_data=callbacks.add_action("start:done")
+                    t(language, "menu_add"), callback_data=callbacks.add_action("case:add")
+                ),
+            ],
+            [
+                InlineKeyboardButton(
+                    t(language, "menu_done"), callback_data=callbacks.add_action("case:check")
                 )
             ]
         ]
@@ -294,6 +482,12 @@ def _case_choice_keyboard(language: str, callbacks: CallbackStore) -> InlineKeyb
                     t(language, "case_new"), callback_data=callbacks.add_action("case:new")
                 )
             ],
+            [
+                InlineKeyboardButton(
+                    f"🏛️ {t(language, 'menu_schemes')}",
+                    callback_data=callbacks.add_action("case:browse_schemes"),
+                )
+            ],
         ]
     )
 
@@ -329,6 +523,21 @@ def _delete_keyboard(language: str, callbacks: CallbackStore) -> InlineKeyboardM
     )
 
 
+def _cancel_keyboard(language: str, callbacks: CallbackStore) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        [
+            [
+                InlineKeyboardButton(
+                    t(language, "agree"), callback_data=callbacks.add_action("cancel:yes")
+                ),
+                InlineKeyboardButton(
+                    t(language, "no"), callback_data=callbacks.add_action("cancel:no")
+                ),
+            ]
+        ]
+    )
+
+
 def _start_action_keyboard(language: str, callbacks: CallbackStore) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         [
@@ -336,7 +545,13 @@ def _start_action_keyboard(language: str, callbacks: CallbackStore) -> InlineKey
                 InlineKeyboardButton(
                     t(language, "menu_start"), callback_data=callbacks.add_action("start:new")
                 )
-            ]
+            ],
+            [
+                InlineKeyboardButton(
+                    f"🏛️ {t(language, 'menu_schemes')}",
+                    callback_data=callbacks.add_action("case:browse_schemes"),
+                )
+            ],
         ]
     )
 
@@ -394,12 +609,77 @@ async def _send_backend_error(
     await _send(update, _error_text(language, error, action=action), language=language)
 
 
+async def _submit_case(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+    language: str,
+    *,
+    query: Any | None = None,
+    active: dict[str, Any] | None = None,
+) -> bool:
+    backend: BackendClient = _data(context, "backend")
+    if active is None:
+        try:
+            active = await _active_case(update, context)
+        except Exception as exc:
+            if query is not None:
+                await _edit_callback(query, _error_text(language, exc, action="start case"))
+            else:
+                await _send_backend_error(update, language, exc, action="start case")
+            return False
+    language = str(active.get("language") or language) if active else language
+    if not active or not backend:
+        text = t(language, "no_active")
+        if query is not None:
+            await _edit_callback(query, text)
+        else:
+            await _send(update, text, language=language)
+        return False
+    case_id = _case_id(active) or ""
+    baseline_ids = _case_message_ids(active)
+    if query is not None:
+        try:
+            await query.answer(text="⏳ Evaluating eligibility...", show_alert=False)
+        except Exception:
+            pass
+    try:
+        await backend.start_case(case_id)
+    except Exception as exc:
+        if query is not None:
+            await _edit_callback(query, _error_text(language, exc, action="start case"))
+        else:
+            await _send_backend_error(update, language, exc, action="start case")
+        return False
+    if query is not None:
+        await _edit_callback(query, t(language, "analysis_started"), reply_markup=None)
+    else:
+        await _send(
+            update,
+            t(language, "analysis_started"),
+            language=language,
+            active_state="PROCESSING",
+        )
+    _schedule_result_watch(context, case_id, language, baseline_ids)
+    return True
+
+
 async def _edit_callback(query: Any, text: str, **kwargs: Any) -> None:
     try:
         await query.edit_message_text(text, **kwargs)
-    except Exception:
-        # Callback messages can be stale or already edited. Do not let Telegram
-        # API errors turn a user action into an unhandled update exception.
+    except Exception as exc:
+        err = str(exc)
+        if "Message is not modified" in err:
+            try:
+                await query.answer(text="✓ Updated", show_alert=False)
+            except Exception:
+                pass
+            return
+        # If edit failed because message is too old or cannot be edited, send as a new message
+        try:
+            if query.message and query.message.chat:
+                await query.message.chat.send_message(text, **kwargs)
+        except Exception:
+            pass
         return
 
 
@@ -454,7 +734,26 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
             update,
             _status_text(language, active),
             language=language,
-            reply_markup=_case_choice_keyboard(language, _callbacks(context)),
+            reply_markup=_case_choice_keyboard(language, _callbacks(context))
+            if str(active.get("status") or "").upper() != "NEEDS_INFO"
+            else _status_markup(language, active, _callbacks(context)),
+        )
+        return
+    try:
+        latest = await _latest_case(update, context)
+    except Exception:
+        latest = None
+    if latest and str(latest.get("status", "")).upper() in {
+        "COMPLETED",
+        "NOT_ELIGIBLE",
+        "FAILED_ESCALATED",
+    }:
+        language = _language(update, context, latest)
+        await _send(
+            update,
+            _status_text(language, latest),
+            language=language,
+            reply_markup=_start_action_keyboard(language, _callbacks(context)),
         )
         return
     await _begin_onboarding(update, context)
@@ -466,11 +765,29 @@ async def status_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     except Exception as exc:
         await _send_backend_error(update, _language(update, context), exc, action="status")
         return
+    if not active:
+        try:
+            active = await _latest_case(update, context)
+        except Exception as exc:
+            await _send_backend_error(update, _language(update, context), exc, action="status")
+            return
     language = _language(update, context, active)
     if not active:
         await _send(update, t(language, "no_active"), language=language)
         return
-    await _send(update, _status_text(language, active), language=language)
+    markup = _status_markup(language, active, _callbacks(context))
+    send_kwargs: dict[str, Any] = {"language": language, "active_state": active.get("status")}
+    if markup is not None:
+        send_kwargs["reply_markup"] = markup
+    await _send(
+        update,
+        _status_text(language, active),
+        **send_kwargs,
+    )
+
+
+async def submit_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await _submit_case(update, context, _language(update, context))
 
 
 async def checklist_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -494,15 +811,21 @@ async def checklist_command(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         "other": t(language, "doc_tag_other"),
     }
     lines = [t(language, "checklist_header", count=len(docs)), "━━━━━━━━━━━━━━━━━━━━"]
+    uploaded_types = set()
     for idx, d in enumerate(docs, 1):
         dtype = d.get("doc_type", "other")
+        uploaded_types.add(dtype)
         label = type_labels.get(dtype, dtype)
         lines.append(f"{idx}. {label}")
     if not docs:
         lines.append("No documents attached yet.")
     lines.append("━━━━━━━━━━━━━━━━━━━━")
-    lines.append("Target Scheme: PM-Kisan (MOCK)")
-    lines.append(f"👉 Tap [{t(language, 'menu_done')}] to evaluate eligibility.")
+    lines.append("Target Scheme: PM-Kisan")
+    missing = [dt for dt in ("aadhaar", "land_record", "bank_passbook") if dt not in uploaded_types]
+    if missing:
+        missing_names = [type_labels.get(dt, dt) for dt in missing]
+        lines.append(f"⚠️ Still needed: {', '.join(missing_names)}")
+    lines.append(f"👉 When ready, choose [{t(language, 'menu_done')}] below.")
     callbacks = _callbacks(context)
     await _send(
         update,
@@ -538,8 +861,17 @@ async def language_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     )
 
 
-def _scheme_text(language: str, schemes: list[dict[str, Any]]) -> str:
-    lines = [t(language, "schemes_header")]
+def _scheme_text(
+    language: str,
+    schemes: list[dict[str, Any]],
+    *,
+    extraction_notice: str | None = None,
+) -> str:
+    lines: list[str] = []
+    if extraction_notice:
+        lines.append(extraction_notice)
+        lines.append("")
+    lines.append(t(language, "schemes_header"))
     for scheme in schemes:
         name = str(scheme.get("name") or scheme.get("scheme_id") or "Unnamed scheme")
         benefit = str(scheme.get("benefit") or t(language, "scheme_benefit_unknown"))
@@ -547,27 +879,40 @@ def _scheme_text(language: str, schemes: list[dict[str, Any]]) -> str:
         document_text = ", ".join(str(item) for item in documents) or t(
             language, "scheme_documents_unknown"
         )
-        lines.append(
-            t(language, "scheme_item", name=name, benefit=benefit, documents=document_text)
-        )
+        item_text = t(language, "scheme_item", name=name, benefit=benefit, documents=document_text)
+        portal = scheme.get("official_url") or scheme.get("portal")
+        if portal:
+            item_text += f"\n🌐 Official Portal: {portal}"
+        lines.append(item_text)
     return "\n\n".join(lines)
 
 
 async def schemes_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     language = _language(update, context)
     backend: BackendClient = _data(context, "backend")
-    if backend is None:
-        await _send_backend_error(update, language, BackendUnavailableError(), action="schemes")
-        return
-    try:
-        schemes = await backend.get_schemes()
-    except Exception as exc:
-        await _send_backend_error(update, language, exc, action="schemes")
-        return
-    if not schemes:
+    backend_schemes: list[dict[str, Any]] = []
+    if backend is not None:
+        try:
+            backend_schemes = await backend.get_schemes()
+        except Exception:
+            pass
+
+    live_schemes, extraction_notice = await fetch_live_government_schemes()
+
+    all_schemes: list[dict[str, Any]] = list(backend_schemes) if backend_schemes else []
+    existing_ids = {str(s.get("scheme_id", "")).lower() for s in all_schemes}
+    for s in live_schemes:
+        if str(s.get("scheme_id", "")).lower() not in existing_ids:
+            all_schemes.append(s)
+
+    if not all_schemes:
         await _send(update, t(language, "schemes_empty"), language=language)
         return
-    await _send(update, _scheme_text(language, schemes), language=language)
+    await _send(
+        update,
+        _scheme_text(language, all_schemes, extraction_notice=extraction_notice),
+        language=language,
+    )
     await _send(
         update,
         t(language, "scheme_need_prompt"),
@@ -594,6 +939,195 @@ async def delete_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     )
 
 
+async def cancel_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    try:
+        active = await _active_case(update, context)
+    except Exception as exc:
+        await _send_backend_error(update, _language(update, context), exc, action="cancel")
+        return
+    language = _language(update, context, active)
+    if not active:
+        await _send(update, t(language, "no_active"), language=language)
+        return
+    await _send(
+        update,
+        t(language, "cancel_confirm"),
+        language=language,
+        reply_markup=_cancel_keyboard(language, _callbacks(context)),
+    )
+
+
+_KNOWN_ACTIONS = {
+    "consent:yes",
+    "consent:no",
+    "case:new",
+    "case:replace",
+    "case:continue",
+    "case:cancel",
+    "case:browse_schemes",
+    "delete:yes",
+    "delete:no",
+    "cancel:yes",
+    "cancel:no",
+    "start:new",
+    "start:done",
+    "case:check",
+    "case:add",
+}
+
+
+def _inspect_button_text(query: Any, data: str) -> str:
+    message = getattr(query, "message", None)
+    if not message:
+        return ""
+    reply_markup = getattr(message, "reply_markup", None)
+    if not reply_markup:
+        return ""
+    keyboard = getattr(reply_markup, "inline_keyboard", None)
+    if not keyboard:
+        return ""
+    for row in keyboard:
+        for btn in row:
+            if getattr(btn, "callback_data", None) == data:
+                return str(getattr(btn, "text", "") or "").strip()
+    return ""
+
+
+def _resolve_callback_action(
+    data: str,
+    callbacks: CallbackStore,
+    query: Any,
+    active_case: dict[str, Any] | None,
+) -> str | None:
+    # Interactive questions use prefix "a:". They must NEVER be treated as actions.
+    if data.startswith("a:"):
+        return None
+
+    action_target = callbacks.pop_action(data)
+    if action_target and action_target.action:
+        act = action_target.action
+        if act in _KNOWN_ACTIONS or act.startswith("language:") or act.startswith("tag:"):
+            return act
+
+    legacy = {
+        "lang:ta": "language:ta",
+        "lang:te": "language:te",
+        "lang:hi": "language:hi",
+        "lang:en": "language:en",
+        "consent:yes": "consent:yes",
+        "consent:no": "consent:no",
+        "case:new": "case:new",
+        "case:continue": "case:continue",
+        "delete:no": "delete:no",
+        "delete:yes": "delete:yes",
+        "cancel:no": "cancel:no",
+        "cancel:yes": "cancel:yes",
+        "start:done": "start:done",
+        "case:check": "case:check",
+        "case:add": "case:add",
+        "start:new": "start:new",
+        "case:replace": "case:replace",
+        "case:cancel": "case:cancel",
+        "case:browse_schemes": "case:browse_schemes",
+    }
+    if data in legacy:
+        return legacy[data]
+
+    if data.startswith("u:"):
+        raw = data[2:]
+        if raw in _KNOWN_ACTIONS or raw.startswith("language:") or raw.startswith("tag:"):
+            return raw
+
+    btn_text = _inspect_button_text(query, data).lower()
+    msg_text = str(getattr(getattr(query, "message", None), "text", "") or "").lower()
+
+    if btn_text:
+        if any(w in btn_text for w in ("continue", "जारी", "కొనసాగించు", "தொடர")):
+            return "case:continue"
+        if any(
+            w in btn_text
+            for w in (
+                "check eligibility",
+                "check",
+                "done",
+                "पात्रता",
+                "అర్హత",
+                "சரிபார்க்க",
+                "சரிபார்",
+                "పూర్తయింది",
+                "முடிந்தது",
+                "पूरा हुआ",
+            )
+        ):
+            return "case:check"
+        if any(w in btn_text for w in ("add another", "add doc", "మరొక", "மற்றொரு", "अन्य")):
+            return "case:add"
+        if any(w in btn_text for w in ("browse schemes", "schemes", "పథకాలు", "திட்டங்கள்", "योजना")):
+            return "case:browse_schemes"
+        if any(
+            w in btn_text
+            for w in ("start new", "new case", "start a new", "नया", "కొత్త", "புதிய")
+        ):
+            return "case:new"
+        if "english" in btn_text:
+            return "language:en"
+        if "हिन्दी" in btn_text or "hindi" in btn_text:
+            return "language:hi"
+        if "తెలుగు" in btn_text or "telugu" in btn_text:
+            return "language:te"
+        if "தமிழ்" in btn_text or "tamil" in btn_text:
+            return "language:ta"
+        if any(w in btn_text for w in ("agree", "सहमत", "అంగీకరిస్తున్నాను", "ஒப்புக்கொள்கிறேன்")):
+            if any(w in msg_text for w in ("delete", "हटा", "நீக்க", "తొలగించ")):
+                return "delete:yes"
+            if any(w in msg_text for w in ("cancel", "रद्द", "రద్దు", "ரத்து")):
+                return "cancel:yes"
+            # Require explicit consent keywords before treating generic agree as DPDP consent
+            if any(
+                w in msg_text
+                for w in (
+                    "consent",
+                    "data",
+                    "privacy",
+                    "सहमत",
+                    "गोपनीयता",
+                    "தனியுரிமை",
+                    "గోప్యత",
+                    "process",
+                )
+            ):
+                return "consent:yes"
+            return None
+        if any(w in btn_text for w in ("no", "नहीं", "వద్దు", "இல்லை")):
+            if any(w in msg_text for w in ("delete", "हटा", "நீக்க", "తొలగించ")):
+                return "delete:no"
+            if any(w in msg_text for w in ("cancel", "रद्द", "రద్దు", "ரத்து")):
+                return "cancel:no"
+            # Require explicit consent keywords before treating generic no as DPDP decline
+            if any(
+                w in msg_text
+                for w in (
+                    "consent",
+                    "data",
+                    "privacy",
+                    "सहमत",
+                    "गोपनीयता",
+                    "தனியுரிமை",
+                    "గోప్యత",
+                    "process",
+                )
+            ):
+                return "consent:no"
+            return None
+
+    if data.startswith("u:"):
+        if active_case:
+            return "case:continue"
+        return "start:new"
+
+    return None
+
+
 async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
     if query is None:
@@ -607,25 +1141,64 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     onboarding: OnboardingStore = _data(context, "onboarding", OnboardingStore())
     backend: BackendClient = _data(context, "backend")
     callbacks = _callbacks(context)
-    action_target = callbacks.pop_action(data)
-    action = (
-        action_target.action
-        if action_target
-        else {
-            # Keep old callback values readable for messages issued before a bot restart.
-            "lang:ta": "language:ta",
-            "lang:te": "language:te",
-            "lang:hi": "language:hi",
-            "lang:en": "language:en",
-            "consent:yes": "consent:yes",
-            "consent:no": "consent:no",
-            "case:new": "case:new",
-            "case:continue": "case:continue",
-            "delete:no": "delete:no",
-            "delete:yes": "delete:yes",
-            "start:done": "start:done",
-        }.get(data)
+
+    # Pre-fetch active case once to eliminate duplicate HTTP GET calls
+    active_case: dict[str, Any] | None = None
+    try:
+        active_case = await _active_case(update, context)
+    except Exception:
+        active_case = None
+
+    language = (
+        str(active_case["language"])
+        if active_case and active_case.get("language")
+        else onboarding.language_for(chat_id)
     )
+
+    if data.startswith("a:"):
+        target: AnswerTarget | None = callbacks.get(data)
+        if target is None and active_case and backend:
+            btn_text = _inspect_button_text(query, data)
+            messages = active_case.get("messages") or []
+            for msg in reversed(messages):
+                if isinstance(msg, dict) and msg.get("kind") == "question":
+                    target = AnswerTarget(
+                        _case_id(active_case) or "",
+                        str(msg.get("id") or ""),
+                        btn_text,
+                        str(chat_id),
+                    )
+                    break
+        if target is None or not backend:
+            await _edit_callback(query, t(language, "callback_unavailable"))
+            return
+        if target.chat_id and target.chat_id != str(chat_id):
+            callbacks.pop(data)
+            await _edit_callback(query, t(language, "callback_unavailable"), reply_markup=None)
+            return
+        baseline_ids = {target.message_id}
+        baseline_ids.update(_case_message_ids(active_case))
+        try:
+            await backend.answer(target.case_id, target.message_id, target.option)
+        except Exception as exc:
+            await _edit_callback(query, _error_text(language, exc, action="answer"))
+            return
+        callbacks.pop(data)
+        previous = query.message.text if query.message else ""
+        await _edit_callback(
+            query,
+            f"{previous}\n\n✓ {t(language, 'answer_recorded')}",
+            reply_markup=None,
+        )
+        _schedule_result_watch(context, target.case_id, language, baseline_ids)
+        return
+
+    action = _resolve_callback_action(data, callbacks, query, active_case)
+
+    if action == "case:browse_schemes":
+        await schemes_command(update, context)
+        return
+
     if action and action.startswith("language:"):
         parts = action.split(":")
         language = parts[1]
@@ -641,22 +1214,6 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             reply_markup=_consent_keyboard(language, callbacks),
         )
         return
-    language = onboarding.language_for(chat_id)
-    if action in {
-        "case:new",
-        "case:replace",
-        "case:continue",
-        "case:cancel",
-        "delete:yes",
-        "delete:no",
-        "start:done",
-    }:
-        try:
-            active_for_language = await _active_case(update, context)
-        except Exception:
-            active_for_language = None
-        if active_for_language and active_for_language.get("language"):
-            language = str(active_for_language["language"])
     if action == "consent:no":
         onboarding.clear(chat_id)
         await _edit_callback(query, t(language, "consent_declined"), reply_markup=None)
@@ -671,17 +1228,23 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             await _edit_callback(query, _error_text(language, exc, action="create case"))
             return
         onboarding.clear(chat_id)
+        # ReplyKeyboardMarkup belongs in a new chat message. Telegram does not
+        # accept it in editMessageText, and swallowing that API error would leave
+        # the citizen with no usable next step after tapping consent.
+        await _edit_callback(query, t(language, "consent_saved"), reply_markup=None)
+        await _send(update, t(language, "step_guide"), language=language, active_state="COLLECTING")
+        context.application.bot_data.setdefault("cases", {})[str(chat_id)] = _case_id(case)
+        return
+    if action == "case:add":
+        try:
+            await query.answer(
+                text="📸 Please send your document photo or file now", show_alert=False
+            )
+        except Exception:
+            pass
         await _edit_callback(
             query,
-            t(language, "step_guide"),
-            reply_markup=None,
-        )
-        context.application.bot_data.setdefault("cases", {})[str(chat_id)] = _case_id(case)
-        await _send(
-            update,
-            t(language, "prompt_input", seconds=MAX_VOICE_SECONDS),
-            language=language,
-            active_state="COLLECTING",
+            t(language, "document_guidance"),
             reply_markup=_done_keyboard(language, callbacks),
         )
         return
@@ -689,7 +1252,7 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         parts = action.split(":")
         if len(parts) >= 3:
             doc_id, chosen_type = parts[1], parts[2]
-            active = await _active_case(update, context)
+            active = active_case or await _active_case(update, context)
             if active and backend and doc_id != "pending":
                 try:
                     await backend.classify_document(_case_id(active) or "", doc_id, chosen_type)
@@ -698,7 +1261,7 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             tag_label = t(language, f"doc_tag_{chosen_type}")
             await _edit_callback(
                 query,
-                f"✅ {tag_label} saved!\nSend remaining photos or tap Submit:",
+                f"✅ {tag_label} saved!\nSend remaining photos or tap Check eligibility:",
                 reply_markup=_done_keyboard(language, callbacks),
             )
             return
@@ -718,7 +1281,7 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         return
     if action == "case:replace":
         try:
-            active = await _active_case(update, context)
+            active = active_case or await _active_case(update, context)
             if active and backend:
                 await backend.delete_case(_case_id(active) or "")
         except Exception as exc:
@@ -730,22 +1293,87 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         await _begin_onboarding(update, context, language)
         return
     if action == "case:continue":
-        try:
-            active = await _active_case(update, context)
-        except Exception as exc:
-            await _edit_callback(query, _error_text(language, exc, action="status"))
-            return
-        if active:
-            await _edit_callback(query, _status_text(language, active), reply_markup=None)
-        else:
+        active = active_case
+        if not active:
+            try:
+                active = await _active_case(update, context)
+            except Exception as exc:
+                await _edit_callback(query, _error_text(language, exc, action="status"))
+                return
+        if not active:
             await _edit_callback(query, t(language, "no_active"), reply_markup=None)
+            return
+
+        status = str(active.get("status") or "").upper()
+        docs = active.get("documents") or []
+        uploaded_types = {d.get("doc_type") for d in docs if isinstance(d, dict)}
+        type_labels = {
+            "aadhaar": t(language, "doc_tag_aadhaar"),
+            "land_record": t(language, "doc_tag_land"),
+            "bank_passbook": t(language, "doc_tag_passbook"),
+            "income_certificate": t(language, "doc_tag_income"),
+            "marksheet": t(language, "doc_tag_marksheet"),
+            "other": t(language, "doc_tag_other"),
+        }
+
+        if status == "NEEDS_DOCUMENTS":
+            missing = [
+                dt for dt in ("aadhaar", "land_record", "bank_passbook")
+                if dt not in uploaded_types
+            ]
+            missing_names = [type_labels.get(dt, dt) for dt in missing]
+            missing_str = ", ".join(missing_names) if missing_names else "required documents"
+            lines = [
+                "📋 Continuing Active Application (PM-Kisan)",
+                "",
+                f"✅ Verified documents ({len(docs)}):",
+            ]
+            for idx, d in enumerate(docs, 1):
+                dtype = d.get("doc_type", "other")
+                lines.append(f"{idx}. {type_labels.get(dtype, dtype)}")
+            lines.extend([
+                "",
+                f"⚠️ Missing Document Required:\n👉 {missing_str}",
+                "",
+                f"Please upload a clear photo of your {missing_str}.",
+                f"When ready, choose [{t(language, 'menu_done')}] below.",
+            ])
+            text = "\n".join(lines)
+            await _edit_callback(query, text, reply_markup=_done_keyboard(language, callbacks))
+            return
+        if status == "NEEDS_INFO":
+            question_markup = _pending_question_keyboard(active, callbacks)
+            text = "📋 Continuing Active Application\n\n❓ Please answer the pending question:"
+            await _edit_callback(query, text, reply_markup=question_markup)
+            return
+        if status == "COLLECTING":
+            text = f"📋 Active Application (PM-Kisan)\n\n{t(language, 'step_guide')}"
+            await _edit_callback(query, text, reply_markup=_done_keyboard(language, callbacks))
+            return
+
+        text = f"📋 Active Application Status: {status}\n\n" + _status_text(language, active)
+        await _edit_callback(query, text, reply_markup=_done_keyboard(language, callbacks))
         return
     if action == "delete:no":
         await _edit_callback(query, t(language, "delete_cancelled"), reply_markup=None)
         return
+    if action == "cancel:no":
+        await _edit_callback(query, t(language, "case_keep"), reply_markup=None)
+        return
+    if action == "cancel:yes":
+        try:
+            active = active_case or await _active_case(update, context)
+            if active and backend:
+                await backend.delete_case(_case_id(active) or "")
+        except Exception as exc:
+            await _edit_callback(query, _error_text(language, exc, action="cancel"))
+            return
+        onboarding.clear(chat_id)
+        await _edit_callback(query, t(language, "cancelled"), reply_markup=None)
+        return
     if action == "delete:yes":
         try:
-            active = await _active_case(update, context)
+            active = active_case or await _active_case(update, context)
             if active and backend:
                 await backend.delete_case(_case_id(active) or "")
         except Exception as exc:
@@ -754,48 +1382,17 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         onboarding.clear(chat_id)
         await _edit_callback(query, t(language, "deleted"), reply_markup=None)
         return
-    if action == "start:done":
-        try:
-            active = await _active_case(update, context)
-        except Exception as exc:
-            await _edit_callback(query, _error_text(language, exc, action="start case"))
-            return
-        if not active or not backend:
-            await _edit_callback(query, t(language, "no_active"))
-            return
-        try:
-            await backend.start_case(_case_id(active) or "")
-        except Exception as exc:
-            await _edit_callback(query, _error_text(language, exc, action="start case"))
-            return
-        await _edit_callback(query, t(language, "working"), reply_markup=None)
-        await _send(
-            update,
-            (
-                "🔍 ADHIKAAR is evaluating your case...\n"
-                "Checking document facts and scheme rules. Your outcome will appear momentarily."
-            ),
-            language=language,
-            active_state="PROCESSING",
-        )
+    if action in {"start:done", "case:check"}:
+        await _submit_case(update, context, language, query=query, active=active_case)
         return
-    if data.startswith("a:"):
-        callbacks: CallbackStore = _data(context, "callbacks", CallbackStore())
-        target: AnswerTarget | None = callbacks.get(data)
-        if target is None or not backend:
-            await _edit_callback(query, t(language, "callback_unavailable"))
-            return
-        try:
-            await backend.answer(target.case_id, target.message_id, target.option)
-        except Exception as exc:
-            await _edit_callback(query, _error_text(language, exc, action="answer"))
-            return
-        callbacks.pop(data)
-        previous = query.message.text if query.message else ""
+
+    # Fallback when action was unrecognized: if active case exists, show it directly
+    if active_case:
         await _edit_callback(
             query,
-            f"{previous}\n\n✓ {t(language, 'answer_recorded')}",
-            reply_markup=None,
+            f"📋 Active Application Status: {active_case.get('status')}\n\n"
+            + _status_text(language, active_case),
+            reply_markup=_done_keyboard(language, callbacks),
         )
         return
     await _edit_callback(query, t(language, "callback_unavailable"))
@@ -837,15 +1434,58 @@ async def text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             "menu_schemes": schemes_command,
             "menu_help": help_command,
             "menu_delete": delete_command,
-            "menu_cancel": delete_command,
+            "menu_cancel": cancel_command,
             "menu_language": language_command,
             "menu_checklist": checklist_command,
+            "menu_done": submit_command,
         }
         for language in ("en", "ta", "te", "hi"):
             for key, handler in menu_actions.items():
-                if text.strip() == t(language, key):
+                if text.strip() == t(language, key).strip():
                     await handler(update, context)
                     return
+
+        clean_text = text.strip().lower()
+        if clean_text in {
+            "status",
+            "/status",
+            "continue",
+            "my case",
+            "my application",
+            "check status",
+        }:
+            await status_command(update, context)
+            return
+        if clean_text in {"help", "/help", "guide", "info"}:
+            await help_command(update, context)
+            return
+        if clean_text in {
+            "schemes",
+            "/schemes",
+            "browse schemes",
+            "schemes list",
+            "yojana",
+            "benefits",
+            "browse benefits",
+            "all benefits",
+            "govt benefits",
+            "welfare",
+            "welfare schemes",
+        }:
+            await schemes_command(update, context)
+            return
+        if clean_text in {"language", "/language", "lang", "bhasha"}:
+            await language_command(update, context)
+            return
+        if clean_text in {"cancel", "/cancel"}:
+            await cancel_command(update, context)
+            return
+        if clean_text in {"delete", "/delete"}:
+            await delete_command(update, context)
+            return
+        if clean_text in {"checklist", "/checklist", "documents", "my documents", "uploaded"}:
+            await checklist_command(update, context)
+            return
     try:
         active = await _active_case(update, context)
     except Exception as exc:
@@ -875,27 +1515,21 @@ async def text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         "start",
         "/start",
         "evaluate",
+        "check eligibility",
+        "/check-eligibility",
+        "eligible",
+        "eligibility",
+        "am i eligible",
+        "verify",
+        "check my case",
     }
     for lang in ("en", "ta", "te", "hi"):
         done_triggers.add(t(lang, "done").strip().lower())
         done_triggers.add(t(lang, "menu_done").strip().lower())
+    done_triggers.update({"முடிந்தது", "పూర్తయింది", "पूरा हुआ"})
 
     if clean_text in done_triggers:
-        try:
-            await backend.start_case(case_id)
-        except Exception as exc:
-            await _send_backend_error(update, language, exc, action="start case")
-            return
-        await _send(update, t(language, "working"), language=language, active_state="PROCESSING")
-        await _send(
-            update,
-            (
-                "🔍 ADHIKAAR is evaluating your case...\n"
-                "Checking document facts and scheme rules. Your outcome will appear momentarily."
-            ),
-            language=language,
-            active_state="PROCESSING",
-        )
+        await _submit_case(update, context, language)
         return
 
     try:
@@ -903,12 +1537,24 @@ async def text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     except Exception as exc:
         await _send_backend_error(update, language, exc, action="send text")
         return
-    await _send(
-        update,
-        t(language, "received_text"),
-        language=language,
-        active_state=active.get("status") if active else "COLLECTING",
-    )
+
+    case_status = str(active.get("status") or "").upper() if active else "COLLECTING"
+    if case_status == "NEEDS_DOCUMENTS":
+        callbacks = _callbacks(context)
+        await _send(
+            update,
+            t(language, "received_text_need_docs"),
+            language=language,
+            active_state=case_status,
+            reply_markup=_done_keyboard(language, callbacks),
+        )
+    else:
+        await _send(
+            update,
+            t(language, "received_text"),
+            language=language,
+            active_state=case_status if active else "COLLECTING",
+        )
 
 
 async def voice_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -1005,19 +1651,39 @@ async def _document_ack(update: Update, context: ContextTypes.DEFAULT_TYPE, coun
     active = await _active_case(update, context)
     language = _language(update, context, active)
     callbacks = _callbacks(context)
-    done_msg = t(language, "menu_done")
     ack_msg = t(language, "received_documents", count=count)
     await _send(
         update,
         (
             f"{ack_msg}\n\n"
-            "🔒 Photos secured & encrypted (chat copies removed for DPDP privacy).\n"
-            f"👉 Tap [{done_msg}] when ready to evaluate eligibility."
+            "🔒 Chat copy removed after secure upload for DPDP privacy."
         ),
         language=language,
         active_state=active.get("status") if active else "COLLECTING",
         reply_markup=_done_keyboard(language, callbacks),
     )
+
+
+def _detect_doc_type(text: str) -> str | None:
+    text_lower = text.lower()
+    if any(k in text_lower for k in (
+        "aadhaar", "adhar", "uid", "aadhar", "adhaar", "आधार", "ஆதார்", "ఆధార్"
+    )):
+        return "aadhaar"
+    if any(k in text_lower for k in (
+        "land", "patta", "chitta", "khasra", "7/12", "khatauni", "ror",
+        "భూమి", "நிலம்", "भूमि", "పట్టా"
+    )):
+        return "land_record"
+    if any(k in text_lower for k in (
+        "bank", "passbook", "account", "statement", "बैंक", "பாஸ்புக்", "పాస్‌బుక్"
+    )):
+        return "bank_passbook"
+    if any(k in text_lower for k in ("income", "aay", "வருமானம்", "ఆదాయం", "आय")):
+        return "income_certificate"
+    if any(k in text_lower for k in ("marksheet", "mark", "10th", "12th", "10", "12")):
+        return "marksheet"
+    return None
 
 
 async def photo_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -1037,19 +1703,8 @@ async def photo_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         await _send(update, t(language, "upload_too_large"), language=language)
         return
 
-    caption = (getattr(message, "caption", "") or "").lower()
-    doc_type = None
-    if any(k in caption for k in ("aadhaar", "adhar", "uid")):
-        doc_type = "aadhaar"
-    elif any(k in caption for k in ("land", "patta", "chitta", "khasra", "7/12")):
-        doc_type = "land_record"
-    elif any(k in caption for k in ("bank", "passbook", "account")):
-        doc_type = "bank_passbook"
-    elif any(k in caption for k in ("income", "aay")):
-        doc_type = "income_certificate"
-    elif any(k in caption for k in ("marksheet", "mark", "10th", "12th")):
-        doc_type = "marksheet"
-
+    caption = getattr(message, "caption", "") or ""
+    doc_type = _detect_doc_type(caption)
     filename = f"{doc_type}.jpg" if doc_type else "photo.jpg"
     doc_result = await _forward_document(
         update,
@@ -1072,19 +1727,18 @@ async def photo_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         language = _language(update, context, active)
         callbacks = _callbacks(context)
         ack_msg = t(language, "received_documents", count=1)
-        done_msg = t(language, "menu_done")
         if doc_type:
             tag_label = t(language, f"doc_tag_{doc_type}")
             text = (
                 f"{ack_msg}\n\n✅ {tag_label} received.\n"
-                "🔒 Chat copy removed for DPDP privacy.\n"
-                f"👉 Tap [{done_msg}] to evaluate eligibility."
+                "🔒 Chat copy removed after secure upload for DPDP privacy.\n\n"
+                "👉 Tap Check eligibility when you are ready."
             )
         else:
             text = (
                 f"{ack_msg}\n\n"
-                "🔒 Chat copy removed for DPDP privacy.\n"
-                f"👉 Tap [{done_msg}] to evaluate eligibility."
+                "🔒 Chat copy removed after secure upload for DPDP privacy.\n\n"
+                "👉 Tap Check eligibility when you are ready."
             )
         reply_markup = _done_keyboard(language, callbacks)
         await _send(
@@ -1126,20 +1780,9 @@ async def image_document_handler(update: Update, context: ContextTypes.DEFAULT_T
         return
 
     raw_name = document.file_name or "document"
-    caption = (getattr(message, "caption", "") or "").lower()
-    combined = f"{raw_name.lower()} {caption}"
-    doc_type = None
-    if any(k in combined for k in ("aadhaar", "adhar", "uid")):
-        doc_type = "aadhaar"
-    elif any(k in combined for k in ("land", "patta", "chitta", "khasra", "7/12")):
-        doc_type = "land_record"
-    elif any(k in combined for k in ("bank", "passbook", "account")):
-        doc_type = "bank_passbook"
-    elif any(k in combined for k in ("income", "aay")):
-        doc_type = "income_certificate"
-    elif any(k in combined for k in ("marksheet", "mark", "10th", "12th")):
-        doc_type = "marksheet"
-
+    caption = getattr(message, "caption", "") or ""
+    combined = f"{raw_name} {caption}"
+    doc_type = _detect_doc_type(combined)
     filename = f"{doc_type}.png" if doc_type else raw_name
     doc_result = await _forward_document(
         update,
@@ -1162,19 +1805,18 @@ async def image_document_handler(update: Update, context: ContextTypes.DEFAULT_T
         language = _language(update, context, active)
         callbacks = _callbacks(context)
         ack_msg = t(language, "received_documents", count=1)
-        done_msg = t(language, "menu_done")
         if doc_type:
             tag_label = t(language, f"doc_tag_{doc_type}")
             text = (
                 f"{ack_msg}\n\n✅ {tag_label} received.\n"
-                "🔒 Chat copy removed for DPDP privacy.\n"
-                f"👉 Tap [{done_msg}] to evaluate eligibility."
+                "🔒 Chat copy removed after secure upload for DPDP privacy.\n\n"
+                "👉 Tap Check eligibility when you are ready."
             )
         else:
             text = (
                 f"{ack_msg}\n\n"
-                "🔒 Chat copy removed for DPDP privacy.\n"
-                f"👉 Tap [{done_msg}] to evaluate eligibility."
+                "🔒 Chat copy removed after secure upload for DPDP privacy.\n\n"
+                "👉 Tap Check eligibility when you are ready."
             )
         reply_markup = _done_keyboard(language, callbacks)
         await _send(
@@ -1188,18 +1830,34 @@ async def image_document_handler(update: Update, context: ContextTypes.DEFAULT_T
 
 async def handle_notification(payload: dict[str, Any], application: Application) -> None:
     callbacks: CallbackStore = application.bot_data.setdefault("callbacks", CallbackStore())
-    for text, keyboard in render_notification(payload, callbacks=callbacks):
-        await application.bot.send_message(
-            chat_id=payload["chat_id"], text=text, reply_markup=keyboard
-        )
+    delivered = application.bot_data.setdefault("delivered_notifications", set())
+    in_flight = application.bot_data.setdefault("in_flight_notifications", set())
+    key = _notification_key(payload)
+    if key in delivered or key in in_flight:
+        return
+    # Claim the key before the first await. Push delivery and the persisted-case
+    # watcher can otherwise both observe an empty set and send the same result.
+    in_flight.add(key)
+    try:
+        for text, keyboard in render_notification(payload, callbacks=callbacks):
+            await application.bot.send_message(
+                chat_id=payload["chat_id"], text=text, reply_markup=keyboard
+            )
+    except Exception:
+        in_flight.discard(key)
+        raise
+    in_flight.discard(key)
+    delivered.add(key)
 
 
 def register_handlers(application: Application) -> Application:
     application.add_handler(CommandHandler("start", start_command))
     application.add_handler(CommandHandler("new", start_new_application))
     application.add_handler(CommandHandler("status", status_command))
+    application.add_handler(CommandHandler("submit", submit_command))
     application.add_handler(CommandHandler("checklist", checklist_command))
     application.add_handler(CommandHandler("delete", delete_command))
+    application.add_handler(CommandHandler("cancel", cancel_command))
     application.add_handler(CommandHandler("help", help_command))
     application.add_handler(CommandHandler("schemes", schemes_command))
     application.add_handler(CommandHandler("language", language_command))
@@ -1220,7 +1878,10 @@ def build_application(
     token = token or os.getenv("TELEGRAM_BOT_TOKEN", "")
     if not token:
         raise ValueError("TELEGRAM_BOT_TOKEN is required to build the Telegram application")
-    application = Application.builder().token(token).build()
+    from telegram.request import HTTPXRequest
+
+    request = HTTPXRequest(connect_timeout=20.0, read_timeout=20.0)
+    application = Application.builder().token(token).request(request).build()
     application.bot_data.update(
         {
             "backend": backend

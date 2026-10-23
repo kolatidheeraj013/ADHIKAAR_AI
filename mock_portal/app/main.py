@@ -12,7 +12,7 @@ from pydantic import BaseModel, Field
 
 app = FastAPI(title="ADHIKAAR Mock Portal", version="0.1.0")
 
-_FAIL_MODES = {"none", "timeout", "reject_permanent"}
+_FAIL_MODES = {"none", "timeout", "reject_permanent", "stalled"}
 _fail_mode = "none"
 _applications: dict[str, dict[str, Any]] = {}
 _next_reference = 1
@@ -78,7 +78,9 @@ async def submit_application(request: ApplicationRequest) -> dict[str, str] | JS
 
 
 @app.get("/applications/{portal_ref}")
-async def get_application(portal_ref: str) -> dict[str, str]:
+async def get_application(portal_ref: str) -> dict[str, Any]:
+    if _fail_mode == "stalled":
+        return {"portal_ref": portal_ref, "status": "stalled", "days_stalled": 45}
     application = _applications.get(portal_ref)
     if application is None:
         raise HTTPException(status_code=404, detail="application not found")
@@ -93,7 +95,7 @@ async def configure_dev(request: DevConfigRequest) -> dict[str, str]:
     if request.fail_mode not in _FAIL_MODES:
         raise HTTPException(
             status_code=422,
-            detail="fail_mode must be none, timeout, or reject_permanent",
+            detail="fail_mode must be none, timeout, reject_permanent, or stalled",
         )
     _fail_mode = request.fail_mode
     return {"fail_mode": _fail_mode}

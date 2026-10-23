@@ -147,6 +147,8 @@ class FakePortalClient:
         return {"ok": True, "portal_ref": portal_ref}
 
     def verify(self, portal_ref: str) -> dict[str, Any]:
+        if self.fail_mode == "stalled":
+            return {"ok": True, "portal_ref": portal_ref, "status": "stalled", "days_stalled": 45}
         return {"ok": True, "portal_ref": portal_ref, "status": "accepted"}
 
 

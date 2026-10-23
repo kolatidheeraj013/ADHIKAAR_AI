@@ -1,18 +1,55 @@
 scheme_id: state_scholarship_mock
-name: "State Scholarship (MOCK, simplified)"
+name: State Pre-Matric Scholarship (MOCK, simplified)
 version: 1
-benefit: "Education scholarship (MOCK benefit)"
-required_documents: [aadhaar, income_certificate, marksheet, bonafide_certificate]
+benefit: INR 4,000 per academic year (MOCK benefit)
+provenance:
+  source_urls:
+  - https://socialjustice.gov.in/
+  - https://www.myscheme.gov.in/schemes/pre-matric-scholarship
+  - https://scholarships.gov.in/
+  retrieved_at: '2026-10-23T00:00:00Z'
+  version: 1.0.0
+  verified_by: ADHIKAAR Knowledge Team
+  source_priority: official_guideline > myscheme.gov.in > india.gov.in
+  compliance_label: MOCK
+  notes: Simplified deterministic rules for educational assistance; strictly labeled
+    MOCK per DS-01.
+required_documents:
+- aadhaar
+- income_certificate
+- marksheet
+- bonafide_certificate
 facts:
-  - {key: family_income_annual, type: float, source: income_certificate}
-  - {key: last_exam_percentage, type: float, source: marksheet}
-  - {key: institution_recognized, type: bool, source: declaration, question: "Is your educational institution recognized?"}
+- key: family_income_annual
+  type: int
+  source: income_certificate
+- key: last_exam_percentage
+  type: float
+  source: marksheet
+- key: institution_recognized
+  type: bool
+  source: declaration
+  question: Is your educational institution recognized?
 payload_fields:
-  - {key: applicant_name, type: str, source: aadhaar}
-  - {key: aadhaar_last4, type: str, source: aadhaar}
-  - {key: bank_account_number, type: str, source: bank_passbook}
-  - {key: bank_ifsc, type: str, source: bank_passbook}
+- key: applicant_name
+  type: str
+  source: aadhaar
+- key: aadhaar_last4
+  type: str
+  source: aadhaar
+- key: bank_account_number
+  type: str
+  source: income_certificate
+- key: bank_ifsc
+  type: str
+  source: income_certificate
 rules:
-  - {id: income_limit, expr: "family_income_annual <= 250000", fail_reason: "Annual family income exceeds the MOCK limit."}
-  - {id: marks_requirement, expr: "last_exam_percentage >= 75", fail_reason: "Last examination percentage is below the MOCK requirement."}
-  - {id: recognized_institution, expr: "institution_recognized == True", fail_reason: "The institution is not recognized."}
+- id: income_ceiling
+  expr: family_income_annual <= 250000
+  fail_reason: Annual family income exceeds the ceiling of INR 2,50,000.
+- id: academic_merit
+  expr: last_exam_percentage >= 75.0
+  fail_reason: Marks percentage is below the minimum requirement of 75.0%.
+- id: recognized_school
+  expr: institution_recognized == True
+  fail_reason: Educational institution must be recognized by the state board.

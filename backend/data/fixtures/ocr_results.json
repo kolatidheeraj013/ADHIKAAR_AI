@@ -1,0 +1,14 @@
+{
+  "aadhaar_murugan.jpg": {
+    "text": "Government of India\nMurugan K\nDOB: 12/05/1982\nMale\nXXXX XXXX 8942\nAadhaar - Common Man's Right",
+    "confidence": 0.96
+  },
+  "land_record_murugan.jpg": {
+    "text": "Department of Revenue\nOwner: Murugan K\nSurvey No: 142/3A\nArea: 1.8 Acres\nWetland Agriculture",
+    "confidence": 0.94
+  },
+  "bank_passbook_murugan.jpg": {
+    "text": "State Bank of India\nAccount Holder: Murugan K\nAccount Number: 30129481923\nIFSC: SBIN0001234",
+    "confidence": 0.95
+  }
+}
