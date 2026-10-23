@@ -1,7 +1,6 @@
 import asyncio
-from unittest.mock import AsyncMock, patch
+from unittest.mock import patch
 
-import pytest
 from app.live_schemes import (
     LIVE_EXTRACTION_FAILURE_MSG,
     LIVE_GOVT_SCHEMES,
@@ -17,7 +16,15 @@ def test_live_govt_schemes_catalog_contains_real_world_portals():
     """Verify the verified live welfare schemes have real live portals and details."""
     assert len(LIVE_GOVT_SCHEMES) >= 6
     ids = {s["scheme_id"] for s in LIVE_GOVT_SCHEMES}
-    assert {"pm_kisan", "pmay_g_u", "ayushman_bharat", "pm_ujjwala", "pm_svanidhi", "atal_pension"}.issubset(ids)
+    expected_ids = {
+        "pm_kisan",
+        "pmay_g_u",
+        "ayushman_bharat",
+        "pm_ujjwala",
+        "pm_svanidhi",
+        "atal_pension",
+    }
+    assert expected_ids.issubset(ids)
 
     pm_kisan = next(s for s in LIVE_GOVT_SCHEMES if s["scheme_id"] == "pm_kisan")
     assert pm_kisan["official_url"] == "https://pmkisan.gov.in/"
@@ -26,7 +33,7 @@ def test_live_govt_schemes_catalog_contains_real_world_portals():
 
 
 def test_fetch_live_schemes_fallback_on_failure():
-    """Verify that when extraction from myscheme or india.gov fails, it produces the requested failure message."""
+    """Verify fallback notice when extraction from myscheme or india.gov fails."""
     assert "Oh we can't able extract the data from the websites" in LIVE_EXTRACTION_FAILURE_MSG
     assert "https://www.myscheme.gov.in/" in LIVE_EXTRACTION_FAILURE_MSG
     assert "https://www.india.gov.in/my-government/schemes" in LIVE_EXTRACTION_FAILURE_MSG

@@ -81,7 +81,11 @@ def _audit_node(
         case_id=state.case_id,
         actor="agent",
         event_type=f"node.{name}",
-        summary=f"{name} node executed in {duration_ms}ms" if duration_ms > 0 else f"{name} node executed",
+        summary=(
+            f"{name} node executed in {duration_ms}ms"
+            if duration_ms > 0
+            else f"{name} node executed"
+        ),
         evidence={
             "node": name,
             "status": state.status,

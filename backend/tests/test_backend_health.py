@@ -3,7 +3,6 @@ from __future__ import annotations
 from uuid import uuid4
 
 from app.db.models import Application, Case, Escalation
-from app.db.session import build_session_factory
 from app.integrations.fakes import FakePortalClient
 from app.main import _services, app
 from fastapi.testclient import TestClient

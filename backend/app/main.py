@@ -678,7 +678,8 @@ async def health(session: Session = Depends(_session)) -> dict[str, str]:
         db_status = "unhealthy"
 
     checkpointer_status = "ready" if _services().checkpointer is not None else "not_ready"
-    overall_status = "ok" if db_status == "healthy" and checkpointer_status == "ready" else "degraded"
+    is_healthy = db_status == "healthy" and checkpointer_status == "ready"
+    overall_status = "ok" if is_healthy else "degraded"
     return {
         "service": "backend",
         "status": overall_status,
@@ -703,7 +704,9 @@ async def system_stats(session: Session = Depends(_session)) -> dict[str, Any]:
     latencies = [
         e.evidence.get("duration_ms")
         for e in events
-        if e.evidence and isinstance(e.evidence.get("duration_ms"), (int, float)) and e.evidence.get("duration_ms") > 0
+        if e.evidence
+        and isinstance(e.evidence.get("duration_ms"), (int, float))
+        and e.evidence.get("duration_ms") > 0
     ]
     avg_latency_ms = round(sum(latencies) / len(latencies), 2) if latencies else 0.0
 
