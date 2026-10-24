@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import os
 from collections.abc import Awaitable, Callable
+from datetime import UTC
 from io import BytesIO
 from typing import Any
 
@@ -24,8 +25,9 @@ from telegram.ext import (
 )
 
 from .backend_client import BackendClient, BackendHTTPError, BackendUnavailableError
+from .chat_memory import ChatMemory
 from .i18n import t
-from .live_schemes import fetch_live_government_schemes
+from .live_schemes import fetch_live_government_schemes, search_kaggle_schemes
 from .notify import AnswerTarget, CallbackStore, question_keyboard, render_notification
 from .onboarding import OnboardingStore
 
@@ -104,7 +106,12 @@ def _case_id(case: dict[str, Any] | None) -> str | None:
     return str(value) if value else None
 
 
-def _menu_keyboard(language: str = "en", *, active_state: str | None = None) -> ReplyKeyboardMarkup:
+def _menu_keyboard(
+    language: str = "en",
+    *,
+    active_state: str | None = None,
+    has_active_case: bool = False,
+) -> ReplyKeyboardMarkup:
     if active_state in {"COLLECTING", "NEEDS_DOCUMENTS"}:
         return ReplyKeyboardMarkup(
             [
@@ -142,11 +149,13 @@ _NEXT_ACTIONS = {
     "PROCESSING": "Please wait while your case is being checked.",
     "NEEDS_INFO": "Choose an answer in the latest message.",
     "NEEDS_DOCUMENTS": "Send the missing document photos/files, then tap Done.",
-    "NEEDS_REVIEW": "Please wait for a volunteer to review your case.",
+    "NEEDS_REVIEW": "Your application is currently undergoing official verification.",
     "SUBMITTED": "Please wait for the scheme portal confirmation.",
     "COMPLETED": "No further action is needed.",
     "NOT_ELIGIBLE": "No further action is needed.",
-    "FAILED_ESCALATED": "A volunteer will follow up with you.",
+    "FAILED_ESCALATED": (
+        "Your application has been routed for official human review and resolution."
+    ),
 }
 
 
@@ -226,11 +235,34 @@ def _upload_too_large(value: Any) -> bool:
     return size is not None and size > MAX_UPLOAD_BYTES
 
 
+ACTIVE_CASE_MAX_AGE_SECONDS = 3600  # 1 hour TTL for active case visibility
+
+
 async def _active_case(update: Update, context: ContextTypes.DEFAULT_TYPE) -> dict[str, Any] | None:
+    chat_id = str(_chat_id(update))
+    cleared = context.application.bot_data.setdefault("cleared_chats", set())
+    if chat_id in cleared:
+        return None
     backend: BackendClient = _data(context, "backend")
     if backend is None:
         return None
-    return await backend.active_case(_chat_id(update))
+    case = await backend.active_case(_chat_id(update))
+    if not case:
+        return None
+    status = str(case.get("status") or "").upper()
+    if status in {"COMPLETED", "NOT_ELIGIBLE", "FAILED_ESCALATED"}:
+        return None
+    created_str = case.get("created_at") or case.get("updated_at")
+    if created_str:
+        try:
+            from datetime import datetime
+
+            dt = datetime.fromisoformat(created_str.replace("Z", "+00:00"))
+            if (datetime.now(UTC) - dt).total_seconds() > ACTIVE_CASE_MAX_AGE_SECONDS:
+                return None
+        except Exception:
+            pass
+    return case
 
 
 async def _latest_case(update: Update, context: ContextTypes.DEFAULT_TYPE) -> dict[str, Any] | None:
@@ -366,13 +398,34 @@ async def _watch_for_case_result(
             "FAILED_ESCALATED",
         }:
             # The persisted case is still useful even when a notification row was
-            # not created. Send a compact status/outcome fallback rather than leave
-            # the citizen staring at a spinner.
-            await application.bot.send_message(
-                chat_id=case.get("channel_ref") or "",
-                text=_status_text(language, case),
-                reply_markup=_menu_keyboard(language, active_state=status),
+            # not created. Send the explicit result card or status fallback.
+            result_msg = next(
+                (
+                    m
+                    for m in reversed(messages)
+                    if isinstance(m, dict) and m.get("kind") == "result"
+                ),
+                None,
             )
+            if result_msg:
+                await handle_notification(
+                    {
+                        "chat_id": case.get("channel_ref") or "",
+                        "case_id": case_id,
+                        "kind": "result",
+                        "language": language,
+                        "text": result_msg.get("text", ""),
+                        "options": [],
+                        "message_id": f"{result_msg.get('id')}:{attempt}",
+                    },
+                    application,
+                )
+            else:
+                await application.bot.send_message(
+                    chat_id=case.get("channel_ref") or "",
+                    text=_status_text(language, case),
+                    reply_markup=_menu_keyboard(language, active_state=status),
+                )
             return
 
 
@@ -427,7 +480,7 @@ def _done_keyboard(language: str, callbacks: CallbackStore) -> InlineKeyboardMar
                 InlineKeyboardButton(
                     t(language, "menu_done"), callback_data=callbacks.add_action("case:check")
                 )
-            ]
+            ],
         ]
     )
 
@@ -562,12 +615,20 @@ async def _send(
     *,
     language: str = "en",
     active_state: str | None = None,
+    has_active_case: bool | None = None,
     **kwargs: Any,
 ) -> Any:
     message = update.effective_message
     if message is None:
         return None
-    kwargs.setdefault("reply_markup", _menu_keyboard(language, active_state=active_state))
+    if has_active_case is None:
+        has_active_case = bool(
+            active_state and active_state not in {"COMPLETED", "NOT_ELIGIBLE", "FAILED_ESCALATED"}
+        )
+    kwargs.setdefault(
+        "reply_markup",
+        _menu_keyboard(language, active_state=active_state, has_active_case=has_active_case),
+    )
     return await message.reply_text(text, **kwargs)
 
 
@@ -636,6 +697,10 @@ async def _submit_case(
             await _send(update, text, language=language)
         return False
     case_id = _case_id(active) or ""
+    delivered = context.application.bot_data.get("delivered_notifications")
+    if isinstance(delivered, set):
+        to_remove = {k for k in delivered if str(case_id) in k}
+        delivered.difference_update(to_remove)
     baseline_ids = _case_message_ids(active)
     if query is not None:
         try:
@@ -889,6 +954,20 @@ def _scheme_text(
 
 async def schemes_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     language = _language(update, context)
+    chat_id = str(_chat_id(update))
+    chat_mem: ChatMemory = _data(context, "chat_memory", ChatMemory())
+    user_profile = chat_mem.extract_personal_info(chat_id)
+
+    # Check for arguments e.g. /browser farmer or /schemes scholarship
+    query_text = ""
+    args = getattr(context, "args", None)
+    if args:
+        query_text = " ".join(args).strip()
+
+    # Search Kaggle catalog (myscheme.gov primary enriched by ind-gov-schemes)
+    matched_kaggle = search_kaggle_schemes(query=query_text, limit=6, user_profile=user_profile)
+    live_schemes, extraction_notice = await fetch_live_government_schemes()
+
     backend: BackendClient = _data(context, "backend")
     backend_schemes: list[dict[str, Any]] = []
     if backend is not None:
@@ -897,20 +976,34 @@ async def schemes_command(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         except Exception:
             pass
 
-    live_schemes, extraction_notice = await fetch_live_government_schemes()
-
     all_schemes: list[dict[str, Any]] = list(backend_schemes) if backend_schemes else []
-    existing_ids = {str(s.get("scheme_id", "")).lower() for s in all_schemes}
-    for s in live_schemes:
-        if str(s.get("scheme_id", "")).lower() not in existing_ids:
+    existing_ids: set[str] = {str(s.get("scheme_id", "")).lower() for s in all_schemes}
+
+    for s in (matched_kaggle or []):
+        sid = str(s.get("scheme_id", "")).lower()
+        if sid and sid not in existing_ids:
+            existing_ids.add(sid)
             all_schemes.append(s)
+
+    for s in (live_schemes or []):
+        sid = str(s.get("scheme_id", "")).lower()
+        if sid and sid not in existing_ids:
+            existing_ids.add(sid)
+            all_schemes.append(s)
+
+    if user_profile:
+        summary_parts = [f"{k}: {v}" for k, v in user_profile.items()]
+        profile_note = f"👤 Matched for your stated profile ({', '.join(summary_parts)}):\n\n"
+        extraction_notice = (
+            f"{profile_note}{extraction_notice}" if extraction_notice else profile_note
+        )
 
     if not all_schemes:
         await _send(update, t(language, "schemes_empty"), language=language)
         return
     await _send(
         update,
-        _scheme_text(language, all_schemes, extraction_notice=extraction_notice),
+        _scheme_text(language, all_schemes[:6], extraction_notice=extraction_notice),
         language=language,
     )
     await _send(
@@ -1427,7 +1520,10 @@ async def _download(context: ContextTypes.DEFAULT_TYPE, file_id: str) -> bytes:
 async def text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     message = update.effective_message
     text = message.text if message else None
+    chat_mem: ChatMemory = _data(context, "chat_memory", ChatMemory())
+    chat_id = str(_chat_id(update))
     if text:
+        chat_mem.add_message(chat_id, "user", text)
         menu_actions = {
             "menu_start": start_new_application,
             "menu_continue": status_command,
@@ -1446,6 +1542,64 @@ async def text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
                     return
 
         clean_text = text.strip().lower()
+
+        # Ending chat triggers: clear memory and active case (To-Do 6)
+        if clean_text in {
+            "end chat",
+            "/end",
+            "end",
+            "bye",
+            "goodbye",
+            "exit",
+            "/exit",
+            "quit",
+            "/quit",
+            "close chat",
+            "done with chat",
+        }:
+            cleared = context.application.bot_data.setdefault("cleared_chats", set())
+            cleared.add(chat_id)
+            chat_mem.clear(chat_id)
+            _data(context, "onboarding", OnboardingStore()).clear(chat_id)
+            closing_text = (
+                "👋 Chat session ended and temporary memory cleared.\n\n"
+                "Thank you for contacting ADHIKAAR AI! Whenever you need assistance again, "
+                "just send /start or /browser."
+            )
+            chat_mem.add_message(chat_id, "bot", closing_text)
+            await _send(update, closing_text, has_active_case=False)
+            return
+
+        # Schemes / Browser / Benefits triggers (To-Do 1 & 3)
+        benefit_triggers = [
+            "benefits of mine personal info",
+            "benefit of mine personal info",
+            "benefits of my personal info",
+            "benefits of mine",
+            "know the benefits",
+            "benefits of personal info",
+            "personal info",
+            "my benefits",
+            "welfare benefits",
+            "what benefits",
+            "browser",
+            "/browser",
+            "browse",
+            "/browse",
+            "browse schemes",
+            "schemes list",
+            "yojana",
+            "benefits",
+            "browse benefits",
+            "all benefits",
+            "govt benefits",
+            "welfare",
+            "welfare schemes",
+        ]
+        if any(trig in clean_text for trig in benefit_triggers):
+            await schemes_command(update, context)
+            return
+
         if clean_text in {
             "status",
             "/status",
@@ -1458,21 +1612,6 @@ async def text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             return
         if clean_text in {"help", "/help", "guide", "info"}:
             await help_command(update, context)
-            return
-        if clean_text in {
-            "schemes",
-            "/schemes",
-            "browse schemes",
-            "schemes list",
-            "yojana",
-            "benefits",
-            "browse benefits",
-            "all benefits",
-            "govt benefits",
-            "welfare",
-            "welfare schemes",
-        }:
-            await schemes_command(update, context)
             return
         if clean_text in {"language", "/language", "lang", "bhasha"}:
             await language_command(update, context)
@@ -1495,7 +1634,18 @@ async def text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     case_id = _case_id(active)
     backend: BackendClient = _data(context, "backend")
     if not case_id or not text or not backend:
-        await _send(update, t(language, "not_ready"), language=language)
+        user_info = chat_mem.extract_personal_info(chat_id)
+        if user_info:
+            summary = ", ".join(f"{k}: {v}" for k, v in user_info.items())
+            reply = (
+                f"👍 Stored in temporary memory: {summary}.\n\n"
+                f"{t(language, 'not_ready')}\n\n"
+                "💡 Or type /browser to view government welfare benefits matching your profile!"
+            )
+        else:
+            reply = t(language, "not_ready")
+        chat_mem.add_message(chat_id, "bot", reply)
+        await _send(update, reply, language=language, has_active_case=False)
         return
 
     clean_text = text.strip().lower()
@@ -1656,12 +1806,17 @@ async def _document_ack(update: Update, context: ContextTypes.DEFAULT_TYPE, coun
         update,
         (
             f"{ack_msg}\n\n"
-            "🔒 Chat copy removed after secure upload for DPDP privacy."
+            "🔒 Chat copy removed after secure upload for DPDP privacy.\n\n"
+            "👉 Tap [🔍 Check Eligibility & Outcome Now] below to evaluate your application."
         ),
         language=language,
         active_state=active.get("status") if active else "COLLECTING",
         reply_markup=_done_keyboard(language, callbacks),
     )
+    if active and active.get("status") == "NEEDS_DOCUMENTS":
+        create_task = getattr(context.application, "create_task", None)
+        if callable(create_task):
+            create_task(_submit_case(update, context, language))
 
 
 def _detect_doc_type(text: str) -> str | None:
@@ -1732,13 +1887,13 @@ async def photo_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
             text = (
                 f"{ack_msg}\n\n✅ {tag_label} received.\n"
                 "🔒 Chat copy removed after secure upload for DPDP privacy.\n\n"
-                "👉 Tap Check eligibility when you are ready."
+                "👉 Tap [🔍 Check Eligibility & Outcome Now] below to evaluate your application."
             )
         else:
             text = (
                 f"{ack_msg}\n\n"
                 "🔒 Chat copy removed after secure upload for DPDP privacy.\n\n"
-                "👉 Tap Check eligibility when you are ready."
+                "👉 Tap [🔍 Check Eligibility & Outcome Now] below to evaluate your application."
             )
         reply_markup = _done_keyboard(language, callbacks)
         await _send(
@@ -1748,6 +1903,10 @@ async def photo_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
             active_state=active.get("status") if active else "COLLECTING",
             reply_markup=reply_markup,
         )
+        if active and active.get("status") == "NEEDS_DOCUMENTS":
+            create_task = getattr(context.application, "create_task", None)
+            if callable(create_task):
+                create_task(_submit_case(update, context, language))
 
 
 async def image_document_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -1860,6 +2019,8 @@ def register_handlers(application: Application) -> Application:
     application.add_handler(CommandHandler("cancel", cancel_command))
     application.add_handler(CommandHandler("help", help_command))
     application.add_handler(CommandHandler("schemes", schemes_command))
+    application.add_handler(CommandHandler("browser", schemes_command))
+    application.add_handler(CommandHandler("browse", schemes_command))
     application.add_handler(CommandHandler("language", language_command))
     application.add_handler(CallbackQueryHandler(callback_handler))
     application.add_handler(MessageHandler(filters.VOICE, voice_handler))
@@ -1874,6 +2035,7 @@ def build_application(
     *,
     backend: BackendClient | None = None,
     onboarding: OnboardingStore | None = None,
+    chat_memory: ChatMemory | None = None,
 ) -> Application:
     token = token or os.getenv("TELEGRAM_BOT_TOKEN", "")
     if not token:
@@ -1889,6 +2051,8 @@ def build_application(
                 os.getenv("BACKEND_URL", "http://localhost:8000"), os.getenv("SERVICE_TOKEN", "")
             ),
             "onboarding": onboarding or OnboardingStore(),
+            "chat_memory": chat_memory or ChatMemory(),
+            "cleared_chats": set(),
             "albums": AlbumDebouncer(),
             "callbacks": CallbackStore(),
         }

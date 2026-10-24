@@ -579,9 +579,13 @@ def _persist_run(case_id: UUID, result: GraphRun, session: Session) -> None:
 
 def _state_for_case(case: Case, session: Session) -> CaseState:
     existing = _services().runs.get(str(case.id))
-    if existing:
-        return existing.state.model_copy(deep=True)
     documents = session.scalars(select(Document).where(Document.case_id == case.id)).all()
+    doc_paths = [item.storage_path for item in documents if item.storage_path]
+    if existing:
+        st = existing.state.model_copy(deep=True)
+        # Ensure any newly uploaded documents are merged into the state
+        st.document_paths = list(dict.fromkeys(st.document_paths + doc_paths))
+        return st
     return CaseState(
         case_id=str(case.id),
         language=case.language,
@@ -590,7 +594,7 @@ def _state_for_case(case: Case, session: Session) -> CaseState:
         consent=case.consent_at is not None,
         voice_path=case.voice_storage_path,
         transcript=case.intent_text,
-        document_paths=[item.storage_path for item in documents if item.storage_path],
+        document_paths=doc_paths,
         status="RECEIVED",
     )
 
@@ -805,12 +809,16 @@ async def active_case(
     _require_service(x_service_token)
     session = _services().sessions()
     try:
+        from datetime import timedelta
+
+        cutoff = datetime.now(timezone.utc) - timedelta(hours=1)
         case = session.scalar(
             select(Case)
             .where(
                 Case.channel == channel,
                 Case.channel_ref == channel_ref,
                 Case.status.not_in(["COMPLETED", "NOT_ELIGIBLE", "FAILED_ESCALATED"]),
+                Case.created_at >= cutoff,
             )
             .order_by(Case.created_at.desc())
         )
@@ -1014,7 +1022,14 @@ async def start_case(
         session.commit()
     if not docs:
         raise HTTPException(status_code=422, detail="upload at least one document first")
-    if existing and case.status in {
+    has_new_docs = bool(
+        existing
+        and any(
+            d.storage_path and d.storage_path not in existing.state.document_paths
+            for d in docs
+        )
+    )
+    if existing and not has_new_docs and case.status in {
         "PROCESSING",
         "NEEDS_INFO",
         "NEEDS_REVIEW",

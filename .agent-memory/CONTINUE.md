@@ -1,13 +1,25 @@
 # ADHIKAAR Continuation Checkpoint
 
-- Objective: Telegram commands refinement and mobile flow polish on `@Adhikaar013bot`.
+- Objective: Fine-Tuning v3 (Llama 3.1-8B) and Telegram Bot Refinements (`v5.1-FineTune-Refinements`).
 - Completed Deliverables:
-  1. Priority 0 (Must-Fix for Pitch & Demo): Synthetic sample pack in `data/samples/`, system architecture & sequence diagrams in `README.md`, One-Page Proposal (`docs/proposal.md`), scheme ingestion scripts (`scripts/ingest_schemes.py`).
-  2. Priority 1 (Judging Rubric & Evaluative Proof): Post-submission tracking & SLA stall (`POST /cases/{id}/track`), per-node latency telemetry, 25-case agent eval suite (`docs/eval_report.md` with 100% outcome agreement), GitHub Actions CI workflow (`.github/workflows/ci.yml`), 5-min demo presenter script (`docs/demo_script.md`), quantified economic impact model (`docs/impact.md`).
-  3. Priority 2 (Polish & Extras): Enriched `/stats` and `/metrics` with Prometheus plaintext export, 83% backend test coverage report (`docs/coverage_report.md`), pip-audit & npm audit security report (`docs/security_audit.md`).
-  4. Code Quality & Release: 146/146 unit tests passing across backend (92), telegram bot (47), and mock portal (7); 0 Ruff lint errors; committed and pushed to GitHub main under `"v5(Before Telegram cmds refinement)"` (commit `0e3a776`).
-  5. Knowledge Graph Refresh: Graphify updated to 1,304 nodes, 3,242 edges, and 84 communities in `graphify-out/` (`graph.json`, `GRAPH_REPORT.md`, `graph.html`).
-- Files to inspect first: this file, `telegram_bot/app/bot.py`, `telegram_bot/app/i18n.py`, `backend/app/main.py`.
+  1. Telegram Bot Refinements (To-Dos 1-6):
+     - Kaggle welfare scheme browser with primary `myscheme.gov/schemes.csv` (4,670 schemes) and enrichment `ind-gov-schemes/structured_govt_schemes_converted.csv` (3,534 schemes); live-scrape fallback returns verified catalog with explicit extraction failure notice.
+     - Outcome delivery post-upload fixed: backend `_state_for_case` refreshed from DB, `has_new_docs` triggers instant re-evaluation, and inline button triggers automatic check.
+     - `/browser` and `/browse` commands added; prompt keywords (e.g. `"I need to know the benefits of mine personal info"`) trigger matched Kaggle catalog results based on citizen profile.
+     - 10-turn rolling conversational chat memory in `telegram_bot/app/chat_memory.py` with 1-hour sliding TTL and Indic attribute extractor (occupation, land size, income, state).
+     - Removed all volunteer references across citizen copy, status views, and next actions; replaced with official verification copy.
+     - Active case auto-expiry (1 hour sliding TTL) and explicit chat dismissal ("end chat", "exit", `/new`).
+  2. Llama 3.1-8B Fine-Tuning v3 & LM Studio Integration:
+     - Synthetic multi-task dataset generator in `scripts/generate_llm_training_data_v3.py` producing 5,000 train samples (`ml_training/data/train_v3.jsonl`) and 500 val samples (`ml_training/data/val_v3.jsonl`).
+     - Rewritten Google Colab notebook `llama_3_8b_instruct_finetune_d13_FASTv3.ipynb` with QLoRA, `packing=False`, `num_train_epochs=1`, `warmup_steps=30`, greedy decoding, and 1-click GGUF export.
+     - Successful training run on Colab: smooth convergence from initial loss 3.15 down to 0.14.
+     - Connected live LM Studio local server running `adhikaar-llama3.1-8b-v3` on `http://localhost:1234/v1`; validated end-to-end fact extraction & portal recovery through `ProviderLLMClient`.
+     - Full LM Studio deployment and configuration guide documented in `FT-backend.md`.
+  3. Knowledge Graph Refresh:
+     - Graphify updated to 1,383 nodes, 3,390 edges, and 89 communities in `graphify-out/` (`graph.json`, `GRAPH_REPORT.md`, `graph.html`).
+  4. Test Verification:
+     - 55/55 Telegram bot tests passing, 92/92 Backend tests passing, 0 Ruff lint errors.
+- Files to inspect first: this file, `FT-backend.md`, `llama_3_8b_instruct_finetune_d13_FASTv3.ipynb`, `telegram_bot/app/bot.py`, `telegram_bot/app/chat_memory.py`, `telegram_bot/app/live_schemes.py`.
 
 - Phase 4 outcome:
   - `backend/app/integrations/sarvam.py`: ffmpeg 16 kHz mono WAV normalization, duration validation (<=30s), language mapping (`ta|te|hi|en` -> `ta-IN|te-IN|hi-IN|en-IN`), live translation/STT, and offline fixture fallback.
