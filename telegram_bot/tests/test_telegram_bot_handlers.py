@@ -262,10 +262,10 @@ def test_consent_callback_sends_reply_keyboard_in_a_new_message():
     assert "Consent recorded" in query.edits[0][0]
     assert message.replies
     keyboard = message.replies[0][1]["reply_markup"]
-    assert [[button.text for button in row] for row in keyboard.keyboard] == [
-        ["📋 What I uploaded"],
-        ["❌ Cancel application"],
-    ]
+    labels = {button.text for row in keyboard.keyboard for button in row}
+    assert {"Start new application", "Continue / status", "Browse schemes"}.issubset(labels)
+    assert "What I uploaded" not in " ".join(labels)
+    assert "Cancel application" not in " ".join(labels)
 
 
 def test_submit_command_reports_backend_unavailable_instead_of_raising():

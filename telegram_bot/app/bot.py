@@ -112,25 +112,7 @@ def _menu_keyboard(
     active_state: str | None = None,
     has_active_case: bool = False,
 ) -> ReplyKeyboardMarkup:
-    if active_state in {"COLLECTING", "NEEDS_DOCUMENTS"}:
-        return ReplyKeyboardMarkup(
-            [
-                [t(language, "menu_checklist")],
-                [t(language, "menu_cancel")],
-            ],
-            resize_keyboard=True,
-            is_persistent=True,
-            input_field_placeholder=t(language, "menu_placeholder"),
-        )
-    if active_state in {"PROCESSING", "NEEDS_INFO"}:
-        return ReplyKeyboardMarkup(
-            [
-                [t(language, "menu_cancel")],
-            ],
-            resize_keyboard=True,
-            is_persistent=True,
-            input_field_placeholder="Processing...",
-        )
+    """Always return standard application menu options without checklist or cancel buttons."""
     return ReplyKeyboardMarkup(
         [
             [t(language, "menu_start"), t(language, "menu_continue")],
