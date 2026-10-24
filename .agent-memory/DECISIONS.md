@@ -221,3 +221,29 @@
 - Related files: `telegram_bot/app/bot.py`, `telegram_bot/app/notify.py`,
   `telegram_bot/app/i18n.py`, `telegram_bot/tests/test_telegram_bot_handlers.py`.
 - Status: accepted and offline-verified; human Telegram retest remains required.
+
+## D-017 — Observability metrics endpoint and Prometheus telemetry format
+
+- Date: 2026-10-24
+- Context: OB-04 requires reporting system statistics (total cases, auto-submitted vs. escalated,
+  and average resolution time) to give evaluators and operations teams real-time visibility.
+- Decision: Expose dual-format endpoints `/stats` and `/metrics` returning JSON by default,
+  and Prometheus plaintext gauge/counter metrics when `?format=prometheus` is supplied.
+  Terminal case timestamps (`created_at` to `updated_at`) calculate resolution duration.
+- Reason: Standardizes monitoring for production readiness without introducing heavy APM agents.
+- Related files: `backend/app/main.py`, `backend/tests/test_backend_health.py`.
+- Status: accepted and verified.
+
+## D-018 — Automated test coverage and dependency security audit baseline
+
+- Date: 2026-10-24
+- Context: TE-13 and PS-12 require documented evidence of test thoroughness and supply-chain
+  vulnerability freedom for pitch and evaluation readiness.
+- Decision: Add `pytest-cov` to test extras and commit `docs/coverage_report.md` (83% backend
+  coverage across 92 tests, 146 total tests passing). Maintain `pip-audit` zero-vulnerability
+  gate and publish `docs/security_audit.md` affirming DPDP 2023 compliance.
+- Reason: Provides immutable proof of system reliability and data minimization invariants.
+- Related files: `backend/pyproject.toml`, `telegram_bot/pyproject.toml`,
+  `docs/coverage_report.md`, `docs/security_audit.md`, `README.md`.
+- Status: accepted and verified.
+

@@ -373,3 +373,31 @@
   - Backend running on `http://127.0.0.1:8000` (health: "ok").
   - Telegram bot daemon running on `http://127.0.0.1:8200` (`/ready`: "ready").
 
+## 2026-10-24 — Priority 2 (Polish & Extras) completion, v5 release & Graphify refresh
+
+- Completed all Priority 2 items requested by Dheeraj:
+  1. Observability Metrics Endpoint (`OB-04` [P2]):
+     - Enhanced `GET /stats` and `GET /metrics` in `backend/app/main.py`.
+     - Calculated `average_resolution_time_seconds` across terminal cases (`COMPLETED`, `SUBMITTED`, `NOT_ELIGIBLE`, `FAILED_ESCALATED`).
+     - Added Prometheus plaintext format export (`GET /metrics?format=prometheus`) exposing `adhikaar_total_cases`, `adhikaar_auto_submitted`, `adhikaar_escalated`, `adhikaar_avg_resolution_seconds`, and `adhikaar_avg_node_latency_ms`.
+     - Added assertions in `backend/tests/test_backend_health.py`.
+  2. Test Coverage Report (`TE-13` [P2]):
+     - Configured `pytest-cov` in `backend/pyproject.toml` and `telegram_bot/pyproject.toml`.
+     - Executed full coverage run: Backend achieved **83%** coverage across 2,729 statements (LangGraph 91%, State 100%, Rules 89%, Audit 90%, Models 100%, Notifier 95%, Storage 96%).
+     - Authored `docs/coverage_report.md` documenting test suite breakdown (146 passed tests) and local/CI reproduction commands.
+  3. Dependency Security Audit (`PS-12` [P2]):
+     - Executed `pip-audit` scanning all active Python dependencies: **0 known vulnerabilities found**.
+     - Executed `npm audit` in `frontend/`: identified build-time PostCSS dev sub-dependencies and verified zero runtime threat to compiled static assets.
+     - Authored `docs/security_audit.md` documenting DPDP Act 2023 compliance, Aadhaar 8-digit masking, and immutable forensic hash chains.
+  4. Repository Status & Release:
+     - Updated `checklist.md` marking `OB-04`, `TE-13`, `PS-12` as completed `[x]`.
+     - Added Coverage (83%) and Security Audit (0 Vulnerabilities) badges to `README.md`.
+     - Updated `docs/audit/STATUS.md` with P2 evidence.
+     - Enforced strict Ruff linting (0 errors across backend, telegram_bot, and mock_portal).
+     - Full test suite verified: 146 passed (92 backend, 47 telegram_bot, 7 mock_portal).
+     - Staged, committed with `"v5(Before Telegram cmds refinement)"` (commit `0e3a776`), and pushed to GitHub `origin/main`.
+  5. Graphify Refresh:
+     - Re-extracted incremental changes via AST (29 changed code files, 76 unchanged cached).
+     - Clustered graph: 1,304 nodes, 3,242 edges, 84 communities.
+     - Regenerated `graphify-out/graph.json`, `graphify-out/GRAPH_REPORT.md`, and `graphify-out/graph.html`.
+

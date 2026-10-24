@@ -1,13 +1,14 @@
 # ADHIKAAR Continuation Checkpoint
 
-- Objective: Validate Telegram bot UX rewrite with live human chat testing on `@Adhikaar013bot`.
+- Objective: Telegram commands refinement and mobile flow polish on `@Adhikaar013bot`.
 - Completed Deliverables:
-  1. Fixed Outcome Delivery Flow: Identified that answering "No" to the interactive declaration question ("Does anyone in your family pay income tax?") was incorrectly intercepted by `_resolve_callback_action` as `consent:no` (due to unconstrained button text matching for "no" without verifying consent context), causing `consent_declined` to clear onboarding and abort the case. Added early guard for `a:` callbacks, prioritized answer execution in `callback_handler`, and required explicit consent keywords before treating generic buttons as consent.
-  2. Fixed backend message UUID comparison in `backend/app/main.py:971` using `.replace("-", "")` normalization.
-  3. Added prominent "🏛️ Browse Govt Schemes & Benefits" option to both `/start` inline action keyboards and main menu handlers.
-  4. Implemented live government welfare scheme extraction with automatic fallback in `telegram_bot/app/live_schemes.py`: attempts live retrieval from `https://www.myscheme.gov.in/` and `https://www.india.gov.in/my-government/schemes`; if extraction fails or encounters CSR/403/timeouts, explicitly presents: "⚠️ Oh we can't able extract the data from the websites (https://www.myscheme.gov.in/, https://www.india.gov.in/my-government/schemes)" followed by the verified catalog of live government welfare benefits (PM-Kisan, PMAY, Ayushman Bharat, PM Ujjwala, PM SVANidhi, APY) with direct links to official live portals.
-  5. 100% test pass rate: 47/47 passed in `telegram_bot`, 90/90 passed in `backend`. Both daemons restarted and verified healthy on ports 8000 and 8200.
-- Files to inspect first: this file, `implementation.md`, `telegram_bot/app/bot.py`, `backend/app/main.py`.
+  1. Priority 0 (Must-Fix for Pitch & Demo): Synthetic sample pack in `data/samples/`, system architecture & sequence diagrams in `README.md`, One-Page Proposal (`docs/proposal.md`), scheme ingestion scripts (`scripts/ingest_schemes.py`).
+  2. Priority 1 (Judging Rubric & Evaluative Proof): Post-submission tracking & SLA stall (`POST /cases/{id}/track`), per-node latency telemetry, 25-case agent eval suite (`docs/eval_report.md` with 100% outcome agreement), GitHub Actions CI workflow (`.github/workflows/ci.yml`), 5-min demo presenter script (`docs/demo_script.md`), quantified economic impact model (`docs/impact.md`).
+  3. Priority 2 (Polish & Extras): Enriched `/stats` and `/metrics` with Prometheus plaintext export, 83% backend test coverage report (`docs/coverage_report.md`), pip-audit & npm audit security report (`docs/security_audit.md`).
+  4. Code Quality & Release: 146/146 unit tests passing across backend (92), telegram bot (47), and mock portal (7); 0 Ruff lint errors; committed and pushed to GitHub main under `"v5(Before Telegram cmds refinement)"` (commit `0e3a776`).
+  5. Knowledge Graph Refresh: Graphify updated to 1,304 nodes, 3,242 edges, and 84 communities in `graphify-out/` (`graph.json`, `GRAPH_REPORT.md`, `graph.html`).
+- Files to inspect first: this file, `telegram_bot/app/bot.py`, `telegram_bot/app/i18n.py`, `backend/app/main.py`.
+
 - Phase 4 outcome:
   - `backend/app/integrations/sarvam.py`: ffmpeg 16 kHz mono WAV normalization, duration validation (<=30s), language mapping (`ta|te|hi|en` -> `ta-IN|te-IN|hi-IN|en-IN`), live translation/STT, and offline fixture fallback.
   - `backend/app/integrations/ocr.py`: PaddleOCR wrapper with angle classification, confidence scoring, and offline fixture fallback.
@@ -116,10 +117,6 @@
     `make lint` passed, `uv lock --check` passed for backend and Telegram.
 
 ## Exact first action for the next coding session
+ 
+Proceed with Telegram commands refinement: review and polish all citizen commands (`/start`, `/schemes`, `/checklist`, `/status`, `/help`, `/new`, `/language`, `/cancel`), ensuring immediate sub-second feedback, streamlined menus, mobile UX clarity, and natural vernacular copy across English, Hindi, Tamil, and Telugu.
 
-Do not paste a Telegram bot token into chat or commit it. Start the backend and Telegram
-services with the same `SERVICE_TOKEN`, verify backend `/health` and Telegram `/ready` return
-HTTP 200 on the configured ports, then perform a fresh real flow with synthetic data:
-`/start` → language → consent → one text/voice message → upload images → `Check eligibility`
-→ wait for the result → `/status`. Confirm that the result appears once, includes the outcome,
-and that `/checklist` and `/cancel` are understandable on mobile.

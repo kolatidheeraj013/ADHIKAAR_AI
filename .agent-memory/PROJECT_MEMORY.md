@@ -57,18 +57,18 @@ specification is `implementation.md`.
     backend eligibility decisions. Offline tests and lint pass; human chat acceptance
     is pending.
 
+- Phase 10: Complete demo polish and offline-verified scenarios A–E.
+- Phase B Completeness: 100% of Priority 0, Priority 1, and Priority 2 deliverables completed:
+  - P0: Full synthetic sample pack (14 files), architecture diagrams, one-page proposal (`docs/proposal.md`), scheme ingestion scripts.
+  - P1: Post-submission tracking & SLA escalation (`POST /cases/{id}/track`), per-node latency telemetry, 25-case agent eval suite (`docs/eval_report.md` with 100% agreement), GitHub Actions CI (`.github/workflows/ci.yml`), 5-min demo presenter script (`docs/demo_script.md`), quantified economic impact model (`docs/impact.md`).
+  - P2: Observability `/stats` and `/metrics` with Prometheus telemetry format, 83% backend test coverage report (`docs/coverage_report.md`), pip-audit & npm audit security report (`docs/security_audit.md`).
+- Code Quality & Release: 146 passed automated tests across backend (92), bot (47), and portal (7); 0 Ruff lint errors; committed and pushed to GitHub main under `"v5(Before Telegram cmds refinement)"`.
+
 ## Current continuation focus
 
-  - Phases 0–9 are implemented; Phase 9 offline behavior is verified and Bot API
-    connectivity is verified for `@Adhikaar013bot` without exposing the token.
-  - Current checkpoint: Phase 10 is offline-verified; live Telegram chat smoke test is
-    pending because the agent cannot act as the user's Telegram account.
-  - The deterministic demo runner and runbook are now the cold-start path.
-- Colab fine-tuning for Llama-3.1-8B runs asynchronously; model will plug directly into
-  `ProviderLLMClient` via `LLM_BASE_URL` without backend code changes (D-009).
-- `SARVAM_API_KEY` is present in local environment; falls back cleanly to offline fixtures if unset.
-- Fine-tuned Llama 3.1 8B is planned for later Hugging Face import/deployment through
-  the OpenAI-compatible `LLM_BASE_URL`; it is not required to pass Phase 4 or Phase 5.
+- All core P0, P1, and P2 rubric items are complete and pushed.
+- Current active objective: Telegram commands refinement (`/start`, `/schemes`, `/checklist`, `/status`, `/help`, etc.) to maximize mobile fluency, zero-latency interactions, and ease of demonstration.
+- Graphify knowledge graph was refreshed to 1,304 nodes, 3,242 edges, and 84 communities (`graphify-out/`).
 
 ## Safety constraints & decisions
 
@@ -83,24 +83,12 @@ specification is `implementation.md`.
 
 - Docker is not installed in the current runner, so compose startup is unverified.
 - All services verified via isolated project `uv run` virtual environments.
-- GNU Make was initially absent from the Windows shell. It is now installed through
-  WinGet (`ezwinports.make` 4.4.1); existing shells need a PATH refresh before plain
-  `make test`/`make lint` resolve it.
-- The existing `backend/.venv` is incomplete/locked on this runner; the backend was
-  started successfully with `uv run --isolated --project backend ...`. This is an
-  environment issue, not an application failure.
-- `/persistent-project-memory` extension was unavailable; these Markdown files are
-  the durable project-memory fallback.
-- Phase 3 uses `langgraph` with the compatible `langgraph-checkpoint-sqlite` 2.x
-  adapter for local durable resumes.
-- `graphify-out/graph.json` exists and the graphify report has previously been
-  refreshed; use graphify's existing-graph query path for future codebase questions
-  instead of rebuilding unless an explicit update/rebuild is requested.
-- Graphify was incrementally refreshed with `--update --code-only` and `cluster-only`:
-  graph output is now 1160 nodes, 2837 edges, and 62 communities in `graphify-out/`.
-  Non-code semantic files were intentionally not re-extracted because no graphify-supported semantic API key was available.
+- GNU Make was installed through WinGet (`ezwinports.make` 4.4.1).
+- LM Studio fact extractor (`adhikaar-llama3.1-8b-fact-extractor`) operates on `http://127.0.0.1:1234/v1`.
+- Zero-network test invariant is preserved across all 146 automated tests.
 
 ## Phase 10 demo assets
+
 
 - `backend/app/demo.py` runs the real graph with deterministic fakes for scenarios
   A/B/C/D1/D2/E and returns sanitized acceptance evidence.
