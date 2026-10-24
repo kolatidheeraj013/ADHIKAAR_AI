@@ -140,7 +140,9 @@ class ProviderLLMClient(LLMClient):
             except Exception as e:
                 logger.warning("LLM extraction attempt %d failed: %s", attempt + 1, e)
 
-        return {}
+        # Fall back to heuristic/fixture extraction if live LLM endpoint is unreachable
+        logger.info("Live LLM unavailable; falling back to heuristic/fixture extraction.")
+        return self._extract_from_fixtures_or_heuristics(text, source_type, target_keys)
 
     def extract_field(self, text: str, field: str, source_doc_id: str | None) -> Any:
         """Targeted single-field re-extraction for portal recovery."""

@@ -1,25 +1,18 @@
 # ADHIKAAR Continuation Checkpoint
 
-- Objective: Fine-Tuning v3 (Llama 3.1-8B) and Telegram Bot Refinements (`v5.1-FineTune-Refinements`).
+- Objective: Telegram Bot Final Refinements & Graceful Offline Fallback (`v5.2-Telegram-final refienments`).
 - Completed Deliverables:
-  1. Telegram Bot Refinements (To-Dos 1-6):
-     - Kaggle welfare scheme browser with primary `myscheme.gov/schemes.csv` (4,670 schemes) and enrichment `ind-gov-schemes/structured_govt_schemes_converted.csv` (3,534 schemes); live-scrape fallback returns verified catalog with explicit extraction failure notice.
-     - Outcome delivery post-upload fixed: backend `_state_for_case` refreshed from DB, `has_new_docs` triggers instant re-evaluation, and inline button triggers automatic check.
-     - `/browser` and `/browse` commands added; prompt keywords (e.g. `"I need to know the benefits of mine personal info"`) trigger matched Kaggle catalog results based on citizen profile.
-     - 10-turn rolling conversational chat memory in `telegram_bot/app/chat_memory.py` with 1-hour sliding TTL and Indic attribute extractor (occupation, land size, income, state).
-     - Removed all volunteer references across citizen copy, status views, and next actions; replaced with official verification copy.
-     - Active case auto-expiry (1 hour sliding TTL) and explicit chat dismissal ("end chat", "exit", `/new`).
-  2. Llama 3.1-8B Fine-Tuning v3 & LM Studio Integration:
-     - Synthetic multi-task dataset generator in `scripts/generate_llm_training_data_v3.py` producing 5,000 train samples (`ml_training/data/train_v3.jsonl`) and 500 val samples (`ml_training/data/val_v3.jsonl`).
-     - Rewritten Google Colab notebook `llama_3_8b_instruct_finetune_d13_FASTv3.ipynb` with QLoRA, `packing=False`, `num_train_epochs=1`, `warmup_steps=30`, greedy decoding, and 1-click GGUF export.
-     - Successful training run on Colab: smooth convergence from initial loss 3.15 down to 0.14.
-     - Connected live LM Studio local server running `adhikaar-llama3.1-8b-v3` on `http://localhost:1234/v1`; validated end-to-end fact extraction & portal recovery through `ProviderLLMClient`.
-     - Full LM Studio deployment and configuration guide documented in `FT-backend.md`.
-  3. Knowledge Graph Refresh:
-     - Graphify updated to 1,383 nodes, 3,390 edges, and 89 communities in `graphify-out/` (`graph.json`, `GRAPH_REPORT.md`, `graph.html`).
-  4. Test Verification:
-     - 55/55 Telegram bot tests passing, 92/92 Backend tests passing, 0 Ruff lint errors.
-- Files to inspect first: this file, `FT-backend.md`, `llama_3_8b_instruct_finetune_d13_FASTv3.ipynb`, `telegram_bot/app/bot.py`, `telegram_bot/app/chat_memory.py`, `telegram_bot/app/live_schemes.py`.
+  1. Telegram UI & Menu Polish:
+     - Fixed active case replacement prompt button label: replaced truncated long prompt string with clean action buttons `[🗑️ Delete & Start New]` and `[Keep Active Case]` across English, Tamil, Telugu, and Hindi.
+     - Removed intrusive persistent bottom reply keyboard buttons `[📋 What I uploaded]` and `[❌ Cancel application]` that were sticking to the screen after starting chat; restored standard persistent menu (`Start new application`, `Continue / status`, `Browse schemes`, `Help`, `Delete data`, `Language / privacy`).
+     - Kept checklist and cancellation actions available via slash commands (`/checklist`, `/cancel`) and inline keyboards.
+  2. Timezone-Aware 1-Hour Case Expiry:
+     - Fixed SQLite naive datetime parsing in `_active_case` (`telegram_bot/app/bot.py`) and `active_case` (`backend/app/main.py`) by explicitly normalizing with `.replace(tzinfo=UTC)`, resolving `TypeError` that previously broke the 1-hour auto-expiration.
+  3. Resilient LLM Fallback:
+     - Added automatic fallback to heuristic/fixture extraction in `ProviderLLMClient.extract_facts` (`backend/app/integrations/llm.py`) when live LLM connection is closed/unreachable, allowing the app to keep working seamlessly even when LM Studio is stopped.
+  4. Test & Quality Verification:
+     - 55/55 Telegram bot tests passing, 92/92 Backend tests passing, 7/7 Mock Portal tests passing, 0 Ruff lint errors.
+- Files to inspect first: this file, `telegram_bot/app/bot.py`, `telegram_bot/app/i18n.py`, `backend/app/integrations/llm.py`, `backend/app/main.py`.
 
 - Phase 4 outcome:
   - `backend/app/integrations/sarvam.py`: ffmpeg 16 kHz mono WAV normalization, duration validation (<=30s), language mapping (`ta|te|hi|en` -> `ta-IN|te-IN|hi-IN|en-IN`), live translation/STT, and offline fixture fallback.
