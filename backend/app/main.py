@@ -809,19 +809,21 @@ async def active_case(
     _require_service(x_service_token)
     session = _services().sessions()
     try:
-        from datetime import timedelta
-
-        cutoff = datetime.now(timezone.utc) - timedelta(hours=1)
         case = session.scalar(
             select(Case)
             .where(
                 Case.channel == channel,
                 Case.channel_ref == channel_ref,
                 Case.status.not_in(["COMPLETED", "NOT_ELIGIBLE", "FAILED_ESCALATED"]),
-                Case.created_at >= cutoff,
             )
             .order_by(Case.created_at.desc())
         )
+        if case and case.created_at:
+            created = case.created_at
+            if created.tzinfo is None:
+                created = created.replace(tzinfo=timezone.utc)
+            if (datetime.now(timezone.utc) - created).total_seconds() > 3600:
+                case = None
         return {"case": _safe_case(case, session) if case else None}
     finally:
         session.close()

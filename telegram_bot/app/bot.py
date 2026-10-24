@@ -258,6 +258,8 @@ async def _active_case(update: Update, context: ContextTypes.DEFAULT_TYPE) -> di
             from datetime import datetime
 
             dt = datetime.fromisoformat(created_str.replace("Z", "+00:00"))
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=UTC)
             if (datetime.now(UTC) - dt).total_seconds() > ACTIVE_CASE_MAX_AGE_SECONDS:
                 return None
         except Exception:
@@ -550,11 +552,11 @@ def _replace_case_keyboard(language: str, callbacks: CallbackStore) -> InlineKey
         [
             [
                 InlineKeyboardButton(
-                    t(language, "replace_confirm"),
+                    t(language, "replace_yes"),
                     callback_data=callbacks.add_action("case:replace"),
                 ),
                 InlineKeyboardButton(
-                    t(language, "no"), callback_data=callbacks.add_action("case:cancel")
+                    t(language, "replace_no"), callback_data=callbacks.add_action("case:cancel")
                 ),
             ]
         ]
@@ -1159,9 +1161,33 @@ def _resolve_callback_action(
             return "case:browse_schemes"
         if any(
             w in btn_text
-            for w in ("start new", "new case", "start a new", "नया", "కొత్త", "புதிய")
+            for w in (
+                "start new",
+                "new case",
+                "start a new",
+                "start fresh",
+                "नया",
+                "కొత్త",
+                "புதிய",
+            )
         ):
+            replace_hints = (
+                "starting a new application will delete",
+                "delete that case",
+                "செயலில் ஒரு வழக்கு",
+            )
+            if any(w in msg_text for w in replace_hints):
+                return "case:replace"
             return "case:new"
+        keep_hints = (
+            "keep active",
+            "keep current",
+            "सक्रिय केस रखें",
+            "కేసును కొనసాగించు",
+            "வைத்திருக்கவும்",
+        )
+        if any(w in btn_text for w in keep_hints):
+            return "case:cancel"
         if "english" in btn_text:
             return "language:en"
         if "हिन्दी" in btn_text or "hindi" in btn_text:
