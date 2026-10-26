@@ -16,7 +16,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](file:///c:/Users/banks/ADHIKAAR_AI/LICENSE)
 
 <p align="center">
-  <b>Closing India's ₹1.5+ Lakh Crore welfare exclusion gap with voice, vision, and deterministic rules.</b>
+  <b>A barrier-breaking autonomous agent that eliminates language barriers and bureaucratic confusion—empowering citizens to effortlessly discover, verify, and access government subsidies, welfare payments, and social benefit programs with voice-first ease.</b>
 </p>
 
 [See It In Action](#-see-it-in-action) • [System Architecture](#-system-architecture) • [How It Works](#-how-it-works-in-4-steps) • [Key Highlights](#-key-engineering-highlights) • [10 Output Invariants](#-machine-checked-output-invariants) • [Quickstart](#-quickstart--local-reproduction) • [Docs](#-documentation--judging-assets)
@@ -36,7 +36,7 @@ India spends over ₹4 lakh crore annually on direct citizen welfare, yet **more
 
 Existing platforms like `myScheme.gov.in` and `india.gov.in` are passive discovery directories: **they inform, but they cannot act**. They cannot listen to vernacular voice notes, cannot inspect camera photos of crumpled rural documents, cannot mathematically verify statutory rules, and cannot recover from portal errors.
 
-**ADHIKAAR closes the entire loop.** A citizen simply sends a voice note in their native language and camera photos of their documents via Telegram (or an accessible web portal). ADHIKAAR transcribes speech, grades visual quality, extracts facts into validated schemas, matches eligibility against 8,200+ schemes using deterministic rules, auto-submits the application to the scheme portal, and sends back a verified reference number.
+**ADHIKAAR is a barrier-breaking application that overcomes language barriers and administrative confusion.** A citizen simply sends a voice note in their native language (Tamil, Telugu, Hindi, or English) and camera photos of their documents via Telegram (or an accessible web portal). ADHIKAAR transcribes speech, grades visual quality, extracts facts into validated schemas, matches eligibility against 8,210+ schemes using deterministic rules, auto-submits the application to the scheme portal, and sends back a verified reference number.
 
 ```
 Citizen Voice & Photos ──► AI Perception & Grounding ──► Deterministic Rules ──► Direct Portal Submission
