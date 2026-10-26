@@ -1,6 +1,6 @@
 <div align="center">
 
-# ADHIKAAR (अधिकार)
+# ADHIKAAR
 ### Autonomous Multi-Modal Welfare Entitlement Agent
 
 [![CI Status](https://github.com/kolatidheeraj013/ADHIKAAR_AI/actions/workflows/ci.yml/badge.svg)](https://github.com/kolatidheeraj013/ADHIKAAR_AI/actions/workflows/ci.yml)

@@ -39,6 +39,18 @@ class Settings:
     llm_api_key: str = field(default_factory=lambda: os.getenv("LLM_API_KEY", ""))
     llm_model: str = field(default_factory=lambda: os.getenv("LLM_MODEL", "gpt-4.1"))
     llm_base_url: str = field(default_factory=lambda: os.getenv("LLM_BASE_URL", ""))
+    llm_max_concurrency: int = field(
+        default_factory=lambda: int(os.getenv("LLM_MAX_CONCURRENCY", "1"))
+    )
+    llm_rpm_limit: int = field(
+        default_factory=lambda: int(os.getenv("LLM_RPM_LIMIT", "20"))
+    )
+    llm_min_interval_seconds: float = field(
+        default_factory=lambda: float(os.getenv("LLM_MIN_INTERVAL_SECONDS", "1.0"))
+    )
+    llm_timeout_seconds: float = field(
+        default_factory=lambda: float(os.getenv("LLM_TIMEOUT_SECONDS", "90.0"))
+    )
 
     # Storage & ML
     storage_backend: str = field(default_factory=lambda: os.getenv("STORAGE_BACKEND", "local"))

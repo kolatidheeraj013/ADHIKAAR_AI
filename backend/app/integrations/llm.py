@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 import logging
 import re
+import threading
+import time
 from pathlib import Path
 from typing import Any
 
@@ -37,6 +39,82 @@ def mask_identifiers(text: str) -> str:
     return re.sub(r"\b\d{4}[ -]?\d{4}[ -]?\d{4}\b", replace_12_digit, text)
 
 
+class LLMRateLimiter:
+    """Thread-safe rate limiter and concurrency controller for LLM endpoints."""
+
+    def __init__(
+        self,
+        max_concurrency: int = 1,
+        rpm_limit: int = 20,
+        min_interval_seconds: float = 1.0,
+    ) -> None:
+        self.max_concurrency = max(1, max_concurrency)
+        self.rpm_limit = max(1, rpm_limit)
+        self.min_interval = max(0.0, min_interval_seconds)
+        self._semaphore = threading.BoundedSemaphore(self.max_concurrency)
+        self._lock = threading.Lock()
+        self._call_timestamps: list[float] = []
+
+    def acquire(self, timeout: float = 45.0) -> bool:
+        """Acquire both concurrency semaphore and rate limit window."""
+        acquired = self._semaphore.acquire(timeout=timeout)
+        if not acquired:
+            return False
+
+        with self._lock:
+            now = time.monotonic()
+            # Prune timestamps older than 60 seconds
+            self._call_timestamps = [t for t in self._call_timestamps if now - t < 60.0]
+
+            # Enforce RPM limit
+            if len(self._call_timestamps) >= self.rpm_limit:
+                sleep_needed = 60.0 - (now - self._call_timestamps[0]) + 0.1
+                if sleep_needed > 0:
+                    logger.info(
+                        "LLM rate limit reached (%d RPM). Throttling for %.2fs",
+                        self.rpm_limit,
+                        sleep_needed,
+                    )
+                    time.sleep(sleep_needed)
+                    now = time.monotonic()
+                    self._call_timestamps = [t for t in self._call_timestamps if now - t < 60.0]
+
+            # Enforce minimum cooldown between consecutive requests
+            if self._call_timestamps and (now - self._call_timestamps[-1]) < self.min_interval:
+                cooldown = self.min_interval - (now - self._call_timestamps[-1])
+                time.sleep(cooldown)
+
+            self._call_timestamps.append(time.monotonic())
+        return True
+
+    def release(self) -> None:
+        """Release the concurrency semaphore."""
+        try:
+            self._semaphore.release()
+        except ValueError:
+            pass
+
+
+_RATE_LIMITERS: dict[str, LLMRateLimiter] = {}
+_LIMITER_LOCK = threading.Lock()
+
+
+def get_rate_limiter(
+    base_url: str,
+    max_concurrency: int,
+    rpm_limit: int,
+    min_interval: float,
+) -> LLMRateLimiter:
+    with _LIMITER_LOCK:
+        if base_url not in _RATE_LIMITERS:
+            _RATE_LIMITERS[base_url] = LLMRateLimiter(
+                max_concurrency=max_concurrency,
+                rpm_limit=rpm_limit,
+                min_interval_seconds=min_interval,
+            )
+        return _RATE_LIMITERS[base_url]
+
+
 class ProviderLLMClient(LLMClient):
     """Production LLM client supporting OpenAI, Hugging Face, vLLM, and offline fixtures."""
 
@@ -48,6 +126,10 @@ class ProviderLLMClient(LLMClient):
         base_url: str | None = None,
         demo_mode: str | None = None,
         fixtures_path: Path | None = None,
+        max_concurrency: int | None = None,
+        rpm_limit: int | None = None,
+        min_interval_seconds: float | None = None,
+        timeout_seconds: float | None = None,
     ) -> None:
         self.provider = provider or settings.llm_provider
         self.api_key = api_key if api_key is not None else settings.llm_api_key
@@ -60,6 +142,26 @@ class ProviderLLMClient(LLMClient):
         self._fixtures: dict[str, dict[str, Any]] = {}
         self._load_fixtures()
 
+        # Rate limiting and concurrency controls
+        self.max_concurrency = (
+            max_concurrency
+            if max_concurrency is not None
+            else getattr(settings, "llm_max_concurrency", 1)
+        )
+        self.rpm_limit = (
+            rpm_limit if rpm_limit is not None else getattr(settings, "llm_rpm_limit", 20)
+        )
+        self.min_interval = (
+            min_interval_seconds
+            if min_interval_seconds is not None
+            else getattr(settings, "llm_min_interval_seconds", 1.0)
+        )
+        self.timeout_seconds = (
+            timeout_seconds
+            if timeout_seconds is not None
+            else getattr(settings, "llm_timeout_seconds", 90.0)
+        )
+
     def _load_fixtures(self) -> None:
         if self.fixtures_path.exists():
             try:
@@ -69,7 +171,7 @@ class ProviderLLMClient(LLMClient):
                 logger.warning("Failed to load LLM fixtures from %s: %s", self.fixtures_path, e)
 
     def _call_chat_completion(self, messages: list[dict[str, str]], json_mode: bool = True) -> str:
-        """Call standard OpenAI-compatible /chat/completions endpoint."""
+        """Call standard OpenAI-compatible /chat/completions endpoint with rate limiting."""
         url = f"{self.base_url}/chat/completions"
         headers = {"Content-Type": "application/json"}
         if self.api_key:
@@ -84,19 +186,44 @@ class ProviderLLMClient(LLMClient):
         if json_mode and self.provider.lower() not in ("lmstudio", "ollama", "local"):
             payload["response_format"] = {"type": "json_object"}
 
-        with httpx.Client(timeout=45.0) as client:
-            try:
-                response = client.post(url, headers=headers, json=payload)
-                response.raise_for_status()
-            except httpx.HTTPStatusError as err:
-                if err.response.status_code == 400 and "response_format" in payload:
-                    payload.pop("response_format", None)
-                    response = client.post(url, headers=headers, json=payload)
-                    response.raise_for_status()
-                else:
-                    raise
-            data = response.json()
-            return str(data["choices"][0]["message"]["content"]).strip()
+        limiter = get_rate_limiter(
+            self.base_url,
+            self.max_concurrency,
+            self.rpm_limit,
+            self.min_interval,
+        )
+
+        if not limiter.acquire(timeout=45.0):
+            raise TimeoutError(
+                f"LLM concurrency limit ({self.max_concurrency}) queue wait timed out after 45s."
+            )
+
+        try:
+            with httpx.Client(timeout=self.timeout_seconds) as client:
+                for retry in range(2):
+                    try:
+                        response = client.post(url, headers=headers, json=payload)
+                        if response.status_code in (429, 503) and retry == 0:
+                            logger.warning(
+                                "LLM returned HTTP %d (%s). Throttling 2.0s before retry...",
+                                response.status_code,
+                                response.text[:100],
+                            )
+                            time.sleep(2.0)
+                            continue
+                        response.raise_for_status()
+                        break
+                    except httpx.HTTPStatusError as err:
+                        if err.response.status_code == 400 and "response_format" in payload:
+                            payload.pop("response_format", None)
+                            response = client.post(url, headers=headers, json=payload)
+                            response.raise_for_status()
+                            break
+                        raise
+                data = response.json()
+                return str(data["choices"][0]["message"]["content"]).strip()
+        finally:
+            limiter.release()
 
     def extract_facts(
         self, text: str, source_type: str, source_doc_id: str | None, target_keys: list[str]
