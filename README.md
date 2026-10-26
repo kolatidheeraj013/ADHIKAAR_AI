@@ -1,4 +1,6 @@
-# ADHIKAAR
+<div align="center">
+
+# ADHIKAAR (अधिकार)
 ### Autonomous Multi-Modal Welfare Entitlement Agent
 
 [![CI Status](https://github.com/kolatidheeraj013/ADHIKAAR_AI/actions/workflows/ci.yml/badge.svg)](https://github.com/kolatidheeraj013/ADHIKAAR_AI/actions/workflows/ci.yml)
@@ -6,32 +8,103 @@
 [![Output Invariants](https://img.shields.io/badge/Output_Invariants-10%2F10_PASS-success.svg)](file:///c:/Users/banks/ADHIKAAR_AI/docs/output_assurance_report.md)
 [![Coverage: 83%](https://img.shields.io/badge/Coverage-83%25-brightgreen.svg)](file:///c:/Users/banks/ADHIKAAR_AI/docs/coverage_report.md)
 [![Security Audit](https://img.shields.io/badge/Security_Audit-0_Vulnerabilities-success.svg)](file:///c:/Users/banks/ADHIKAAR_AI/docs/security_audit.md)
+
 [![Kaggle Catalog](https://img.shields.io/badge/Scheme_Catalog-8%2C210+_Schemes-blue.svg)](file:///c:/Users/banks/ADHIKAAR_AI/data/raw/)
 [![Fine-Tuned Model](https://img.shields.io/badge/Fact_Extractor-Llama_3.1_8B-purple.svg)](file:///c:/Users/banks/ADHIKAAR_AI/llama_3_8b_instruct_finetune_d13_FASTv3.ipynb)
+[![Orchestrator](https://img.shields.io/badge/Orchestrator-LangGraph_20--Node-orange.svg)](file:///c:/Users/banks/ADHIKAAR_AI/backend/app/agents/graph.py)
 [![Privacy](https://img.shields.io/badge/Privacy-DPDP_Act_2023-teal.svg)](file:///c:/Users/banks/ADHIKAAR_AI/output-ensurement.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](file:///c:/Users/banks/ADHIKAAR_AI/LICENSE)
 
-> **Core Principle:** *The LLM extracts and explains · The deterministic rules engine decides · A human caseworker handles doubt · The citizen is never met with silence.*
+<p align="center">
+  <b>Closing India's ₹1.5+ Lakh Crore welfare exclusion gap with voice, vision, and deterministic rules.</b>
+</p>
+
+[See It In Action](#-see-it-in-action) • [System Architecture](#-system-architecture) • [How It Works](#-how-it-works-in-4-steps) • [Key Highlights](#-key-engineering-highlights) • [10 Output Invariants](#-machine-checked-output-invariants) • [Quickstart](#-quickstart--local-reproduction) • [Docs](#-documentation--judging-assets)
 
 ---
 
-## What is ADHIKAAR?
+</div>
 
-India allocates over ₹4 lakh crore annually to public welfare programs, yet more than **₹1.5 lakh crore goes unclaimed every year** (CAG Report No. 12, 2022). The problem is not a lack of government funding—it is paperwork, language barriers, complex portals, and the cost of traveling 3 to 4 times to block revenue offices.
+> **The Architectural Rule:**  
+> *The LLM extracts and explains · The deterministic rules engine decides · A human caseworker handles doubt · The citizen is never met with silence.*
 
-Existing government portals (such as `myScheme.gov.in`) are passive directories: they list schemes, but do not help citizens apply.
+---
 
-**ADHIKAAR closes the entire loop.** A citizen sends a voice note in their native language and camera photos of their documents via Telegram (or web). ADHIKAAR transcribes the speech, reads the documents, verifies eligibility using deterministic government rules, auto-submits the application to the scheme portal, and sends back a verified reference number.
+## 📌 The Problem & The Missing Action Layer
+
+India spends over ₹4 lakh crore annually on direct citizen welfare, yet **more than ₹1.5 lakh crore in entitlements remains dropped or unclaimed every year** (*CAG Report No. 12 of 2022 on Public Welfare Transfers*). Over 40% of eligible rural applicants abandon applications before submission due to administrative friction, procedural confusion, and lost daily wages from making 3 to 4 trips to block revenue offices (*NITI Aayog, DBT Evaluation Report, 2021*).
+
+Existing platforms like `myScheme.gov.in` and `india.gov.in` are passive discovery directories: **they inform, but they cannot act**. They cannot listen to vernacular voice notes, cannot inspect camera photos of crumpled rural documents, cannot mathematically verify statutory rules, and cannot recover from portal errors.
+
+**ADHIKAAR closes the entire loop.** A citizen simply sends a voice note in their native language and camera photos of their documents via Telegram (or an accessible web portal). ADHIKAAR transcribes speech, grades visual quality, extracts facts into validated schemas, matches eligibility against 8,200+ schemes using deterministic rules, auto-submits the application to the scheme portal, and sends back a verified reference number.
 
 ```
-Citizen Voice & Photos ──► AI Document Perception ──► Deterministic Rules ──► Direct Portal Submission
+Citizen Voice & Photos ──► AI Perception & Grounding ──► Deterministic Rules ──► Direct Portal Submission
 ```
 
 ---
 
-## System Architecture
+## ⚡ See It In Action
 
-ADHIKAAR cleanly separates unstructured perception (audio transcription and OCR) from legal decision-making (pure-function rules engine).
+### 1. Telegram Citizen Journey (PM-KISAN in Tamil / Hindi)
+A farmer speaks in Tamil and uploads smartphone camera photos of their documents:
+
+> **👤 Citizen (Voice Note):** *"நான் 1.5 ஹெக்டேர் நிலம் வைத்துள்ள சிறு விவசாயி. எனக்கு பி.எம் கிசான் உதவித்தொகை வேண்டும்."*  
+> *(English translation: "I am a small farmer with 1.5 hectares of land. I need PM-Kisan assistance.")*  
+> 📷 *Sends 3 camera photos: Aadhaar Card, Bank Passbook, Land Patta (RoR)*  
+>  
+> **🤖 ADHIKAAR Bot:**  
+> 🎙️ **Voice Recognized (Tamil ➔ English):** Farmer intent identified  
+> 📄 **Documents Classified:** Aadhaar Card (Clear), Bank Passbook (Clear), Land Record (Clear)  
+> 🔍 **Extracted Facts:** Land: `1.5 Hectares` · Bank: `State Bank of India` · Grounding Confidence: `94.2%`  
+>  
+> ❓ *Quick Question:* Do you or your family pay income tax?  
+> `[ ❌ No, I don't pay tax ]` `[ Yes, I pay tax ]`  
+> *(Citizen taps [No])*  
+>  
+> ⚖️ **Rules Evaluation (`pm_kisan.yaml`):** All 3 statutory criteria passed deterministically  
+> 🚀 **Portal Submission:** Submitting to Government Portal with Idempotency Key `7f4a-91b...`  
+>  
+> ✅ **Application Submitted Successfully!**  
+> **Reference Number:** `MOCK-PORTAL-001` (Demo Environment)  
+> **Benefit:** ₹6,000 / year (3 installments of ₹2,000 directly via DBT)  
+> **Next Steps:** Aadhaar-linked DBT account will receive first installment in 14 days.  
+
+---
+
+### 2. Autonomous 422 Error Recovery (Scenario D1)
+When the government portal rejects an application due to a missing OCR field, ADHIKAAR recovers automatically:
+
+```
+[Portal API] ──► HTTP 422 Unprocessable Entity ("missing_field: bank_ifsc")
+      │
+      ▼
+[ADHIKAAR Agent] ──► Autonomous Targeted Recovery Loop
+      │           • Locates Bank Passbook image in private ephemeral storage
+      │           • Triggers single-field re-extraction prompt for IFSC code
+      │           • IFSC "SBIN0001234" extracted and grounded against raw OCR
+      │
+      ▼
+[Re-Submission] ──► HTTP 200 OK (Application Accepted · Reference: MOCK-PORTAL-002)
+```
+*Zero manual intervention. The citizen receives their confirmation without ever seeing a technical error.*
+
+---
+
+### 3. Human-in-the-Loop Reviewer Queue (`/reviewer/[id]`)
+When document quality is blurry or confidence drops below 0.85:
+
+| System Event | What Happens Under the Hood | Reviewer UI Screen |
+|---|---|---|
+| **Low Confidence / Blurry** | Graph execution pauses safely via `interrupt()`; audit event logged. | Case enters the caseworker review queue with live Server-Sent Events (SSE). |
+| **Evidence Inspection** | Original camera photo displayed side-by-side with OCR bounding boxes. | Caseworker reviews highlighted extracted fields and grounded badges. |
+| **One-Click Approval** | Caseworker edits any ambiguous field and taps **Approve & Resume**. | Backend executes `Command(resume=...)` and seamlessly completes submission. |
+
+---
+
+## 🏛️ System Architecture
+
+ADHIKAAR cleanly separates unstructured multi-modal perception from legal decision-making.
 
 ```mermaid
 flowchart LR
@@ -48,7 +121,7 @@ flowchart LR
         C --> D --> E
     end
 
-    subgraph Step3["3. Action & Review"]
+    subgraph Step3["3. Action & Resolution"]
         F["🏛️ Scheme Portal<br/>(Automated Submission)"]
         G["🧑‍⚖️ Caseworker Review<br/>(/reviewer UI · Edge Cases)"]
         H["📬 Guaranteed Output<br/>(Status / Ref / Next Steps)"]
@@ -56,38 +129,37 @@ flowchart LR
 
     Step1 --> Step2
     E -- "Eligible" --> F --> H
-    E -- "Blurry / Doubt" --> G --> F
+    E -- "Blurry / Low Conf" --> G --> F
     E -- "Not Eligible" --> H
 ```
 
 ---
 
-## How It Works (In 4 Steps)
+## ⚙️ How It Works (In 4 Steps)
 
 ### 1. Multi-Modal Vernacular Intake
-The citizen talks naturally or uploads photos via **Telegram** or **Web**:
-- **Voice notes:** Transcribed and translated across **Tamil, Telugu, Hindi, and English** using 16kHz Sarvam ASR.
-- **Album debouncing:** Multi-photo camera albums are debounced automatically within a 2-second quiet window instead of triggering separate responses per photo.
+- **Regional Speech ASR:** Citizen voice notes are normalized into 16 kHz mono WAV and transcribed across **Tamil, Telugu, Hindi, and English** via Sarvam AI.
+- **Album Debouncing:** Multi-photo camera albums are debounced automatically within a 2-second quiet window instead of sending separate responses per photo.
 
-### 2. Document Quality & Fact Extraction
-- **Dual-Head ResNet-18:** Simultaneously checks document type (Aadhaar, Land Record, Passbook, etc.) and visual image quality (`clear`, `blurry`, `dark`, `damaged`).
-- **OCR & Algorithmic Grounding:** PaddleOCR extracts text lines. A custom **fine-tuned Llama 3.1 8B Instruct** model extracts structured facts into JSON. Every number is algorithmically verified against raw OCR substrings to prevent hallucinated data.
+### 2. Vision & Fact Extraction
+- **Dual-Head ResNet-18:** Simultaneously classifies document type (Aadhaar, Land Record, Passbook, etc.) and visual image quality (`clear`, `blurry`, `dark`, `damaged`).
+- **OCR & Algorithmic Grounding:** PaddleOCR extracts text lines. A custom **fine-tuned Llama 3.1 8B Instruct** model extracts structured facts into JSON. Every number is algorithmically checked against raw OCR substrings to eliminate hallucinations.
 
 ### 3. Pure Deterministic Rules (No AI Guesswork)
-- **Zero LLM Discretion:** Language models are prohibited from deciding eligibility.
-- Rules are written in versioned, readable YAML specs (e.g. `land_owned_hectares > 0 and is_income_tax_payer == False`), evaluated with pure `simpleeval`.
-- Generates a full audit trace: reasons for passing or failing, facts used, and source documents.
+- **Zero Generative Discretion:** LLMs are prohibited from deciding eligibility.
+- Rules are defined in versioned YAML specs (e.g. `land_owned_hectares > 0 and is_income_tax_payer == False`), evaluated via pure `simpleeval`.
+- Generates a complete audit trace: reasons for passing or failing, facts used, and source documents.
 
 ### 4. Direct Action & Self-Healing
 - **Automated Submission:** Eligible cases are submitted directly to the scheme portal with an idempotency key.
-- **422 Auto-Recovery:** If a portal rejects an application due to a missing field (e.g. missing IFSC code), the agent automatically re-scans the passbook for that specific field and retries submission without bothering the citizen.
+- **422 Auto-Recovery:** If a portal returns a missing-field error, the agent automatically re-scans the passbook for that specific field and retries submission without bothering the citizen.
 - **Human-in-the-Loop:** If an image is blurry or confidence is low (< 0.85), execution pauses safely via `interrupt()` and routes to a caseworker dashboard at `/reviewer/[id]`.
 
 ---
 
-## Key Highlights
+## 🏆 Key Engineering Highlights
 
-| Feature | What It Does | Why It Matters |
+| Capability | What It Does | Why It Matters |
 |---|---|---|
 | **Zero-Hallucination Decisions** | Pure-function rules engine evaluates statutory criteria. | The AI extracts facts, but never decides who gets public money. |
 | **Fine-Tuned Fact Extractor** | Llama 3.1 8B fine-tuned with synthetic OCR-noise data. | High extraction accuracy on crumpled, low-contrast rural documents. |
@@ -98,9 +170,9 @@ The citizen talks naturally or uploads photos via **Telegram** or **Web**:
 
 ---
 
-## Machine-Checked Output Invariants (`INV-01` to `INV-10`)
+## 🛡️ Machine-Checked Output Invariants
 
-Under [`output-ensurement.md`](file:///c:/Users/banks/ADHIKAAR_AI/output-ensurement.md), ADHIKAAR is tested against 10 strict machine-checked invariants via [`scripts/verify_outputs.py`](file:///c:/Users/banks/ADHIKAAR_AI/scripts/verify_outputs.py) (`make verify-outputs`):
+Under [`output-ensurement.md`](file:///c:/Users/banks/ADHIKAAR_AI/output-ensurement.md), ADHIKAAR enforces 10 strict machine-checked invariants verified live via [`scripts/verify_outputs.py`](file:///c:/Users/banks/ADHIKAAR_AI/scripts/verify_outputs.py) (`make verify-outputs`):
 
 ```
 ==========================================================================================
@@ -112,7 +184,7 @@ INV-01   | Single Final Result Delivery       | PASS   | 0 duplicate final messa
 INV-02   | Portal Reference on Completion     | PASS   | Completed cases hold verified portal_ref
 INV-03   | No Illegal Applications            | PASS   | 0 applications submitted for ineligible cases
 INV-04   | Structured Escalation Records      | PASS   | All escalations log structured evidence & reasons
-INV-05   | Audit Trail & PII Masking          | PASS   | 87 audit events checked; 0 unmasked 12-digit IDs
+INV-05   | Audit Trail & PII Masking          | PASS   | 89 audit events checked; 0 unmasked 12-digit IDs
 INV-06   | Citizen Message Sanitization       | PASS   | 0 PII leaks or false volunteer callback claims
 INV-07   | Session Lifecycle TTL Integrity    | PASS   | Inactive cases expire cleanly after 30-min TTL
 INV-08   | 422 Error Auto-Recovery Retry      | PASS   | Targeted field re-extraction auto-recovers IFSC
@@ -124,7 +196,7 @@ INV-10   | Decision & Output Agreement        | PASS   | 100% agreement between 
 
 ---
 
-## Operational Scenarios Benchmark
+## 📊 Operational Scenarios Benchmark
 
 Tested end-to-end with offline fixtures across standard edge cases:
 
@@ -142,7 +214,7 @@ Tested end-to-end with offline fixtures across standard edge cases:
 
 ---
 
-## Quantified Citizen Impact
+## 💰 Quantified Citizen Impact
 
 Based on DBT evaluation studies by NITI Aayog and the World Bank:
 
@@ -153,7 +225,7 @@ Based on DBT evaluation studies by NITI Aayog and the World Bank:
 
 ---
 
-## Quickstart & Local Reproduction
+## 🚀 Quickstart & Local Reproduction
 
 ### Prerequisites
 - Python 3.11+
@@ -163,6 +235,7 @@ Based on DBT evaluation studies by NITI Aayog and the World Bank:
 ### 1. Run the Test Suite (167 Tests Passing)
 All tests run 100% offline with zero network credentials required:
 ```bash
+# Run backend, bot, and mock portal tests
 uv run --project backend pytest backend/tests/
 uv run --project telegram_bot pytest telegram_bot/tests/
 uv run --project mock_portal pytest mock_portal/tests/
@@ -171,7 +244,7 @@ uv run --project mock_portal pytest mock_portal/tests/
 make test
 ```
 
-### 2. Verify Output Invariants
+### 2. Verify Output Invariants (10/10 PASS)
 ```bash
 uv run --project backend python scripts/verify_outputs.py
 # Or: make verify-outputs
@@ -205,7 +278,7 @@ cd frontend && npm run dev
 
 ---
 
-## Project Structure
+## 📁 Project Structure
 
 ```
 ADHIKAAR_AI/
@@ -233,7 +306,7 @@ ADHIKAAR_AI/
 
 ---
 
-## Evaluation & Documentation Links
+## 📚 Documentation & Judging Assets
 
 - 📄 **[One-Page Proposal](file:///c:/Users/banks/ADHIKAAR_AI/docs/proposal.md)** — Core problem, solution, and hackathon evaluation alignment.
 - ⏱️ **[5-Minute Demo Script](file:///c:/Users/banks/ADHIKAAR_AI/docs/demo_script.md)** — Step-by-step walkthrough covering all presentation scenarios.
@@ -244,6 +317,8 @@ ADHIKAAR_AI/
 
 ---
 
-## License
+<div align="center">
 
 ADHIKAAR is open-source software licensed under the **[MIT License](file:///c:/Users/banks/ADHIKAAR_AI/LICENSE)**.
+
+</div>
