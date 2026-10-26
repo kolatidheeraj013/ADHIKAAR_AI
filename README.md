@@ -19,7 +19,7 @@
   <b>Closing India's ₹1.5+ Lakh Crore welfare exclusion gap with voice, vision, and deterministic rules.</b>
 </p>
 
-[See It In Action](#-see-it-in-action) • [System Architecture](#-system-architecture) • [How It Works](#-how-it-works-in-4-steps) • [Key Highlights](#-key-engineering-highlights) • [10 Output Invariants](#-machine-checked-output-invariants) • [Quickstart](#-quickstart--local-reproduction) • [Docs](#-documentation--judging-assets)
+[See It In Action](#-see-it-in-action) • [System Architecture](#-system-architecture) • [How It Works](#-how-it-works-in-4-steps) • [Key Highlights](#-key-engineering-highlights) • [10 Output Invariants](#-machine-checked-output-invariants) • [How to Launch](#-how-to-launch-the-application-quickstart) • [Docs](#-documentation--judging-assets)
 
 ---
 
@@ -225,55 +225,70 @@ Based on DBT evaluation studies by NITI Aayog and the World Bank:
 
 ---
 
-## 🚀 Quickstart & Local Reproduction
+## 🚀 How to Launch the Application (Quickstart)
 
-### Prerequisites
-- Python 3.11+
-- [uv package manager](https://github.com/astral-sh/uv) (recommended)
-- Node.js 18+ (for Next.js web portal)
+> 💡 **Zero-Cost Architecture (₹0 Infrastructure & API Bills):**  
+> Even at the MVP stage, ADHIKAAR operates at **₹0 (Zero Rupees)** total operating cost:
+> - **Local LLM Inference:** The fine-tuned Llama 3.1 8B model runs 100% locally via LM Studio (`http://127.0.0.1:1234/v1`) — zero OpenAI or cloud API token bills.
+> - **Local Vision & OCR:** PaddleOCR and the Dual-Head ResNet-18 classifier execute locally on-device — zero cloud vision charges.
+> - **Free Citizen Edge:** The Telegram Bot API provides free, unlimited citizen interaction without SMS or WhatsApp gateway fees.
+> - **Local State & Storage:** SQLite append-only storage and private local document vaults eliminate expensive managed cloud database subscriptions.
 
-### 1. Run the Test Suite (167 Tests Passing)
-All tests run 100% offline with zero network credentials required:
+---
+
+### ⚡ The Fastest Method (1-Click Launch)
+
+1. **Start the local LM Studio server & load your model:**
+   ```powershell
+   lms server start
+   lms load adhikaar-llama3.1-8b-v3
+   ```
+
+2. **Launch all ADHIKAAR application services in 1 command:**
+   ```powershell
+   .\scripts\start_all.ps1
+   ```
+   *This automated script starts the Mock Government Portal (8100), Backend Engine (8000), and Telegram Bot (8200) in the background, verifies LM Studio connectivity, and confirms health checks.*
+
+3. **Message [@Adhikaar013bot](https://t.me/Adhikaar013bot) on Telegram** with `/start`!
+
+---
+
+### 🧪 Run the Offline Test Suite & Invariants
+
+All 167 automated tests and 10 machine invariants execute 100% offline with zero external network dependencies:
+
 ```bash
-# Run backend, bot, and mock portal tests
-uv run --project backend pytest backend/tests/
-uv run --project telegram_bot pytest telegram_bot/tests/
-uv run --project mock_portal pytest mock_portal/tests/
-
-# Or via Makefile:
+# 1. Run all 167 tests across backend, bot, and portal
 make test
+
+# 2. Verify all 10 machine output invariants (10/10 PASS)
+make verify-outputs
 ```
 
-### 2. Verify Output Invariants (10/10 PASS)
+---
+
+### Alternative Launch Options
+
+#### Option A: Standalone Terminals (For Watching Live Service Logs)
+Open 3 separate terminals:
 ```bash
-uv run --project backend python scripts/verify_outputs.py
-# Or: make verify-outputs
-```
-
-### 3. Start Services Locally
-
-**Option A: Docker Compose**
-```bash
-docker compose up --build
-```
-
-**Option B: Standalone Terminals**
-```bash
-# 1. Backend API (Port 8000)
-cd backend && uv run uvicorn app.main:app --port 8000
-
-# 2. Mock Scheme Portal (Port 8100)
+# Terminal 1: Mock Scheme Portal (Port 8100)
 cd mock_portal && uv run uvicorn app.main:app --port 8100
 
-# 3. Telegram Bot (Port 8200)
-cd telegram_bot
-export TELEGRAM_BOT_TOKEN="your-telegram-token"
-export BACKEND_URL="http://127.0.0.1:8000"
-export SERVICE_TOKEN="adhikaar-local-service-token"
-uv run uvicorn app.main:app --port 8200
+# Terminal 2: Backend API Engine (Port 8000)
+cd backend && uv run uvicorn app.main:app --port 8000
 
-# 4. Next.js Web Frontend (Port 3000)
+# Terminal 3: Telegram Bot Service (Port 8200)
+cd telegram_bot && uv run uvicorn app.main:app --port 8200
+
+# Terminal 4 (Optional): Next.js Web Caseworker Dashboard (Port 3000)
 cd frontend && npm run dev
+```
+
+#### Option B: Docker Compose (All-in-One Container)
+```bash
+docker compose up --build
 ```
 
 ---
