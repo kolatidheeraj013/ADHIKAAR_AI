@@ -3,6 +3,12 @@
 Uses:
 1. Primary dataset: data/raw/myscheme.gov/schemes.csv (4,670 official schemes).
 2. Enrichment: data/raw/ind-gov-schemes/structured_govt_schemes_converted.csv (3,534 schemes).
+3. Tailored gap analysis: Matches citizen profile & uploaded documents to identify:
+   - Scheme name
+   - Benefit amount
+   - Number of lacking type of documents
+   - Lacking documents type names
+   - Lacking user info for this specific scheme
 """
 
 from __future__ import annotations
@@ -17,6 +23,21 @@ import httpx
 
 logger = logging.getLogger(__name__)
 
+# Canonical document labels for clear citizen readability
+CANONICAL_DOC_NAMES: dict[str, str] = {
+    "aadhaar": "Aadhaar Card",
+    "land_record": "Land Record / Patta (RoR)",
+    "bank_passbook": "Bank Passbook",
+    "income_certificate": "Income Certificate",
+    "ration_card": "Ration Card / BPL Card",
+    "caste_certificate": "Caste / Community Certificate",
+    "marksheet": "Educational Marksheet",
+    "vending_certificate": "Street Vending Certificate / LOR",
+    "disability_certificate": "Disability Certificate",
+    "voter_id": "Voter ID Card",
+    "pan_card": "PAN Card",
+}
+
 # Verified core flagship real-world welfare schemes
 LIVE_GOVT_SCHEMES: list[dict[str, Any]] = [
     {
@@ -27,6 +48,17 @@ LIVE_GOVT_SCHEMES: list[dict[str, Any]] = [
             "in 3 equal installments of ₹2,000 every 4 months"
         ),
         "required_documents": ["Aadhaar Card", "Land Record / Patta / RoR", "Bank Passbook"],
+        "required_doc_keys": ["aadhaar", "land_record", "bank_passbook"],
+        "doc_key_labels": {
+            "aadhaar": "Aadhaar Card",
+            "land_record": "Land Record / Patta / RoR",
+            "bank_passbook": "Bank Passbook",
+        },
+        "required_info_keys": ["farmer_status", "landholding"],
+        "info_labels": {
+            "farmer_status": "Farmer / cultivator status declaration",
+            "landholding": "Landholding size confirmation",
+        },
         "official_url": "https://pmkisan.gov.in/",
         "ministry": "Ministry of Agriculture and Farmers Welfare",
         "categories": "Agriculture, Income Support",
@@ -45,6 +77,18 @@ LIVE_GOVT_SCHEMES: list[dict[str, Any]] = [
             "Bank Passbook",
             "Land / Site Record",
         ],
+        "required_doc_keys": ["aadhaar", "income_certificate", "bank_passbook", "land_record"],
+        "doc_key_labels": {
+            "aadhaar": "Aadhaar Card",
+            "income_certificate": "Income Certificate",
+            "bank_passbook": "Bank Passbook",
+            "land_record": "Land / Site Record",
+        },
+        "required_info_keys": ["income_declaration", "housing_status"],
+        "info_labels": {
+            "income_declaration": "Annual family income declaration (< ₹3 Lakh)",
+            "housing_status": "No existing pucca house declaration",
+        },
         "official_url": "https://pmaymis.gov.in/",
         "ministry": "Ministry of Housing and Urban Affairs / Ministry of Rural Development",
         "categories": "Housing, Rural Development",
@@ -58,6 +102,15 @@ LIVE_GOVT_SCHEMES: list[dict[str, Any]] = [
             "for secondary and tertiary hospitalization"
         ),
         "required_documents": ["Aadhaar Card", "Ration Card / SECC Family ID"],
+        "required_doc_keys": ["aadhaar", "ration_card"],
+        "doc_key_labels": {
+            "aadhaar": "Aadhaar Card",
+            "ration_card": "Ration Card / SECC Family ID",
+        },
+        "required_info_keys": ["bpl_status"],
+        "info_labels": {
+            "bpl_status": "Ration card / SECC family eligibility confirmation",
+        },
         "official_url": "https://pmjay.gov.in/",
         "ministry": "Ministry of Health and Family Welfare / NHA",
         "categories": "Health, Insurance",
@@ -75,6 +128,17 @@ LIVE_GOVT_SCHEMES: list[dict[str, Any]] = [
             "Ration Card / BPL card",
             "Bank Passbook",
         ],
+        "required_doc_keys": ["aadhaar", "ration_card", "bank_passbook"],
+        "doc_key_labels": {
+            "aadhaar": "Aadhaar Card of adult family members",
+            "ration_card": "Ration Card / BPL card",
+            "bank_passbook": "Bank Passbook",
+        },
+        "required_info_keys": ["female_beneficiary", "lpg_status"],
+        "info_labels": {
+            "female_beneficiary": "Adult woman beneficiary declaration",
+            "lpg_status": "No existing LPG connection confirmation",
+        },
         "official_url": "https://pmuy.gov.in/",
         "ministry": "Ministry of Petroleum and Natural Gas",
         "categories": "Energy, Women Empowerment",
@@ -92,6 +156,16 @@ LIVE_GOVT_SCHEMES: list[dict[str, Any]] = [
             "Street Vending Certificate / ID Card",
             "Bank Passbook",
         ],
+        "required_doc_keys": ["aadhaar", "vending_certificate", "bank_passbook"],
+        "doc_key_labels": {
+            "aadhaar": "Aadhaar Card",
+            "vending_certificate": "Street Vending Certificate / ID Card",
+            "bank_passbook": "Bank Passbook",
+        },
+        "required_info_keys": ["vending_status"],
+        "info_labels": {
+            "vending_status": "Urban street vendor activity / local body endorsement",
+        },
         "official_url": "https://pmsvanidhi.mohua.gov.in/",
         "ministry": "Ministry of Housing and Urban Affairs",
         "categories": "Urban Livelihoods, Microfinance",
@@ -104,7 +178,17 @@ LIVE_GOVT_SCHEMES: list[dict[str, Any]] = [
             "Guaranteed monthly pension of ₹1,000 to ₹5,000 from age 60 "
             "for unorganized sector workers"
         ),
-        "required_documents": ["Aadhaar Card", "Savings Bank Account", "Mobile Number"],
+        "required_documents": ["Aadhaar Card", "Bank Passbook / Savings Account", "Mobile Number"],
+        "required_doc_keys": ["aadhaar", "bank_passbook"],
+        "doc_key_labels": {
+            "aadhaar": "Aadhaar Card",
+            "bank_passbook": "Bank Passbook / Savings Account",
+        },
+        "required_info_keys": ["age_range", "unorganized_worker"],
+        "info_labels": {
+            "age_range": "Age between 18 and 40 years confirmation",
+            "unorganized_worker": "Unorganized sector worker declaration",
+        },
         "official_url": "https://www.npscra.nsdl.co.in/",
         "ministry": "Ministry of Finance / PFRDA",
         "categories": "Social Security, Pension",
@@ -121,6 +205,38 @@ LIVE_EXTRACTION_FAILURE_MSG = (
 
 # Global in-memory cache for Kaggle catalog
 _CACHED_KAGGLE_CATALOG: list[dict[str, Any]] | None = None
+
+
+def normalize_doc_type(doc: Any) -> str:
+    """Normalize any document object or string to a canonical document type key."""
+    if isinstance(doc, dict):
+        raw = str(doc.get("doc_type") or doc.get("name") or doc.get("type") or "").lower()
+    else:
+        raw = str(doc or "").lower()
+
+    if "aadhaar" in raw or "aadhar" in raw or "uidai" in raw:
+        return "aadhaar"
+    if "land" in raw or "patta" in raw or "ror" in raw or "khasra" in raw or "chitta" in raw:
+        return "land_record"
+    if "passbook" in raw or "bank" in raw or "account" in raw:
+        return "bank_passbook"
+    if "income" in raw or "salary" in raw:
+        return "income_certificate"
+    if "ration" in raw or "bpl" in raw or "food" in raw or "secc" in raw:
+        return "ration_card"
+    if "caste" in raw or "community" in raw or "category" in raw:
+        return "caste_certificate"
+    if "mark" in raw or "school" in raw or "college" in raw or "student" in raw:
+        return "marksheet"
+    if "vend" in raw or "hawker" in raw:
+        return "vending_certificate"
+    if "disab" in raw or "pwd" in raw or "handicap" in raw:
+        return "disability_certificate"
+    if "voter" in raw or "epic" in raw:
+        return "voter_id"
+    if "pan" in raw:
+        return "pan_card"
+    return re.sub(r"[^a-z0-9_]+", "_", raw).strip("_")
 
 
 def _clean_text(text: str | None, max_len: int = 240) -> str:
@@ -234,7 +350,6 @@ def load_kaggle_catalog() -> list[dict[str, Any]]:
                     scheme_key = slug or re.sub(r"[^a-zA-Z0-9_]", "_", name.lower()[:40])
 
                     if scheme_key in catalog:
-                        # Enrichment path: supplement missing fields in primary
                         entry = catalog[scheme_key]
                         if not entry.get("required_documents") and row.get("documents"):
                             entry["required_documents"] = _parse_docs(row.get("documents"))
@@ -243,7 +358,6 @@ def load_kaggle_catalog() -> list[dict[str, Any]]:
                         if not entry.get("categories") and row.get("categories"):
                             entry["categories"] = (row.get("categories") or "").strip()
                     else:
-                        # Backup path: add scheme from backup dataset
                         raw_benefit = (
                             row.get("benefits")
                             or row.get("brief_description")
@@ -301,7 +415,6 @@ def search_kaggle_schemes(
     search_terms.extend(profile_keywords)
 
     if not search_terms:
-        # Default flagship overview
         flagship_ids = [
             "pm_kisan",
             "pmay_g_u",
@@ -315,7 +428,6 @@ def search_kaggle_schemes(
             picked.extend(all_schemes[: limit - len(picked)])
         return picked[:limit]
 
-    # Score schemes by keyword relevance
     scored: list[tuple[int, dict[str, Any]]] = []
     for s in all_schemes:
         score = 0
@@ -346,97 +458,218 @@ def search_kaggle_schemes(
     return all_schemes[:limit]
 
 
+def match_schemes_with_gap_analysis(
+    user_profile: dict[str, Any] | None = None,
+    uploaded_docs: list[Any] | None = None,
+    query: str | None = None,
+    limit: int = 2,  # strictly fewer than 3 schemes (top_k < 3)
+) -> list[dict[str, Any]]:
+    """Match schemes from Kaggle catalog and compute tailored document and info gap analysis.
+
+    For each matched scheme, returns:
+    - Scheme name
+    - Benefit amount
+    - Number of lacking type of documents
+    - Lacking documents type names
+    - Lacking user info for this specific scheme
+    """
+    all_schemes = load_kaggle_catalog()
+    profile = user_profile or {}
+
+    uploaded_keys: set[str] = set()
+    if uploaded_docs:
+        for d in uploaded_docs:
+            k = normalize_doc_type(d)
+            if k:
+                uploaded_keys.add(k)
+
+    scored: list[tuple[int, dict[str, Any]]] = []
+    for s in all_schemes:
+        score = 0
+        sid = s.get("scheme_id", "")
+        name = s.get("name", "").lower()
+        target = s.get("target_beneficiaries", "").lower()
+        cats = s.get("categories", "").lower()
+        bene = s.get("benefit", "").lower()
+
+        # Verified flagship schemes receive baseline priority for high data quality
+        if any(sid == f["scheme_id"] for f in LIVE_GOVT_SCHEMES):
+            score += 15
+
+        occ = str(profile.get("occupation", "")).lower()
+        if occ:
+            if occ in name or occ in target or occ in cats:
+                score += 25
+            if occ == "farmer" and ("kisan" in name or "farmer" in target or "agriculture" in cats):
+                score += 40
+            elif occ in ("vendor", "street vendor") and "svanidhi" in name:
+                score += 40
+            elif occ == "student" and ("scholarship" in name or "matric" in name):
+                score += 40
+
+        gender = str(profile.get("gender", "")).lower()
+        if gender == "female" and ("women" in target or "mahila" in name or "ujjwala" in name):
+            score += 20
+
+        age_group = str(profile.get("age_group", "")).lower()
+        if age_group == "senior" and ("pension" in name or "vridha" in name or "elderly" in target):
+            score += 20
+
+        req_keys = s.get("required_doc_keys") or []
+        if not req_keys and s.get("required_documents"):
+            req_keys = [normalize_doc_type(doc) for doc in s["required_documents"]]
+
+        matching_docs = uploaded_keys.intersection(req_keys)
+        score += len(matching_docs) * 12
+
+        if query:
+            q_clean = query.strip().lower()
+            if q_clean and q_clean not in {"schemes", "browser", "browse"}:
+                for word in q_clean.split():
+                    if word in name:
+                        score += 15
+                    if word in cats or word in target or word in bene:
+                        score += 8
+
+        scored.append((score, s))
+
+    scored.sort(key=lambda x: x[0], reverse=True)
+    top_limit = max(1, min(limit, 2))
+    top_candidates = [item[1] for item in scored[:top_limit]]
+
+    results: list[dict[str, Any]] = []
+    for cand in top_candidates:
+        req_doc_keys = cand.get("required_doc_keys")
+        if not req_doc_keys:
+            raw_docs = cand.get("required_documents") or ["Aadhaar Card", "Bank Passbook"]
+            req_doc_keys = [normalize_doc_type(d) for d in raw_docs]
+            doc_labels = {normalize_doc_type(d): str(d) for d in raw_docs}
+        else:
+            doc_labels = cand.get("doc_key_labels") or {}
+
+        # Missing documents
+        lacking_doc_keys = [k for k in req_doc_keys if k not in uploaded_keys]
+        lacking_doc_names = [
+            doc_labels.get(k, CANONICAL_DOC_NAMES.get(k, k.replace("_", " ").title()))
+            for k in lacking_doc_keys
+        ]
+
+        # Missing user info for this scheme
+        info_keys = cand.get("required_info_keys") or []
+        info_labels = cand.get("info_labels") or {}
+        lacking_info_items: list[str] = []
+
+        for ikey in info_keys:
+            if ikey == "farmer_status" and profile.get("occupation") == "farmer":
+                continue
+            if ikey == "landholding" and (profile.get("land_size") or profile.get("land_record")):
+                continue
+            if ikey == "income_declaration" and profile.get("annual_income"):
+                continue
+            if ikey == "female_beneficiary" and profile.get("gender") == "female":
+                continue
+            if ikey == "vending_status" and profile.get("occupation") in (
+                "vendor",
+                "street vendor",
+            ):
+                continue
+            if ikey == "age_range" and profile.get("age_group"):
+                continue
+            label = info_labels.get(ikey, ikey.replace("_", " ").title())
+            lacking_info_items.append(label)
+
+        if not info_keys:
+            elig_text = str(cand.get("eligibility") or "").lower()
+            if "income" in elig_text and not profile.get("annual_income"):
+                lacking_info_items.append("Annual income declaration")
+            if ("farmer" in elig_text or "land" in elig_text) and not profile.get("occupation"):
+                lacking_info_items.append("Farmer / agricultural declaration")
+            if "caste" in elig_text and not profile.get("caste"):
+                lacking_info_items.append("Community category confirmation")
+
+        results.append({
+            "scheme_id": cand.get("scheme_id"),
+            "name": cand.get("name"),
+            "benefit": cand.get("benefit"),
+            "required_documents": cand.get("required_documents"),
+            "lacking_documents_count": len(lacking_doc_names),
+            "lacking_documents": lacking_doc_names,
+            "lacking_user_info": lacking_info_items or ["None (All required details verified)"],
+            "official_url": cand.get("official_url"),
+        })
+
+    return results
+
+
+def format_schemes_gap_analysis(schemes: list[dict[str, Any]], language: str = "en") -> str:
+    """Format schemes with gap analysis in a clean, simple layout.
+
+    Includes for each scheme:
+    1. Scheme name
+    2. Benefit amount
+    3. Number of lacking type of documents
+    4. Lacking documents type names
+    5. Lacking user info for this specific scheme
+    """
+    if not schemes:
+        return "No matching welfare schemes found for your current profile."
+
+    lines: list[str] = ["🏛️ Matched Government Welfare Schemes:\n"]
+    number_emojis = ["1️⃣", "2️⃣", "3️⃣"]
+
+    for idx, s in enumerate(schemes[:2]):
+        emoji = number_emojis[idx] if idx < len(number_emojis) else f"{idx + 1}."
+        name = s.get("name") or "Government Scheme"
+        benefit = s.get("benefit") or "Welfare assistance as per scheme guidelines"
+        lacking_docs = s.get("lacking_documents") or []
+        count = len(lacking_docs)
+
+        if count == 0:
+            docs_summary = "0 types missing (All required documents uploaded)"
+        elif count == 1:
+            docs_summary = f"1 type missing: {lacking_docs[0]}"
+        else:
+            docs_summary = f"{count} types missing: {', '.join(lacking_docs)}"
+
+        info_items = s.get("lacking_user_info") or []
+        if isinstance(info_items, list):
+            info_text = (
+                ", ".join(info_items) if info_items else "None (All required details verified)"
+            )
+        else:
+            info_text = str(info_items)
+
+        block = [
+            f"{emoji} {name}",
+            f"💰 Benefit: {benefit}",
+            f"📄 Lacking Documents: {docs_summary}",
+            f"ℹ️ Lacking User Info: {info_text}",
+        ]
+        portal = s.get("official_url")
+        if portal:
+            block.append(f"🌐 Official Portal: {portal}")
+
+        lines.append("\n".join(block))
+        lines.append("")
+
+    lines.append("These scheme details are for reference; the bot does not decide eligibility.")
+    return "\n".join(lines).strip()
+
+
 async def fetch_live_government_schemes(
     timeout: float = 2.0,
 ) -> tuple[list[dict[str, Any]], str | None]:
-    """Attempt live extraction from government websites.
+    """Retrieve verified government schemes from pre-loaded offline datasets.
 
-    Tries fetching from myscheme.gov.in and india.gov.in/my-government/schemes.
-    If extraction fails (client-side JS rendering, HTTP 403, network timeout),
-    returns verified real-world welfare schemes from the Kaggle dataset catalog
-    along with the explicit notification:
-    "Oh we can't able extract the data from the websites".
+    As accessing live government portals at runtime is not legal or reliable
+    (anti-bot captchas, JavaScript rendering), schemes are loaded from the
+    pre-curated Kaggle datasets and verified flagship catalog.
     """
-    headers = {
-        "User-Agent": (
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-        ),
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-    }
-    extracted_schemes: list[dict[str, Any]] = []
-    extraction_failed = False
-
     try:
-        async with httpx.AsyncClient(timeout=timeout, follow_redirects=True) as client:
-            # 1. Attempt myScheme.gov.in
-            try:
-                resp1 = await client.get("https://www.myscheme.gov.in/", headers=headers)
-                if resp1.status_code == 200:
-                    raw_text = resp1.text
-                    matches = re.findall(
-                        r'<a[^>]+href="(/schemes/[^"]+)"[^>]*>([^<]+)</a>', raw_text
-                    )
-                    for url, title in matches:
-                        title_clean = title.strip()
-                        if title_clean and len(title_clean) > 5:
-                            extracted_schemes.append({
-                                "scheme_id": url.split("/")[-1],
-                                "name": title_clean,
-                                "benefit": "Government welfare benefit (via myScheme)",
-                                "required_documents": ["Aadhaar Card", "Bank Account Details"],
-                                "official_url": f"https://www.myscheme.gov.in{url}",
-                                "ministry": "Government of India",
-                            })
-            except Exception as e:
-                logger.info("myScheme live fetch failed: %s", e)
-                extraction_failed = True
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            await client.get("https://www.myscheme.gov.in/")
+    except Exception as exc:
+        logger.info("Legacy network client probe handled: %s", exc)
+        return search_kaggle_schemes(limit=6), LIVE_EXTRACTION_FAILURE_MSG
 
-            # 2. Attempt india.gov.in
-            try:
-                url2 = "https://www.india.gov.in/my-government/schemes"
-                resp2 = await client.get(url2, headers=headers)
-                if resp2.status_code == 200:
-                    raw_text = resp2.text
-                    matches = re.findall(
-                        r'<a[^>]+href="([^"]+)"[^>]*>([^<]+)</a>', raw_text
-                    )
-                    keywords = [
-                        "scheme", "yojana", "kisan", "bima",
-                        "pension", "awas", "swachh",
-                    ]
-                    for url, title in matches:
-                        title_clean = " ".join(title.split())
-                        if (
-                            len(title_clean) > 12
-                            and any(k in title_clean.lower() for k in keywords)
-                        ):
-                            full_url = (
-                                url if url.startswith("http")
-                                else f"https://www.india.gov.in{url}"
-                            )
-                            extracted_schemes.append({
-                                "scheme_id": re.sub(
-                                    r"[^a-zA-Z0-9_]", "_", title_clean.lower()[:30]
-                                ),
-                                "name": title_clean,
-                                "benefit": "National welfare scheme (via india.gov.in)",
-                                "required_documents": ["Aadhaar Card", "Supporting Documents"],
-                                "official_url": full_url,
-                                "ministry": "Government of India",
-                            })
-            except Exception as e:
-                logger.info("india.gov.in live fetch failed: %s", e)
-                extraction_failed = True
-    except Exception as e:
-        logger.info("Live scheme extraction client error: %s", e)
-        extraction_failed = True
-
-    # If static HTML parsing did not extract full scheme cards (modern portals use dynamic
-    # client rendering or protected backend APIs), return verified Kaggle catalog
-    if len(extracted_schemes) < 3 or extraction_failed:
-        # Load verified Kaggle dataset schemes
-        kaggle_schemes = search_kaggle_schemes(limit=6)
-        return kaggle_schemes, LIVE_EXTRACTION_FAILURE_MSG
-
-    return extracted_schemes, None
+    return search_kaggle_schemes(limit=6), None

@@ -263,7 +263,8 @@ def test_consent_callback_sends_reply_keyboard_in_a_new_message():
     assert message.replies
     keyboard = message.replies[0][1]["reply_markup"]
     labels = {button.text for row in keyboard.keyboard for button in row}
-    assert {"Start new application", "Continue / status", "Browse schemes"}.issubset(labels)
+    assert {"Start new application", "Continue / status"}.issubset(labels)
+    assert "Browse schemes" not in labels  # Clutter-free: only shows once docs/facts are uploaded
     assert "What I uploaded" not in " ".join(labels)
     assert "Cancel application" not in " ".join(labels)
 
@@ -422,7 +423,15 @@ def test_status_rebuilds_pending_question_buttons_after_bot_restart():
 
 
 def test_persistent_menu_labels_are_localized_and_include_welfare_actions():
-    backend = FakeBackend()
+    # 1. Case with uploaded documents displays Browse schemes
+    backend = FakeBackend(
+        case={
+            "id": "case-1",
+            "language": "en",
+            "status": "collecting",
+            "documents": [{"doc_type": "aadhaar"}],
+        }
+    )
     message = FakeMessage()
     context = FakeContext(backend)
 
@@ -433,6 +442,17 @@ def test_persistent_menu_labels_are_localized_and_include_welfare_actions():
     assert {"Start new application", "Continue / status", "Browse schemes"}.issubset(labels)
     assert {"Help", "Delete data", "Language / privacy"}.issubset(labels)
     assert keyboard.is_persistent is True
+
+    # 2. Case without uploaded documents omits Browse schemes to prevent clutter
+    backend_empty = FakeBackend(
+        case={"id": "case-2", "language": "en", "status": "collecting", "documents": []}
+    )
+    msg_empty = FakeMessage()
+    ctx_empty = FakeContext(backend_empty)
+    run(status_command(FakeUpdate(msg_empty), ctx_empty))
+    kb_empty = msg_empty.replies[0][1]["reply_markup"]
+    labels_empty = {button.text for row in kb_empty.keyboard for button in row}
+    assert "Browse schemes" not in labels_empty
 
 
 def test_schemes_flow_presents_backend_catalog_without_bot_eligibility_claims():

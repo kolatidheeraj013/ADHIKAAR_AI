@@ -822,7 +822,7 @@ async def active_case(
             created = case.created_at
             if created.tzinfo is None:
                 created = created.replace(tzinfo=timezone.utc)
-            if (datetime.now(timezone.utc) - created).total_seconds() > 3600:
+            if (datetime.now(timezone.utc) - created).total_seconds() > 1800:
                 case = None
         return {"case": _safe_case(case, session) if case else None}
     finally:

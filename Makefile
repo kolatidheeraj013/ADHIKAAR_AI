@@ -1,4 +1,4 @@
-.PHONY: dev test lint demo train seed
+.PHONY: dev test lint demo train seed verify-outputs
 
 dev:
 	@docker compose up --build
@@ -19,3 +19,6 @@ train:
 
 seed:
 	@uv run --isolated --project backend python scripts/seed.py
+
+verify-outputs:
+	@uv run --project backend python scripts/verify_outputs.py

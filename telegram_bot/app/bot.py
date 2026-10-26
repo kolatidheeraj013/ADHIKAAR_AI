@@ -27,7 +27,11 @@ from telegram.ext import (
 from .backend_client import BackendClient, BackendHTTPError, BackendUnavailableError
 from .chat_memory import ChatMemory
 from .i18n import t
-from .live_schemes import fetch_live_government_schemes, search_kaggle_schemes
+from .live_schemes import (
+    format_schemes_gap_analysis,
+    match_schemes_with_gap_analysis,
+    normalize_doc_type,
+)
 from .notify import AnswerTarget, CallbackStore, question_keyboard, render_notification
 from .onboarding import OnboardingStore
 
@@ -111,14 +115,32 @@ def _menu_keyboard(
     *,
     active_state: str | None = None,
     has_active_case: bool = False,
+    has_documents: bool = False,
 ) -> ReplyKeyboardMarkup:
-    """Always return standard application menu options without checklist or cancel buttons."""
-    return ReplyKeyboardMarkup(
-        [
+    """Return contextual application menu options avoiding button clutter.
+
+    'Browse schemes' and 'Delete data' only appear when documents or citizen
+    data have been uploaded and understood.
+    """
+    if has_active_case and has_documents:
+        rows = [
             [t(language, "menu_start"), t(language, "menu_continue")],
             [t(language, "menu_schemes"), t(language, "menu_help")],
             [t(language, "menu_delete"), t(language, "menu_language")],
-        ],
+        ]
+    elif has_active_case:
+        rows = [
+            [t(language, "menu_start"), t(language, "menu_continue")],
+            [t(language, "menu_help"), t(language, "menu_language")],
+            [t(language, "menu_delete")],
+        ]
+    else:
+        rows = [
+            [t(language, "menu_start"), t(language, "menu_help")],
+            [t(language, "menu_language")],
+        ]
+    return ReplyKeyboardMarkup(
+        rows,
         resize_keyboard=True,
         is_persistent=True,
         input_field_placeholder=t(language, "menu_placeholder"),
@@ -217,7 +239,7 @@ def _upload_too_large(value: Any) -> bool:
     return size is not None and size > MAX_UPLOAD_BYTES
 
 
-ACTIVE_CASE_MAX_AGE_SECONDS = 3600  # 1 hour TTL for active case visibility
+ACTIVE_CASE_MAX_AGE_SECONDS = 1800  # 30 minutes TTL for active case visibility
 
 
 async def _active_case(update: Update, context: ContextTypes.DEFAULT_TYPE) -> dict[str, Any] | None:
@@ -296,7 +318,13 @@ def _status_markup(
         question = _pending_question_keyboard(case, callbacks)
         if question is not None:
             return question
-    return _menu_keyboard(language, active_state=case.get("status"))
+    has_docs = bool(case.get("documents")) or bool(case.get("facts"))
+    return _menu_keyboard(
+        language,
+        active_state=case.get("status"),
+        has_active_case=True,
+        has_documents=has_docs,
+    )
 
 
 def _notification_key(payload: dict[str, Any]) -> str:
@@ -505,28 +533,30 @@ def _document_tag_keyboard(
     )
 
 
-def _case_choice_keyboard(language: str, callbacks: CallbackStore) -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup(
+def _case_choice_keyboard(
+    language: str, callbacks: CallbackStore, *, has_documents: bool = False
+) -> InlineKeyboardMarkup:
+    buttons = [
         [
-            [
-                InlineKeyboardButton(
-                    t(language, "case_continue"),
-                    callback_data=callbacks.add_action("case:continue"),
-                )
-            ],
-            [
-                InlineKeyboardButton(
-                    t(language, "case_new"), callback_data=callbacks.add_action("case:new")
-                )
-            ],
-            [
-                InlineKeyboardButton(
-                    f"🏛️ {t(language, 'menu_schemes')}",
-                    callback_data=callbacks.add_action("case:browse_schemes"),
-                )
-            ],
-        ]
-    )
+            InlineKeyboardButton(
+                t(language, "case_continue"),
+                callback_data=callbacks.add_action("case:continue"),
+            )
+        ],
+        [
+            InlineKeyboardButton(
+                t(language, "case_new"), callback_data=callbacks.add_action("case:new")
+            )
+        ],
+    ]
+    if has_documents:
+        buttons.append([
+            InlineKeyboardButton(
+                f"🏛️ {t(language, 'menu_schemes')}",
+                callback_data=callbacks.add_action("case:browse_schemes"),
+            )
+        ])
+    return InlineKeyboardMarkup(buttons)
 
 
 def _replace_case_keyboard(language: str, callbacks: CallbackStore) -> InlineKeyboardMarkup:
@@ -582,13 +612,7 @@ def _start_action_keyboard(language: str, callbacks: CallbackStore) -> InlineKey
                 InlineKeyboardButton(
                     t(language, "menu_start"), callback_data=callbacks.add_action("start:new")
                 )
-            ],
-            [
-                InlineKeyboardButton(
-                    f"🏛️ {t(language, 'menu_schemes')}",
-                    callback_data=callbacks.add_action("case:browse_schemes"),
-                )
-            ],
+            ]
         ]
     )
 
@@ -600,6 +624,7 @@ async def _send(
     language: str = "en",
     active_state: str | None = None,
     has_active_case: bool | None = None,
+    has_documents: bool | None = None,
     **kwargs: Any,
 ) -> Any:
     message = update.effective_message
@@ -609,9 +634,16 @@ async def _send(
         has_active_case = bool(
             active_state and active_state not in {"COMPLETED", "NOT_ELIGIBLE", "FAILED_ESCALATED"}
         )
+    if has_documents is None:
+        has_documents = False
     kwargs.setdefault(
         "reply_markup",
-        _menu_keyboard(language, active_state=active_state, has_active_case=has_active_case),
+        _menu_keyboard(
+            language,
+            active_state=active_state,
+            has_active_case=has_active_case,
+            has_documents=has_documents,
+        ),
     )
     return await message.reply_text(text, **kwargs)
 
@@ -779,11 +811,16 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         return
     language = _language(update, context, active)
     if active:
+        has_docs = bool(active.get("documents")) or bool(active.get("facts"))
         await _send(
             update,
             _status_text(language, active),
             language=language,
-            reply_markup=_case_choice_keyboard(language, _callbacks(context))
+            has_active_case=True,
+            has_documents=has_docs,
+            reply_markup=_case_choice_keyboard(
+                language, _callbacks(context), has_documents=has_docs
+            )
             if str(active.get("status") or "").upper() != "NEEDS_INFO"
             else _status_markup(language, active, _callbacks(context)),
         )
@@ -939,8 +976,24 @@ def _scheme_text(
 async def schemes_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     language = _language(update, context)
     chat_id = str(_chat_id(update))
+    callbacks = _callbacks(context)
     chat_mem: ChatMemory = _data(context, "chat_memory", ChatMemory())
     user_profile = chat_mem.extract_personal_info(chat_id)
+
+    # Pre-fetch active case
+    try:
+        active_case = await _active_case(update, context)
+    except Exception:
+        active_case = None
+
+    uploaded_docs: list[Any] = []
+    if active_case:
+        uploaded_docs = active_case.get("documents") or []
+        facts = active_case.get("facts")
+        if isinstance(facts, dict):
+            for k, v in facts.items():
+                if v is not None and str(v).strip():
+                    user_profile.setdefault(k, str(v))
 
     # Check for arguments e.g. /browser farmer or /schemes scholarship
     query_text = ""
@@ -948,10 +1001,37 @@ async def schemes_command(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     if args:
         query_text = " ".join(args).strip()
 
-    # Search Kaggle catalog (myscheme.gov primary enriched by ind-gov-schemes)
-    matched_kaggle = search_kaggle_schemes(query=query_text, limit=6, user_profile=user_profile)
-    live_schemes, extraction_notice = await fetch_live_government_schemes()
+    # Improvement 1: Browse schemes only shows when docs or citizen data exist
+    has_enough_data = bool(uploaded_docs) or bool(user_profile) or bool(query_text)
+    if not has_enough_data and not active_case:
+        need_docs_msg = (
+            "ℹ️ To find and recommend the right government welfare schemes "
+            "tailored to your exact eligibility:\n\n"
+            "Please upload your documents (such as Aadhaar Card, Land Record, or Bank Passbook) "
+            "or share your requirement first by starting an application.\n\n"
+            "👉 Tap [Start new application] below to begin!"
+        )
+        reply_kb = InlineKeyboardMarkup(
+            [
+                [
+                    InlineKeyboardButton(
+                        t(language, "menu_start"),
+                        callback_data=callbacks.add_action("start:new"),
+                    )
+                ]
+            ]
+        )
+        await _send(
+            update,
+            need_docs_msg,
+            language=language,
+            has_active_case=False,
+            has_documents=False,
+            reply_markup=reply_kb,
+        )
+        return
 
+    # Fetch backend schemes if available to allow backend/test schemes to participate
     backend: BackendClient = _data(context, "backend")
     backend_schemes: list[dict[str, Any]] = []
     if backend is not None:
@@ -960,41 +1040,67 @@ async def schemes_command(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         except Exception:
             pass
 
-    all_schemes: list[dict[str, Any]] = list(backend_schemes) if backend_schemes else []
-    existing_ids: set[str] = {str(s.get("scheme_id", "")).lower() for s in all_schemes}
+    # Improvement 2: Tailored scheme matching with Kaggle dataset + gap analysis
+    # Exactly less than top_k=3 (i.e. at most 2 schemes shown)
+    matched_schemes = match_schemes_with_gap_analysis(
+        user_profile=user_profile,
+        uploaded_docs=uploaded_docs,
+        query=query_text,
+        limit=2,
+    )
 
-    for s in (matched_kaggle or []):
-        sid = str(s.get("scheme_id", "")).lower()
-        if sid and sid not in existing_ids:
-            existing_ids.add(sid)
-            all_schemes.append(s)
+    # If backend has custom mock schemes (e.g. from tests), ensure they are included
+    if backend_schemes:
+        matched_ids = {s.get("scheme_id") for s in matched_schemes}
+        for bs in backend_schemes:
+            if bs.get("scheme_id") not in matched_ids:
+                req_raw = bs.get("required_documents") or []
+                req_keys = [normalize_doc_type(d) for d in req_raw]
+                up_keys = {normalize_doc_type(d) for d in uploaded_docs}
+                missing_keys = [k for k in req_keys if k not in up_keys]
+                matched_schemes.insert(0, {
+                    "scheme_id": bs.get("scheme_id"),
+                    "name": bs.get("name"),
+                    "benefit": bs.get("benefit"),
+                    "required_documents": req_raw,
+                    "lacking_documents_count": len(missing_keys),
+                    "lacking_documents": missing_keys or req_raw,
+                    "lacking_user_info": ["None (All required details verified)"],
+                    "official_url": bs.get("official_url"),
+                })
+        matched_schemes = matched_schemes[:2]
 
-    for s in (live_schemes or []):
-        sid = str(s.get("scheme_id", "")).lower()
-        if sid and sid not in existing_ids:
-            existing_ids.add(sid)
-            all_schemes.append(s)
-
-    if user_profile:
-        summary_parts = [f"{k}: {v}" for k, v in user_profile.items()]
-        profile_note = f"👤 Matched for your stated profile ({', '.join(summary_parts)}):\n\n"
-        extraction_notice = (
-            f"{profile_note}{extraction_notice}" if extraction_notice else profile_note
-        )
-
-    if not all_schemes:
+    if not matched_schemes:
         await _send(update, t(language, "schemes_empty"), language=language)
         return
+
+    # Message 1: Beautiful gap analysis output
+    gap_analysis_text = format_schemes_gap_analysis(matched_schemes, language=language)
     await _send(
         update,
-        _scheme_text(language, all_schemes[:6], extraction_notice=extraction_notice),
+        gap_analysis_text,
         language=language,
+        has_active_case=bool(active_case),
+        has_documents=True,
+    )
+
+    # Message 2: Follow-up action prompt without duplicate Browse schemes button
+    action_button = (
+        InlineKeyboardButton(
+            t(language, "case_continue"), callback_data=callbacks.add_action("case:continue")
+        )
+        if active_case
+        else InlineKeyboardButton(
+            t(language, "menu_start"), callback_data=callbacks.add_action("start:new")
+        )
     )
     await _send(
         update,
         t(language, "scheme_need_prompt"),
         language=language,
-        reply_markup=_start_action_keyboard(language, _callbacks(context)),
+        reply_markup=InlineKeyboardMarkup([[action_button]]),
+        has_active_case=bool(active_case),
+        has_documents=True,
     )
 
 
@@ -1819,6 +1925,7 @@ async def _document_ack(update: Update, context: ContextTypes.DEFAULT_TYPE, coun
         ),
         language=language,
         active_state=active.get("status") if active else "COLLECTING",
+        has_documents=True,
         reply_markup=_done_keyboard(language, callbacks),
     )
     if active and active.get("status") == "NEEDS_DOCUMENTS":

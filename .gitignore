@@ -43,3 +43,7 @@ backend/.chroma/
 # Local secrets and credentials
 *.pem
 *.key
+
+# Agent memory and instructions
+.agent-memory/
+complete-telegram-bot--behaviour.txt

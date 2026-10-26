@@ -22,7 +22,7 @@ class ChatTurn:
 class ChatMemory:
     """Rolling in-memory chat context per citizen chat_id."""
 
-    def __init__(self, max_turns: int = 10, ttl_seconds: float = 3600.0) -> None:
+    def __init__(self, max_turns: int = 10, ttl_seconds: float = 1800.0) -> None:
         self.max_turns = max_turns
         self.ttl_seconds = ttl_seconds
         self._history: dict[str, list[ChatTurn]] = {}
