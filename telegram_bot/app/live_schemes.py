@@ -194,6 +194,209 @@ LIVE_GOVT_SCHEMES: list[dict[str, Any]] = [
         "categories": "Social Security, Pension",
         "target_beneficiaries": "Unorganized Sector Workers aged 18-40",
     },
+    {
+        "scheme_id": "pm_vishwakarma",
+        "name": "PM Vishwakarma Scheme",
+        "benefit": (
+            "₹15,000 modern toolkit incentive, skill training with ₹500/day stipend, "
+            "and collateral-free enterprise loans up to ₹3,00,000 at concessional 5% interest"
+        ),
+        "required_documents": [
+            "Aadhaar Card",
+            "Bank Passbook",
+            "Skill / Trade Declaration",
+        ],
+        "required_doc_keys": ["aadhaar", "bank_passbook"],
+        "doc_key_labels": {
+            "aadhaar": "Aadhaar Card",
+            "bank_passbook": "Bank Passbook",
+        },
+        "required_info_keys": ["trade_type"],
+        "info_labels": {
+            "trade_type": "Traditional artisan / craftsman trade declaration (18 trades)",
+        },
+        "official_url": "https://pmvishwakarma.gov.in/",
+        "ministry": "Ministry of Micro, Small and Medium Enterprises",
+        "categories": "Artisans, Handicrafts, Livelihoods, MSME",
+        "target_beneficiaries": (
+            "Artisans, Craftsmen, Weavers, Carpenters, Blacksmiths, Potters, "
+            "Sculptors, Cobblers, Tailors, Barbers, Masons"
+        ),
+    },
+    {
+        "scheme_id": "pm_sym_eshram",
+        "name": "Pradhan Mantri Shram Yogi Maan-dhan (PM-SYM & e-Shram)",
+        "benefit": (
+            "Assured monthly pension of ₹3,000 after age 60, ₹2,00,000 accidental insurance, "
+            "and national social security card"
+        ),
+        "required_documents": [
+            "Aadhaar Card",
+            "Bank Passbook / Jan Dhan Account",
+            "e-Shram Registration / Mobile",
+        ],
+        "required_doc_keys": ["aadhaar", "bank_passbook"],
+        "doc_key_labels": {
+            "aadhaar": "Aadhaar Card",
+            "bank_passbook": "Bank Passbook / Jan Dhan Account",
+        },
+        "required_info_keys": ["monthly_income", "unorganized_worker"],
+        "info_labels": {
+            "monthly_income": "Monthly income declaration (< ₹15,000)",
+            "unorganized_worker": "Unorganized worker / labourer declaration",
+        },
+        "official_url": "https://eshram.gov.in/",
+        "ministry": "Ministry of Labour and Employment",
+        "categories": "Labour, Social Security, Pension",
+        "target_beneficiaries": (
+            "Construction Workers, Daily Wage Laborers, Mazdoors, Domestic Workers, "
+            "Sanitation Workers, Drivers, Helpers"
+        ),
+    },
+    {
+        "scheme_id": "national_scholarship",
+        "name": "National Scholarship Scheme (Post-Matric & Higher Education)",
+        "benefit": (
+            "Full tuition fee reimbursement and maintenance allowance up to ₹20,000 - ₹50,000 "
+            "per academic year directly to student bank accounts"
+        ),
+        "required_documents": [
+            "Aadhaar Card",
+            "Educational Marksheet",
+            "Income Certificate",
+            "Bank Passbook",
+        ],
+        "required_doc_keys": ["aadhaar", "marksheet", "income_certificate", "bank_passbook"],
+        "doc_key_labels": {
+            "aadhaar": "Aadhaar Card",
+            "marksheet": "Educational Marksheet",
+            "income_certificate": "Income Certificate",
+            "bank_passbook": "Bank Passbook",
+        },
+        "required_info_keys": ["student_status", "annual_income"],
+        "info_labels": {
+            "student_status": "Current student enrollment / bonafide confirmation",
+            "annual_income": "Family annual income declaration (< ₹2.5 Lakh)",
+        },
+        "official_url": "https://scholarships.gov.in/",
+        "ministry": "Ministry of Education / Ministry of Social Justice and Empowerment",
+        "categories": "Education, Scholarships, Youth Empowerment",
+        "target_beneficiaries": "Students, Scholars, SC/ST/OBC/Minority/EWS Youth",
+    },
+    {
+        "scheme_id": "pm_mudra",
+        "name": "Pradhan Mantri MUDRA Yojana (PMMY)",
+        "benefit": (
+            "Collateral-free enterprise loans up to ₹10,00,000 (Shishu up to ₹50k, "
+            "Kishore up to ₹5L, Tarun up to ₹10L) for small businesses and shopkeepers"
+        ),
+        "required_documents": [
+            "Aadhaar Card",
+            "Bank Passbook",
+            "Business / Shop Proof or PAN Card",
+        ],
+        "required_doc_keys": ["aadhaar", "bank_passbook"],
+        "doc_key_labels": {
+            "aadhaar": "Aadhaar Card",
+            "bank_passbook": "Bank Passbook",
+        },
+        "required_info_keys": ["business_type"],
+        "info_labels": {
+            "business_type": "Small business / shop / trade activity declaration",
+        },
+        "official_url": "https://www.mudra.org.in/",
+        "ministry": "Ministry of Finance",
+        "categories": "Business, Microfinance, MSME, Entrepreneurship",
+        "target_beneficiaries": (
+            "Small Business Owners, Shopkeepers, Traders, Micro-enterprises, "
+            "Artisans, Service Units"
+        ),
+    },
+    {
+        "scheme_id": "pm_matsya",
+        "name": "Pradhan Mantri Matsya Sampada Yojana (PMMSY)",
+        "benefit": (
+            "Financial grant and 40% - 60% government subsidy for motorized fishing boats, "
+            "safety kits, aquaculture ponds, and insurance cover"
+        ),
+        "required_documents": [
+            "Aadhaar Card",
+            "Fisherman Registration / Society Proof",
+            "Bank Passbook",
+        ],
+        "required_doc_keys": ["aadhaar", "bank_passbook"],
+        "doc_key_labels": {
+            "aadhaar": "Aadhaar Card",
+            "bank_passbook": "Bank Passbook",
+        },
+        "required_info_keys": ["fisherfolk_status"],
+        "info_labels": {
+            "fisherfolk_status": "Fisherman / fish farmer / aquaculture activity confirmation",
+        },
+        "official_url": "https://pmmsy.dof.gov.in/",
+        "ministry": "Ministry of Fisheries, Animal Husbandry and Dairying",
+        "categories": "Fisheries, Marine, Livelihoods, Agriculture & Allied",
+        "target_beneficiaries": (
+            "Fishermen, Fisherwomen, Fish Farmers, Fish Workers, Coastal Communities"
+        ),
+    },
+    {
+        "scheme_id": "pm_fasal_bima",
+        "name": "Pradhan Mantri Fasal Bima Yojana (PMFBY)",
+        "benefit": (
+            "Financial compensation up to ₹2,00,000 comprehensive crop insurance cover "
+            "against natural risks at minimal premium (1.5% - 2%) with direct DBT claim settlement"
+        ),
+        "required_documents": [
+            "Aadhaar Card",
+            "Land Record / Patta / RoR",
+            "Bank Passbook",
+        ],
+        "required_doc_keys": ["aadhaar", "land_record", "bank_passbook"],
+        "doc_key_labels": {
+            "aadhaar": "Aadhaar Card",
+            "land_record": "Land Record / Patta / RoR",
+            "bank_passbook": "Bank Passbook",
+        },
+        "required_info_keys": ["crop_type"],
+        "info_labels": {
+            "crop_type": "Insured crop and sown area declaration",
+        },
+        "official_url": "https://pmfby.gov.in/",
+        "ministry": "Ministry of Agriculture and Farmers Welfare",
+        "categories": "Agriculture, Crop Insurance, Risk Management",
+        "target_beneficiaries": (
+            "Small, Marginal and Commercial Farmers, Sharecroppers, Tenant Farmers"
+        ),
+    },
+    {
+        "scheme_id": "divyangjan_swavalamban",
+        "name": "Divyangjan Swavalamban Yojana & ADIP Scheme",
+        "benefit": (
+            "Free aids and assistive appliances (wheelchairs, hearing aids, tricycles) "
+            "+ concessional self-employment loans up to ₹5,00,000"
+        ),
+        "required_documents": [
+            "Aadhaar Card",
+            "Disability Certificate (UDID)",
+            "Income Certificate",
+            "Bank Passbook",
+        ],
+        "required_doc_keys": ["aadhaar", "disability_certificate", "bank_passbook"],
+        "doc_key_labels": {
+            "aadhaar": "Aadhaar Card",
+            "disability_certificate": "Disability Certificate (UDID)",
+            "bank_passbook": "Bank Passbook",
+        },
+        "required_info_keys": ["disability_percentage"],
+        "info_labels": {
+            "disability_percentage": "Disability percentage confirmation (40% or above)",
+        },
+        "official_url": "https://disabilityaffairs.gov.in/",
+        "ministry": "Ministry of Social Justice and Empowerment",
+        "categories": "Disability, Social Justice, Empowerment",
+        "target_beneficiaries": "Persons with Disabilities (PwD / Divyangjan)",
+    },
 ]
 
 LIVE_EXTRACTION_FAILURE_MSG = (
@@ -285,6 +488,7 @@ def load_kaggle_catalog() -> list[dict[str, Any]]:
 
     root = _find_data_root()
     myscheme_path = root / "data" / "raw" / "myscheme.gov" / "schemes.csv"
+    faqs_path = root / "data" / "raw" / "myscheme.gov" / "schemes_faqs.csv"
     indgov_path = (
         root / "data" / "raw" / "ind-gov-schemes" / "structured_govt_schemes_converted.csv"
     )
@@ -293,7 +497,23 @@ def load_kaggle_catalog() -> list[dict[str, Any]]:
 
     # Seed with verified core flagship schemes first to ensure highest quality
     for scheme in LIVE_GOVT_SCHEMES:
-        catalog[scheme["scheme_id"]] = dict(scheme)
+        sc = dict(scheme)
+        sc.setdefault("source", "Official National Portal (myScheme.gov.in / india.gov.in)")
+        catalog[scheme["scheme_id"]] = sc
+
+    # Load FAQ questions to enrich search keywords if available
+    faq_keywords: dict[str, list[str]] = {}
+    if faqs_path.is_file():
+        try:
+            with open(faqs_path, encoding="utf-8", errors="replace") as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    slug = (row.get("scheme_slug") or "").strip()
+                    q = (row.get("question") or "").strip()
+                    if slug and q and len(q) > 6:
+                        faq_keywords.setdefault(slug, []).append(q)
+        except Exception as exc:
+            logger.debug("Optional schemes_faqs.csv could not be read: %s", exc)
 
     # 1. Primary Dataset: myscheme.gov
     if myscheme_path.is_file():
@@ -315,6 +535,10 @@ def load_kaggle_catalog() -> list[dict[str, Any]]:
                     if not docs:
                         docs = ["Aadhaar Card", "Bank Account Details", "Proof of Residence"]
 
+                    q_list = faq_keywords.get(slug, [])
+                    faq_tags = " ".join(q_list[:4]) if q_list else ""
+                    combined_tags = f"{row.get('tags') or ''} {faq_tags}".strip()
+
                     catalog[scheme_key] = {
                         "scheme_id": scheme_key,
                         "name": name,
@@ -322,7 +546,9 @@ def load_kaggle_catalog() -> list[dict[str, Any]]:
                         "benefit": _clean_text(raw_benefit, max_len=260),
                         "eligibility": _clean_text(row.get("eligibility"), max_len=200),
                         "required_documents": docs,
-                        "official_url": (row.get("source_url") or "https://www.myscheme.gov.in").strip(),
+                        "official_url": (
+                            row.get("source_url") or "https://www.myscheme.gov.in"
+                        ).strip(),
                         "ministry": (
                             row.get("ministry")
                             or row.get("department")
@@ -330,17 +556,18 @@ def load_kaggle_catalog() -> list[dict[str, Any]]:
                         ).strip(),
                         "categories": (row.get("categories") or "").strip(),
                         "target_beneficiaries": (row.get("target_beneficiaries") or "").strip(),
-                        "tags": (row.get("tags") or "").strip(),
+                        "tags": combined_tags,
                         "state": (row.get("state") or "").strip(),
                         "level": (row.get("level") or "Central").strip(),
+                        "source": "Official Kaggle Catalog (myScheme.gov)",
                     }
         except Exception as exc:
             logger.warning("Error reading primary myscheme.gov dataset: %s", exc)
 
-    # 2. Enrichment & Backup Dataset: ind-gov-schemes
+    # 2. Enrichment & Backup Dataset: ind-gov-schemes (with utf-8-sig BOM handling)
     if indgov_path.is_file():
         try:
-            with open(indgov_path, encoding="utf-8", errors="replace") as f:
+            with open(indgov_path, encoding="utf-8-sig", errors="replace") as f:
                 reader = csv.DictReader(f)
                 for row in reader:
                     slug = (row.get("slug") or row.get("scheme_id") or "").strip()
@@ -376,13 +603,18 @@ def load_kaggle_catalog() -> list[dict[str, Any]]:
                                 row.get("eligibility_criteria"), max_len=200
                             ),
                             "required_documents": docs,
-                            "official_url": (row.get("source_url") or "https://www.india.gov.in").strip(),
+                            "official_url": (
+                                row.get("source_url") or "https://www.india.gov.in"
+                            ).strip(),
                             "ministry": (row.get("department") or "Government of India").strip(),
                             "categories": (row.get("categories") or "").strip(),
-                            "target_beneficiaries": (row.get("target_beneficiaries") or "").strip(),
+                            "target_beneficiaries": (
+                                row.get("target_beneficiaries") or ""
+                            ).strip(),
                             "tags": (row.get("tags") or "").strip(),
                             "state": (row.get("state") or "").strip(),
                             "level": (row.get("level") or "Central").strip(),
+                            "source": "Official Kaggle Catalog (India.gov.in)",
                         }
         except Exception as exc:
             logger.warning("Error reading backup ind-gov-schemes dataset: %s", exc)
@@ -462,16 +694,16 @@ def match_schemes_with_gap_analysis(
     user_profile: dict[str, Any] | None = None,
     uploaded_docs: list[Any] | None = None,
     query: str | None = None,
-    limit: int = 2,  # strictly fewer than 3 schemes (top_k < 3)
+    limit: int = 3,  # fewer than four schemes (at most three)
 ) -> list[dict[str, Any]]:
     """Match schemes from Kaggle catalog and compute tailored document and info gap analysis.
 
     For each matched scheme, returns:
-    - Scheme name
-    - Benefit amount
-    - Number of lacking type of documents
-    - Lacking documents type names
-    - Lacking user info for this specific scheme
+    1. Scheme name
+    2. Benefit amount
+    3. Number of missing document types
+    4. Names of the missing document types
+    5. Missing user information required to assess eligibility or complete the application
     """
     all_schemes = load_kaggle_catalog()
     profile = user_profile or {}
@@ -492,19 +724,84 @@ def match_schemes_with_gap_analysis(
         cats = s.get("categories", "").lower()
         bene = s.get("benefit", "").lower()
 
-        # Verified flagship schemes receive baseline priority for high data quality
-        if any(sid == f["scheme_id"] for f in LIVE_GOVT_SCHEMES):
-            score += 15
-
         occ = str(profile.get("occupation", "")).lower()
         if occ:
             if occ in name or occ in target or occ in cats:
                 score += 25
-            if occ == "farmer" and ("kisan" in name or "farmer" in target or "agriculture" in cats):
+            if occ == "farmer":
+                if any(
+                    k in name or k in target or k in cats
+                    for k in ("kisan", "farmer", "agriculture", "krishi", "fasal", "crop", "land")
+                ):
+                    score += 40
+                if "kisan" in name or sid == "pm_kisan":
+                    score += 35
+                if any(k in name or k in target for k in ("matsya", "fish", "boat")):
+                    score -= 40
+            elif occ in ("vendor", "street vendor") and any(
+                k in name or k in target or k in cats
+                for k in ("svanidhi", "vendor", "street", "hawker")
+            ):
                 score += 40
-            elif occ in ("vendor", "street vendor") and "svanidhi" in name:
+            elif occ == "student" and any(
+                k in name or k in target or k in cats
+                for k in ("scholarship", "matric", "student", "education", "fellowship")
+            ):
                 score += 40
-            elif occ == "student" and ("scholarship" in name or "matric" in name):
+            elif occ == "artisan" and any(
+                k in name or k in target or k in cats
+                for k in (
+                    "vishwakarma", "artisan", "weaver", "craft", "handloom", "handicraft",
+                    "carpenter", "potter", "blacksmith", "tailor",
+                )
+            ):
+                score += 40
+            elif occ == "construction worker" and any(
+                k in name or k in target or k in cats
+                for k in (
+                    "construction", "bocw", "shram", "labour", "mazdoor", "daily wage", "building",
+                )
+            ):
+                score += 40
+            elif occ == "driver" and any(
+                k in name or k in target or k in cats
+                for k in (
+                    "driver", "motor vehicle", "transport", "conductor",
+                    "suraksha bima", "accident",
+                )
+            ):
+                score += 40
+            elif occ == "fisherman" and any(
+                k in name or k in target or k in cats
+                for k in ("matsya", "fisher", "fish", "marine", "aquaculture")
+            ):
+                score += 40
+            elif occ == "sanitation worker" and any(
+                k in name or k in target or k in cats
+                for k in ("safai", "sanitation", "namaste", "domestic worker", "cleaning")
+            ):
+                score += 40
+            elif occ == "small business" and any(
+                k in name or k in target or k in cats
+                for k in (
+                    "mudra", "pmegp", "msme", "business", "entrepreneur", "shopkeeper", "credit",
+                )
+            ):
+                score += 40
+            elif occ == "health worker" and any(
+                k in name or k in target or k in cats
+                for k in ("asha", "anganwadi", "health", "arogya", "ayushman", "nurse")
+            ):
+                score += 40
+            elif occ == "unemployed youth" and any(
+                k in name or k in target or k in cats
+                for k in ("kaushal", "pmkvy", "skill", "training", "youth", "apprenticeship")
+            ):
+                score += 40
+            elif occ == "worker" and any(
+                k in name or k in target or k in cats
+                for k in ("shram", "labour", "unorganized", "pension", "worker")
+            ):
                 score += 40
 
         gender = str(profile.get("gender", "")).lower()
@@ -531,11 +828,66 @@ def match_schemes_with_gap_analysis(
                     if word in cats or word in target or word in bene:
                         score += 8
 
-        scored.append((score, s))
+        # Quality boost only if scheme is already relevant to the person
+        if score > 0 and any(sid == f["scheme_id"] for f in LIVE_GOVT_SCHEMES):
+            score += 10
+
+        # Only retain genuinely relevant matches
+        if score > 0:
+            scored.append((score, s))
 
     scored.sort(key=lambda x: x[0], reverse=True)
-    top_limit = max(1, min(limit, 2))
-    top_candidates = [item[1] for item in scored[:top_limit]]
+    top_limit = max(1, min(limit, 3))
+    if scored:
+        top_candidates = [item[1] for item in scored[:top_limit]]
+    else:
+        flagship_cands = [
+            s
+            for s in all_schemes
+            if any(s.get("scheme_id") == f["scheme_id"] for f in LIVE_GOVT_SCHEMES)
+        ]
+        top_candidates = flagship_cands[:top_limit]
+
+    # If fewer than top_limit schemes were found, supplement with relevant web-derived flagship
+    # schemes matching the person's profession or demographic to ensure a complete output
+    seen_ids = {c.get("scheme_id") for c in top_candidates}
+    if len(top_candidates) < top_limit:
+        for flagship in LIVE_GOVT_SCHEMES:
+            fid = flagship["scheme_id"]
+            if fid not in seen_ids:
+                f_name = flagship.get("name", "").lower()
+                f_target = flagship.get("target_beneficiaries", "").lower()
+                f_cats = flagship.get("categories", "").lower()
+                is_rel = (
+                    not occ
+                    or occ in f_name
+                    or occ in f_target
+                    or occ in f_cats
+                    or (occ == "farmer" and ("kisan" in fid or "fasal" in fid))
+                    or (occ in ("vendor", "street vendor") and "svanidhi" in fid)
+                    or (occ == "student" and "scholarship" in fid)
+                    or (occ == "artisan" and "vishwakarma" in fid)
+                    or (occ == "construction worker" and ("shram" in fid or "pension" in fid))
+                    or (occ == "driver" and ("pension" in fid or "shram" in fid))
+                    or (occ == "small business" and "mudra" in fid)
+                    or (occ == "fisherman" and "matsya" in fid)
+                    or (occ == "health worker" and "ayushman" in fid)
+                    or fid in {"ayushman_bharat", "pmay_g_u", "atal_pension"}
+                )
+                if is_rel:
+                    top_candidates.append(dict(flagship))
+                    seen_ids.add(fid)
+                    if len(top_candidates) >= top_limit:
+                        break
+
+    if len(top_candidates) < top_limit:
+        for flagship in LIVE_GOVT_SCHEMES:
+            fid = flagship["scheme_id"]
+            if fid not in seen_ids:
+                top_candidates.append(dict(flagship))
+                seen_ids.add(fid)
+                if len(top_candidates) >= top_limit:
+                    break
 
     results: list[dict[str, Any]] = []
     for cand in top_candidates:
@@ -594,7 +946,11 @@ def match_schemes_with_gap_analysis(
             "required_documents": cand.get("required_documents"),
             "lacking_documents_count": len(lacking_doc_names),
             "lacking_documents": lacking_doc_names,
+            "missing_documents_count": len(lacking_doc_names),
+            "missing_documents_names": lacking_doc_names,
             "lacking_user_info": lacking_info_items or ["None (All required details verified)"],
+            "missing_user_info": lacking_info_items or ["None (All required details verified)"],
+            "source": cand.get("source") or "Official Kaggle Catalog (myScheme.gov)",
             "official_url": cand.get("official_url"),
         })
 
@@ -607,31 +963,39 @@ def format_schemes_gap_analysis(schemes: list[dict[str, Any]], language: str = "
     Includes for each scheme:
     1. Scheme name
     2. Benefit amount
-    3. Number of lacking type of documents
-    4. Lacking documents type names
-    5. Lacking user info for this specific scheme
+    3. Number of missing document types
+    4. Names of the missing document types
+    5. Missing user information required to assess eligibility or complete the application
     """
     if not schemes:
-        return "No matching welfare schemes found for your current profile."
+        return (
+            "ℹ️ No suitable government welfare schemes could be identified based on your "
+            "current profile and uploaded documents.\n\n"
+            "Please provide more specific details (such as occupation, income, or state) "
+            "or upload additional documents to help us find matching schemes."
+        )
 
-    lines: list[str] = ["🏛️ Matched Government Welfare Schemes:\n"]
+    lines: list[str] = ["🏛️ Matched Government Welfare Schemes (up to 3):\n"]
     number_emojis = ["1️⃣", "2️⃣", "3️⃣"]
 
-    for idx, s in enumerate(schemes[:2]):
+    for idx, s in enumerate(schemes[:3]):
         emoji = number_emojis[idx] if idx < len(number_emojis) else f"{idx + 1}."
         name = s.get("name") or "Government Scheme"
         benefit = s.get("benefit") or "Welfare assistance as per scheme guidelines"
-        lacking_docs = s.get("lacking_documents") or []
+        lacking_docs = s.get("lacking_documents") or s.get("missing_documents_names") or []
         count = len(lacking_docs)
 
         if count == 0:
             docs_summary = "0 types missing (All required documents uploaded)"
+            names_summary = "None (All required documents uploaded)"
         elif count == 1:
             docs_summary = f"1 type missing: {lacking_docs[0]}"
+            names_summary = lacking_docs[0]
         else:
             docs_summary = f"{count} types missing: {', '.join(lacking_docs)}"
+            names_summary = ", ".join(lacking_docs)
 
-        info_items = s.get("lacking_user_info") or []
+        info_items = s.get("lacking_user_info") or s.get("missing_user_info") or []
         if isinstance(info_items, list):
             info_text = (
                 ", ".join(info_items) if info_items else "None (All required details verified)"
@@ -643,8 +1007,11 @@ def format_schemes_gap_analysis(schemes: list[dict[str, Any]], language: str = "
             f"{emoji} {name}",
             f"💰 Benefit: {benefit}",
             f"📄 Lacking Documents: {docs_summary}",
+            f"📋 Missing Document Types: {names_summary}",
             f"ℹ️ Lacking User Info: {info_text}",
         ]
+        source = s.get("source") or "Official Kaggle Catalog (myScheme.gov)"
+        block.append(f"🏛️ Source: {source}")
         portal = s.get("official_url")
         if portal:
             block.append(f"🌐 Official Portal: {portal}")
@@ -652,7 +1019,9 @@ def format_schemes_gap_analysis(schemes: list[dict[str, Any]], language: str = "
         lines.append("\n".join(block))
         lines.append("")
 
-    lines.append("These scheme details are for reference; the bot does not decide eligibility.")
+    lines.append(
+        "These scheme details are for reference; the bot does not decide final eligibility."
+    )
     return "\n".join(lines).strip()
 
 

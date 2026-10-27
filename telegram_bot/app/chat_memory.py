@@ -62,23 +62,62 @@ class ChatMemory:
         combined = " ".join(t.text.lower() for t in turns)
         info: dict[str, str] = {}
 
-        # Occupation
-        farmer_words = ("farmer", "kisan", "cultivator", "agriculture", "raitu")
-        student_words = (
-            "student", "college", "school", "scholarship", "study", "marksheet"
-        )
-        vendor_words = ("vendor", "street", "cart", "shopkeeper", "hawker")
-        worker_words = (
-            "worker", "labour", "daily wage", "unorganized", "carpenter", "mason"
-        )
-
-        if any(w in combined for w in farmer_words):
+        # Comprehensive Indian profession & livelihood recognition
+        if any(w in combined for w in (
+            "farmer", "kisan", "cultivator", "agriculture", "crop", "landowner",
+            "raitu", "vyavasayam", "vivasayi", "krishi",
+        )):
             info["occupation"] = "farmer"
-        elif any(w in combined for w in student_words):
-            info["occupation"] = "student"
-        elif any(w in combined for w in vendor_words):
+        elif any(w in combined for w in (
+            "vendor", "street vendor", "hawker", "cart", "thela", "footpath", "stall",
+        )):
             info["occupation"] = "street vendor"
-        elif any(w in combined for w in worker_words):
+        elif any(w in combined for w in (
+            "student", "college", "school", "scholarship", "study", "marksheet",
+            "degree", "university", "matric",
+        )):
+            info["occupation"] = "student"
+        elif any(w in combined for w in (
+            "artisan", "weaver", "craftsman", "vishwakarma", "carpenter", "potter",
+            "blacksmith", "goldsmith", "tailor", "cobbler", "barber", "handloom",
+            "sculptor", "handicraft", "silversmith",
+        )):
+            info["occupation"] = "artisan"
+        elif any(w in combined for w in (
+            "construction", "building worker", "labour", "labourer", "mazdoor",
+            "daily wage", "shramik", "bocw", "mason", "painter", "plumber",
+            "electrician", "helper",
+        )):
+            info["occupation"] = "construction worker"
+        elif any(w in combined for w in (
+            "driver", "auto driver", "taxi driver", "transport", "cab", "truck driver",
+            "rickshaw", "auto",
+        )):
+            info["occupation"] = "driver"
+        elif any(w in combined for w in (
+            "fisherman", "fisherwoman", "fisheries", "matsya", "fish", "boat", "coastal",
+        )):
+            info["occupation"] = "fisherman"
+        elif any(w in combined for w in (
+            "sanitation", "safai", "safai karamchari", "domestic worker", "maid",
+            "cleaner", "sweeper",
+        )):
+            info["occupation"] = "sanitation worker"
+        elif any(w in combined for w in (
+            "business", "shopkeeper", "trader", "merchant", "entrepreneur",
+            "micro enterprise", "dukaan", "shop",
+        )):
+            info["occupation"] = "small business"
+        elif any(w in combined for w in (
+            "asha", "anganwadi", "nurse", "health worker", "midwife", "sevika",
+        )):
+            info["occupation"] = "health worker"
+        elif any(w in combined for w in (
+            "unemployed", "job seeker", "youth", "skill", "training", "fresher",
+            "graduate",
+        )):
+            info["occupation"] = "unemployed youth"
+        elif any(w in combined for w in ("worker", "unorganized")):
             info["occupation"] = "worker"
 
         # Demographics
@@ -118,3 +157,19 @@ class ChatMemory:
 
     def clear(self, chat_id: int | str) -> None:
         self._history.pop(str(chat_id), None)
+
+    def clean_stale_sessions(self) -> list[str]:
+        """Safely prune all sessions older than ttl_seconds (30 minutes).
+
+        Ensures inactive sessions are cleaned without affecting active users.
+        """
+        now = time.time()
+        cleared_cids: list[str] = []
+        for cid, turns in list(self._history.items()):
+            valid = [t for t in turns if now - t.timestamp < self.ttl_seconds]
+            if not valid:
+                cleared_cids.append(cid)
+                self._history.pop(cid, None)
+            else:
+                self._history[cid] = valid
+        return cleared_cids

@@ -10,6 +10,7 @@
 [![Security Audit](https://img.shields.io/badge/Security_Audit-0_Vulnerabilities-success.svg)](file:///c:/Users/banks/ADHIKAAR_AI/docs/security_audit.md)
 
 [![Kaggle Catalog](https://img.shields.io/badge/Scheme_Catalog-8%2C210+_Schemes-blue.svg)](file:///c:/Users/banks/ADHIKAAR_AI/data/raw/)
+[![Telegram Bot](https://img.shields.io/badge/Telegram_Bot-@Adhikaar013bot-blue.svg?logo=telegram)](https://t.me/Adhikaar013bot)
 [![Fine-Tuned Model](https://img.shields.io/badge/Fact_Extractor-Llama_3.1_8B-purple.svg)](file:///c:/Users/banks/ADHIKAAR_AI/llama_3_8b_instruct_finetune_d13_FASTv3.ipynb)
 [![Orchestrator](https://img.shields.io/badge/Orchestrator-LangGraph_20--Node-orange.svg)](file:///c:/Users/banks/ADHIKAAR_AI/backend/app/agents/graph.py)
 [![Privacy](https://img.shields.io/badge/Privacy-DPDP_Act_2023-teal.svg)](file:///c:/Users/banks/ADHIKAAR_AI/output-ensurement.md)

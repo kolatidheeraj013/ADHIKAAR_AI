@@ -106,9 +106,24 @@ export default function HomePage() {
   return (
     <main className="mx-auto min-h-screen max-w-4xl px-6 py-12">
       <header className="mb-10">
-        <p className="text-sm font-semibold uppercase tracking-[0.25em] text-teal-700">ADHIKAAR · local Phase 8 demo</p>
-        <h1 className="mt-3 text-4xl font-bold tracking-tight">A clearer path to welfare support.</h1>
-        <p className="mt-3 max-w-2xl text-slate-600">Use synthetic sample documents only. The deterministic rules engine decides eligibility; a reviewer handles uncertainty.</p>
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-[0.25em] text-teal-700">ADHIKAAR · Phase 8 Multi-Modal Intake</p>
+            <h1 className="mt-3 text-4xl font-bold tracking-tight">A clearer path to welfare support.</h1>
+            <p className="mt-3 max-w-2xl text-slate-600">Use synthetic sample documents only. The deterministic rules engine decides eligibility; a reviewer handles uncertainty.</p>
+          </div>
+          <a
+            href="https://t.me/Adhikaar013bot"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 rounded-xl bg-sky-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-500"
+          >
+            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.07-.19-.08-.05-.19-.02-.27 0-.12.03-1.99 1.27-5.62 3.72-.53.36-1.01.54-1.44.53-.47-.01-1.38-.27-2.05-.49-.83-.27-1.49-.42-1.43-.88.03-.24.37-.49 1.02-.75 3.98-1.73 6.64-2.87 7.97-3.44 3.8-1.58 4.59-1.86 5.11-1.87.11 0 .37.03.54.17.14.12.18.28.2.45-.02.07-.02.21-.04.37z" />
+            </svg>
+            Open Telegram Bot (@Adhikaar013bot)
+          </a>
+        </div>
       </header>
       <form onSubmit={submit} className="grid gap-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <label className="order-first flex gap-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-950">
