@@ -1,14 +1,1 @@
-These are the improvements that you should follow up and modify the interface of bot and internal data of bot. Below text in bracket "()" is my instruction for you.
 
-1) The Browser schemes option is showing up always ,it should only show up when the document or enough user data is upload and understood
-
-2)After the user types "Browser schemes" or any other hint word to find the eligible schemes after uploading the documents ,bot should reply based on the Kaggle csv files data and or any other clear information loaded web data(if and only if required and possible) .The reply which be in a very simple manner which includes: Scheme name, benefit amount, number of lacking type of documents ,lacking documents type names and lacking user info for this specific scheme . less than top_k=4 of the schemes should be shown .These all replies should be related to that person info  
-
-web data(this is the technique that i have come up with) :
-Accessing the official website is not legal so we are not doing that we are loading the data required amount of data from the internet where we should know the main details of scheme like scheme name, money, required document.
-(web data causing the finetuning to upgrade, just tell me cause its an again a big process right)
-
-3)Existing features in bot:
- Citizen outputs: 14 defined outputs (submitted, not eligible, missing documents, question, extra verification, could not complete, expired, cancelled, browse results, status update and others).
-these all above features of buttons should not appear all at once .
-4)Make sure that the user chat vanishes every 30 minutes with or without lms server start. 
