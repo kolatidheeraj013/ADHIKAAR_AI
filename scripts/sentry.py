@@ -19,6 +19,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+from typing import Any
 
 import httpx
 
@@ -57,11 +58,19 @@ def is_service_healthy(url: str, timeout: float = 1.0) -> bool:
         return False
 
 
-def send_telegram_message(token: str, chat_id: int | str, text: str) -> bool:
+def send_telegram_message(
+    token: str,
+    chat_id: int | str,
+    text: str,
+    reply_markup: dict[str, Any] | None = None,
+) -> bool:
     """Deliver a simple text message via Telegram Bot API."""
     url = f"https://api.telegram.org/bot{token}/sendMessage"
+    payload: dict[str, Any] = {"chat_id": chat_id, "text": text}
+    if reply_markup is not None:
+        payload["reply_markup"] = reply_markup
     try:
-        resp = httpx.post(url, json={"chat_id": chat_id, "text": text}, timeout=10.0)
+        resp = httpx.post(url, json=payload, timeout=10.0)
         return resp.status_code == 200
     except Exception as exc:
         logger.warning("Failed to send Telegram message to %s: %s", chat_id, exc)
@@ -106,7 +115,12 @@ def run_sentry(poll_timeout: int = 15) -> None:
         )
         sys.exit(1)
 
-    admin_chat_id = os.environ.get("ADMIN_TELEGRAM_CHAT_ID") or config.get("ADMIN_TELEGRAM_CHAT_ID")
+    admin_chat_id = (
+        os.environ.get("ADMIN_TELEGRAM_CHAT_ID")
+        or config.get("ADMIN_TELEGRAM_CHAT_ID")
+        or os.environ.get("ADMIN_CHAT_ID")
+        or config.get("ADMIN_CHAT_ID")
+    )
     bot_health_url = "http://127.0.0.1:8200/health"
 
     logger.info("🛡️ Adhikaar Sentry started. Listening for citizen engagement...")
@@ -183,9 +197,9 @@ def run_sentry(poll_timeout: int = 15) -> None:
                     send_telegram_message(
                         token,
                         admin_chat_id,
-                        f"🚨 *Adhikaar Sentry Alert*\n"
-                        f"Citizen @{username} (ID: `{chat_id}`) just started the bot!\n"
-                        f"Automatically launching all services via `start_all.ps1`...",
+                        f"🚨 Adhikaar Sentry Alert\n"
+                        f"Citizen @{username} (ID: {chat_id}) just opened @Adhikaar013bot!\n"
+                        f"Automatically launching all services via start_all.ps1...",
                     )
 
                 # 3. Automatically trigger start_all.ps1
@@ -207,7 +221,17 @@ def run_sentry(poll_timeout: int = 15) -> None:
                         token,
                         chat_id,
                         "✅ Adhikaar AI services are now ready!\n\n"
-                        "Send your message, document photo, or type /start to proceed.",
+                        "Send your message, document photo, or tap Start below to proceed:",
+                        reply_markup={
+                            "inline_keyboard": [
+                                [
+                                    {
+                                        "text": "🚀 Start Application",
+                                        "callback_data": "start:new",
+                                    }
+                                ]
+                            ]
+                        },
                     )
                 else:
                     logger.warning("Services took >45s to spin up. Standby loop will retry.")
