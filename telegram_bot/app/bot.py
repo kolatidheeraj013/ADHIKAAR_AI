@@ -947,6 +947,23 @@ async def _begin_onboarding(
     update: Update, context: ContextTypes.DEFAULT_TYPE, language: str | None = None
 ) -> None:
     language = language or _language(update, context)
+    admin_id = os.getenv("ADMIN_CHAT_ID", "").strip()
+    if admin_id and context.bot:
+        try:
+            user = update.effective_user
+            u_id = user.id if user else 'Unknown'
+            user_desc = f"@{user.username}" if (user and user.username) else f"User ID {u_id}"
+            if str(u_id) != admin_id:
+                import asyncio
+                alert_msg = (
+                    f"🔔 [ADHIKAAR 013 Bot Alert]\nA citizen ({user_desc}) has started using "
+                    "@Adhikaar013bot!\nLaunch application if offline: .\\scripts\\start_all.ps1"
+                )
+                asyncio.create_task(
+                    context.bot.send_message(chat_id=int(admin_id), text=alert_msg)
+                )
+        except Exception:
+            pass
     await _send(update, t(language, "privacy"), language=language)
     await _send(
         update,
@@ -1844,7 +1861,7 @@ def _is_unrelated_query(text: str) -> bool:
         return False
     unrelated_triggers = (
         "joke", "poem", "story", "weather", "cricket", "football", "world cup",
-        "movie", "song", "who is", "what is the capital", "recipe", "cook",
+        "movie", "song", "who is", "what is the capital", "recipe", "cook", "bake",
         "code", "programming", "math", "calculate", "solve", "president",
     )
     if any(u in clean for u in unrelated_triggers):
@@ -1930,6 +1947,21 @@ async def text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
         # Schemes / Browser / Benefits triggers (To-Do 1 & 3)
         benefit_triggers = [
+            "browser schemes",
+            "browse schemes",
+            "eligible schemes",
+            "eligible scheme",
+            "find schemes",
+            "find eligible schemes",
+            "my schemes",
+            "schemes for me",
+            "scheme gap",
+            "gap analysis",
+            "what schemes",
+            "which schemes",
+            "show schemes",
+            "suggest schemes",
+            "recommend schemes",
             "benefits of mine personal info",
             "benefit of mine personal info",
             "benefits of my personal info",
@@ -1944,7 +1976,6 @@ async def text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             "/browser",
             "browse",
             "/browse",
-            "browse schemes",
             "schemes list",
             "yojana",
             "benefits",

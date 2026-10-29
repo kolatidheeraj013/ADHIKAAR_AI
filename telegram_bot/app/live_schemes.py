@@ -36,6 +36,10 @@ CANONICAL_DOC_NAMES: dict[str, str] = {
     "disability_certificate": "Disability Certificate",
     "voter_id": "Voter ID Card",
     "pan_card": "PAN Card",
+    "driver_license": "Driving License / Commercial Badge",
+    "bocw_card": "Construction Worker / BOCW Card",
+    "sanitation_id": "Sanitation Worker ID / Certification",
+    "skill_cert": "Skill Training / Trade Certificate",
 }
 
 # Verified core flagship real-world welfare schemes
@@ -397,6 +401,121 @@ LIVE_GOVT_SCHEMES: list[dict[str, Any]] = [
         "categories": "Disability, Social Justice, Empowerment",
         "target_beneficiaries": "Persons with Disabilities (PwD / Divyangjan)",
     },
+    {
+        "scheme_id": "pmsby_suraksha",
+        "name": "Pradhan Mantri Suraksha Bima Yojana (PMSBY)",
+        "benefit": (
+            "₹2,00,000 accidental death and permanent full disability cover "
+            "for just ₹20 per year premium via auto-debit from bank account"
+        ),
+        "required_documents": ["Aadhaar Card", "Bank Passbook"],
+        "required_doc_keys": ["aadhaar", "bank_passbook"],
+        "doc_key_labels": {
+            "aadhaar": "Aadhaar Card",
+            "bank_passbook": "Bank Passbook / Savings Account",
+        },
+        "required_info_keys": ["age_range_70"],
+        "info_labels": {
+            "age_range_70": "Age between 18 and 70 years declaration",
+        },
+        "official_url": "https://financialservices.gov.in/beta/en/pmsby",
+        "ministry": "Ministry of Finance",
+        "categories": "Insurance, Social Security, Accidental Cover",
+        "target_beneficiaries": (
+            "Drivers, Auto Drivers, Security Guards, Gig Workers, Delivery Agents, "
+            "Factory Workers, Daily Wage Laborers, All Citizens aged 18-70"
+        ),
+    },
+    {
+        "scheme_id": "bocw_welfare",
+        "name": "Building and Other Construction Workers (BOCW) Welfare Scheme",
+        "benefit": (
+            "Financial grant up to ₹50,000 for tools/housing/marriage/education "
+            "+ ₹2,00,000 accidental cover & pension benefits"
+        ),
+        "required_documents": [
+            "Aadhaar Card",
+            "Construction Worker 90-Day Proof / BOCW Card",
+            "Bank Passbook",
+        ],
+        "required_doc_keys": ["aadhaar", "bank_passbook"],
+        "doc_key_labels": {
+            "aadhaar": "Aadhaar Card",
+            "bank_passbook": "Bank Passbook",
+        },
+        "required_info_keys": ["construction_work_proof"],
+        "info_labels": {
+            "construction_work_proof": (
+                "90 days construction labour work in preceding year declaration"
+            ),
+        },
+        "official_url": "https://labour.gov.in/",
+        "ministry": "Ministry of Labour and Employment / State BOCW Boards",
+        "categories": "Construction, Labour, Social Security, Welfare",
+        "target_beneficiaries": (
+            "Construction Workers, Masons, Painters, Plumbers, Electricians, "
+            "Tile Workers, Welders, Concrete Workers, Building Helpers"
+        ),
+    },
+    {
+        "scheme_id": "namaste_safai",
+        "name": "National Action for Mechanized Sanitation Ecosystem (NAMASTE)",
+        "benefit": (
+            "Capital subsidy up to ₹5,00,000 for mechanized sanitation equipment, "
+            "free health insurance under PM-JAY, and skill training with ₹3,000/month stipend"
+        ),
+        "required_documents": [
+            "Aadhaar Card",
+            "Sanitation Worker Proof / Local Body Certification",
+            "Bank Passbook",
+        ],
+        "required_doc_keys": ["aadhaar", "bank_passbook"],
+        "doc_key_labels": {
+            "aadhaar": "Aadhaar Card",
+            "bank_passbook": "Bank Passbook",
+        },
+        "required_info_keys": ["sanitation_work_proof"],
+        "info_labels": {
+            "sanitation_work_proof": "Sanitation / sewer / septic cleaning activity declaration",
+        },
+        "official_url": "https://socialjustice.gov.in/",
+        "ministry": "Ministry of Social Justice and Empowerment / MoHUA",
+        "categories": "Sanitation, Social Justice, Mechanization, Livelihoods",
+        "target_beneficiaries": (
+            "Sanitation Workers, Safai Karamcharis, Sewer Cleaners, Waste Collectors, "
+            "Septic Tank Workers, Domestic Cleaners"
+        ),
+    },
+    {
+        "scheme_id": "pmkvy_naps",
+        "name": "Pradhan Mantri Kaushal Vikas Yojana (PMKVY 4.0) & Apprenticeship (NAPS)",
+        "benefit": (
+            "100% free industry-aligned skill certification, ₹500/day assessment reward, "
+            "and on-the-job training stipend of ₹8,000 - ₹12,000 per month"
+        ),
+        "required_documents": [
+            "Aadhaar Card",
+            "Educational Marksheet / School Leaving Certificate",
+            "Bank Passbook",
+        ],
+        "required_doc_keys": ["aadhaar", "marksheet", "bank_passbook"],
+        "doc_key_labels": {
+            "aadhaar": "Aadhaar Card",
+            "marksheet": "Educational Marksheet / School Leaving Certificate",
+            "bank_passbook": "Bank Passbook",
+        },
+        "required_info_keys": ["youth_unemployed_status"],
+        "info_labels": {
+            "youth_unemployed_status": "Unemployed youth / job seeker status confirmation",
+        },
+        "official_url": "https://www.pmkvyofficial.org/",
+        "ministry": "Ministry of Skill Development and Entrepreneurship",
+        "categories": "Skill Development, Employment, Youth, Apprenticeship",
+        "target_beneficiaries": (
+            "Unemployed Youth, College/School Dropouts, Freshers, Job Seekers, "
+            "Vocational Trainees aged 15-45"
+        ),
+    },
 ]
 
 LIVE_EXTRACTION_FAILURE_MSG = (
@@ -619,6 +738,109 @@ def load_kaggle_catalog() -> list[dict[str, Any]]:
         except Exception as exc:
             logger.warning("Error reading backup ind-gov-schemes dataset: %s", exc)
 
+    # 3. Clean Beneficiary Schemes: data/raw/beneficiary-schemes/
+    beneficiary_path = (
+        root / "data" / "raw" / "beneficiary-schemes" / "indian_government_schemes.csv"
+    )
+    if beneficiary_path.is_file():
+        try:
+            with open(beneficiary_path, encoding="utf-8-sig", errors="replace") as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    sid = (row.get("scheme_id") or "").strip()
+                    name = (row.get("scheme_name") or "").strip()
+                    if not name:
+                        continue
+                    scheme_key = sid or re.sub(r"[^a-zA-Z0-9_]", "_", name.lower()[:40])
+
+                    raw_docs = row.get("required_documents") or ""
+                    doc_tokens = [d.strip() for d in raw_docs.split(";") if d.strip()]
+                    doc_names = (
+                        [
+                            CANONICAL_DOC_NAMES.get(d, d.replace("_", " ").title())
+                            for d in doc_tokens
+                        ]
+                        if doc_tokens
+                        else ["Aadhaar Card", "Bank Passbook"]
+                    )
+
+                    benefit_summary = (row.get("benefit_summary") or "").strip()
+                    benefit_numeric = (row.get("benefit_value_numeric") or "").strip()
+                    if benefit_summary and benefit_numeric and benefit_numeric != "nan":
+                        try:
+                            val = float(benefit_numeric)
+                            if (
+                                val >= 1000
+                                and "₹" not in benefit_summary
+                                and "Rs" not in benefit_summary
+                            ):
+                                benefit_text = f"₹{val:,.0f} - {benefit_summary}"
+                            else:
+                                benefit_text = benefit_summary
+                        except Exception:
+                            benefit_text = benefit_summary
+                    else:
+                        benefit_text = (
+                            benefit_summary or "Financial assistance as per scheme guidelines"
+                        )
+
+                    occupations = (row.get("allowed_occupations") or "").strip()
+                    max_income = (row.get("max_annual_income") or "").strip()
+                    official_url = (
+                        row.get("official_source_url") or row.get("application_url") or ""
+                    ).strip()
+
+                    if scheme_key in catalog:
+                        entry = catalog[scheme_key]
+                        if occupations and not entry.get("allowed_occupations"):
+                            entry["allowed_occupations"] = occupations
+                        if benefit_text and (
+                            len(entry.get("benefit", "")) < 20
+                            or "welfare assistance" in entry.get("benefit", "").lower()
+                        ):
+                            entry["benefit"] = benefit_text
+                        if doc_names and not entry.get("required_documents"):
+                            entry["required_documents"] = doc_names
+                            entry["required_doc_keys"] = doc_tokens
+                        if (
+                            max_income
+                            and max_income != "nan"
+                            and not entry.get("max_annual_income")
+                        ):
+                            entry["max_annual_income"] = max_income
+                        if official_url and not entry.get("official_url"):
+                            entry["official_url"] = official_url
+                    else:
+                        catalog[scheme_key] = {
+                            "scheme_id": scheme_key,
+                            "name": name,
+                            "benefit": _clean_text(benefit_text, max_len=260),
+                            "required_documents": doc_names,
+                            "required_doc_keys": doc_tokens,
+                            "allowed_occupations": occupations,
+                            "max_annual_income": max_income if max_income != "nan" else None,
+                            "official_url": official_url or "https://www.myscheme.gov.in",
+                            "ministry": (
+                                row.get("issuing_authority_normalized") or "Government of India"
+                            ).strip(),
+                            "categories": (row.get("scheme_category_clean") or "").strip(),
+                            "target_beneficiaries": (
+                                occupations.replace(";", ", ").title() if occupations else ""
+                            ),
+                            "tags": (
+                                f"{occupations} {row.get('scheme_category_clean') or ''}"
+                            ).strip(),
+                            "state": (row.get("state_restricted_to_normalized") or "").strip(),
+                            "level": (
+                                "Central"
+                                if str(row.get("is_national_scheme", "")).lower() in ("true", "1")
+                                else "State"
+                            ),
+                            "source": "Kaggle Beneficiary Schemes Dataset (myScheme.gov)",
+                        }
+        except Exception as exc:
+            logger.warning("Error reading beneficiary-schemes dataset: %s", exc)
+
     _CACHED_KAGGLE_CATALOG = list(catalog.values())
     logger.info("Loaded %d government schemes from Kaggle catalog", len(_CACHED_KAGGLE_CATALOG))
     return _CACHED_KAGGLE_CATALOG
@@ -725,84 +947,192 @@ def match_schemes_with_gap_analysis(
         bene = s.get("benefit", "").lower()
 
         occ = str(profile.get("occupation", "")).lower()
-        if occ:
+        has_land = bool(
+            "land_record" in uploaded_keys
+            or profile.get("land_size")
+            or profile.get("land_record")
+        )
+        is_farmer = occ == "farmer" or (not occ and has_land)
+
+        if is_farmer:
+            if any(
+                k in name or k in target or k in cats
+                for k in ("kisan", "farmer", "agriculture", "krishi", "fasal", "crop", "land")
+            ):
+                score += 45
+            if sid == "pm_kisan":
+                score += 80
+            elif sid == "pm_fasal_bima":
+                score += 65
+            elif "kisan" in name:
+                score += 40
+            elif "fasal" in name:
+                score += 35
+            if any(k in name or k in target for k in ("matsya", "fish", "boat")):
+                score -= 40
+        elif occ:
+            # If citizen has declared a specific non-farming profession, strictly penalize
+            # farmer-only schemes so they NEVER displace the citizen's actual profession schemes
+            if sid in ("pm_kisan", "pm_fasal_bima") or (
+                any(k in name for k in ("kisan", "fasal", "krishi"))
+                and "agriculture" in cats
+            ):
+                score -= 60
+
             if occ in name or occ in target or occ in cats:
                 score += 25
-            if occ == "farmer":
-                if any(
+
+            if occ in ("vendor", "street vendor"):
+                if sid == "pm_svanidhi":
+                    score += 85
+                elif any(
                     k in name or k in target or k in cats
-                    for k in ("kisan", "farmer", "agriculture", "krishi", "fasal", "crop", "land")
+                    for k in ("svanidhi", "vendor", "street", "hawker")
                 ):
-                    score += 40
-                if "kisan" in name or sid == "pm_kisan":
+                    score += 50
+                elif sid == "pm_mudra":
+                    score += 25
+            elif occ == "student":
+                if sid == "national_scholarship":
+                    score += 85
+                elif any(
+                    k in name or k in target or k in cats
+                    for k in ("scholarship", "matric", "student", "education", "fellowship")
+                ):
+                    score += 50
+            elif occ == "artisan":
+                if sid == "pm_vishwakarma":
+                    score += 85
+                elif any(
+                    k in name or k in target or k in cats
+                    for k in (
+                        "vishwakarma", "artisan", "weaver", "craft", "handloom", "handicraft",
+                        "carpenter", "potter", "blacksmith", "tailor", "cobbler", "barber",
+                    )
+                ):
+                    score += 50
+                elif sid == "pm_mudra":
+                    score += 25
+            elif occ == "construction worker":
+                if sid == "bocw_welfare":
+                    score += 85
+                elif sid == "pm_sym_eshram":
+                    score += 70
+                elif any(
+                    k in name or k in target or k in cats
+                    for k in (
+                        "construction", "bocw", "shram", "labour", "mazdoor",
+                        "daily wage", "building", "mason",
+                    )
+                ):
+                    score += 50
+                elif sid == "pmsby_suraksha":
+                    score += 30
+            elif occ == "driver":
+                if sid in ("pmsby_suraksha", "pm_sym_eshram"):
+                    score += 85
+                elif any(
+                    k in name or k in target or k in cats
+                    for k in (
+                        "driver", "motor vehicle", "transport", "conductor",
+                        "suraksha bima", "accident",
+                    )
+                ):
+                    score += 50
+            elif occ == "fisherman":
+                if sid == "pm_matsya":
+                    score += 85
+                elif any(
+                    k in name or k in target or k in cats
+                    for k in ("matsya", "fisher", "fish", "marine", "aquaculture", "boat")
+                ):
+                    score += 50
+            elif occ == "sanitation worker":
+                if sid == "namaste_safai":
+                    score += 85
+                elif sid == "pm_sym_eshram":
+                    score += 70
+                elif any(
+                    k in name or k in target or k in cats
+                    for k in ("safai", "sanitation", "namaste", "domestic worker",
+                        "cleaning", "sweeper")
+                ):
+                    score += 50
+            elif occ == "small business":
+                if sid == "pm_mudra":
+                    score += 85
+                elif sid == "pm_svanidhi":
+                    score += 65
+                elif any(
+                    k in name or k in target or k in cats
+                    for k in (
+                        "mudra", "pmegp", "msme", "business", "entrepreneur",
+                        "shopkeeper", "credit", "trader",
+                    )
+                ):
+                    score += 50
+            elif occ == "health worker":
+                if sid == "ayushman_bharat" or any(
+                    k in name or k in target or k in cats
+                    for k in ("asha", "anganwadi", "health", "arogya", "ayushman", "nurse")
+                ):
+                    score += 50
+            elif occ == "unemployed youth":
+                if sid in ("pmkvy_naps", "national_scholarship") or any(
+                    k in name or k in target or k in cats
+                    for k in ("kaushal", "pmkvy", "skill", "training", "youth", "apprenticeship")
+                ):
+                    score += 50
+            elif occ in ("security guard", "gig worker", "factory worker", "worker"):
+                if sid in ("pmsby_suraksha", "pm_sym_eshram", "atal_pension") or any(
+                    k in name or k in target or k in cats
+                    for k in ("shram", "labour", "unorganized", "pension", "worker",
+                        "eshram", "suraksha")
+                ):
+                    score += 50
+                elif sid == "ayushman_bharat":
+                    score += 30
+        else:
+            # Citizen has NOT specified a profession and has no land record:
+            # Prioritize universal fundamental entitlements for all Indian citizens
+            if sid == "pm_kisan":
+                score += 35
+            elif sid == "ayushman_bharat":
+                score += 35
+            elif sid == "pmay_g_u":
+                score += 30
+            elif sid == "atal_pension":
+                score += 25
+            elif sid == "pm_mudra":
+                score += 20
+            # Explicitly do NOT boost PM-Kisan for non-farmers with no land
+            if False and sid in ("pm_kisan", "pm_fasal_bima"):
+                score -= 30
+
+        s_occ = str(s.get("allowed_occupations") or "").lower()
+        if s_occ:
+            if is_farmer and "farmer" in s_occ:
+                score += 35
+            elif occ:
+                if (
+                    occ in ("vendor", "street vendor", "artisan", "small business")
+                    and "self_employed" in s_occ
+                ):
                     score += 35
-                if any(k in name or k in target for k in ("matsya", "fish", "boat")):
-                    score -= 40
-            elif occ in ("vendor", "street vendor") and any(
-                k in name or k in target or k in cats
-                for k in ("svanidhi", "vendor", "street", "hawker")
-            ):
-                score += 40
-            elif occ == "student" and any(
-                k in name or k in target or k in cats
-                for k in ("scholarship", "matric", "student", "education", "fellowship")
-            ):
-                score += 40
-            elif occ == "artisan" and any(
-                k in name or k in target or k in cats
-                for k in (
-                    "vishwakarma", "artisan", "weaver", "craft", "handloom", "handicraft",
-                    "carpenter", "potter", "blacksmith", "tailor",
-                )
-            ):
-                score += 40
-            elif occ == "construction worker" and any(
-                k in name or k in target or k in cats
-                for k in (
-                    "construction", "bocw", "shram", "labour", "mazdoor", "daily wage", "building",
-                )
-            ):
-                score += 40
-            elif occ == "driver" and any(
-                k in name or k in target or k in cats
-                for k in (
-                    "driver", "motor vehicle", "transport", "conductor",
-                    "suraksha bima", "accident",
-                )
-            ):
-                score += 40
-            elif occ == "fisherman" and any(
-                k in name or k in target or k in cats
-                for k in ("matsya", "fisher", "fish", "marine", "aquaculture")
-            ):
-                score += 40
-            elif occ == "sanitation worker" and any(
-                k in name or k in target or k in cats
-                for k in ("safai", "sanitation", "namaste", "domestic worker", "cleaning")
-            ):
-                score += 40
-            elif occ == "small business" and any(
-                k in name or k in target or k in cats
-                for k in (
-                    "mudra", "pmegp", "msme", "business", "entrepreneur", "shopkeeper", "credit",
-                )
-            ):
-                score += 40
-            elif occ == "health worker" and any(
-                k in name or k in target or k in cats
-                for k in ("asha", "anganwadi", "health", "arogya", "ayushman", "nurse")
-            ):
-                score += 40
-            elif occ == "unemployed youth" and any(
-                k in name or k in target or k in cats
-                for k in ("kaushal", "pmkvy", "skill", "training", "youth", "apprenticeship")
-            ):
-                score += 40
-            elif occ == "worker" and any(
-                k in name or k in target or k in cats
-                for k in ("shram", "labour", "unorganized", "pension", "worker")
-            ):
-                score += 40
+                elif (
+                    occ in (
+                        "construction worker",
+                        "driver",
+                        "sanitation worker",
+                        "unorganized worker",
+                    )
+                    and "daily_wage" in s_occ
+                ):
+                    score += 35
+                elif occ == "student" and "student" in s_occ:
+                    score += 35
+                elif occ in ("unemployed youth", "job seeker") and "unemployed" in s_occ:
+                    score += 35
 
         gender = str(profile.get("gender", "")).lower()
         if gender == "female" and ("women" in target or "mahila" in name or "ujjwala" in name):
@@ -838,15 +1168,12 @@ def match_schemes_with_gap_analysis(
 
     scored.sort(key=lambda x: x[0], reverse=True)
     top_limit = max(1, min(limit, 3))
-    if scored:
-        top_candidates = [item[1] for item in scored[:top_limit]]
+    # Only retain positive scores
+    positive_scored = [item for item in scored if item[0] > 0]
+    if positive_scored:
+        top_candidates = [item[1] for item in positive_scored[:top_limit]]
     else:
-        flagship_cands = [
-            s
-            for s in all_schemes
-            if any(s.get("scheme_id") == f["scheme_id"] for f in LIVE_GOVT_SCHEMES)
-        ]
-        top_candidates = flagship_cands[:top_limit]
+        top_candidates = []
 
     # If fewer than top_limit schemes were found, supplement with relevant web-derived flagship
     # schemes matching the person's profession or demographic to ensure a complete output
@@ -855,24 +1182,38 @@ def match_schemes_with_gap_analysis(
         for flagship in LIVE_GOVT_SCHEMES:
             fid = flagship["scheme_id"]
             if fid not in seen_ids:
-                f_name = flagship.get("name", "").lower()
-                f_target = flagship.get("target_beneficiaries", "").lower()
-                f_cats = flagship.get("categories", "").lower()
                 is_rel = (
-                    not occ
-                    or occ in f_name
-                    or occ in f_target
-                    or occ in f_cats
-                    or (occ == "farmer" and ("kisan" in fid or "fasal" in fid))
-                    or (occ in ("vendor", "street vendor") and "svanidhi" in fid)
-                    or (occ == "student" and "scholarship" in fid)
-                    or (occ == "artisan" and "vishwakarma" in fid)
-                    or (occ == "construction worker" and ("shram" in fid or "pension" in fid))
-                    or (occ == "driver" and ("pension" in fid or "shram" in fid))
-                    or (occ == "small business" and "mudra" in fid)
-                    or (occ == "fisherman" and "matsya" in fid)
-                    or (occ == "health worker" and "ayushman" in fid)
-                    or fid in {"ayushman_bharat", "pmay_g_u", "atal_pension"}
+                    (is_farmer and ("kisan" in fid or "fasal" in fid))
+                    or (occ in ("vendor", "street vendor") and fid in ("pm_svanidhi", "pm_mudra"))
+                    or (occ == "student" and fid in ("national_scholarship", "pmkvy_naps"))
+                    or (occ == "artisan" and fid in ("pm_vishwakarma", "pm_mudra"))
+                    or (
+                        occ == "construction worker"
+                        and fid in ("bocw_welfare", "pm_sym_eshram", "pmsby_suraksha")
+                    )
+                    or (
+                        occ == "driver"
+                        and fid in ("pmsby_suraksha", "pm_sym_eshram", "atal_pension")
+                    )
+                    or (occ == "fisherman" and fid == "pm_matsya")
+                    or (
+                        occ == "sanitation worker"
+                        and fid in ("namaste_safai", "pm_sym_eshram")
+                    )
+                    or (occ == "small business" and fid in ("pm_mudra", "pm_svanidhi"))
+                    or (occ == "health worker" and fid in ("ayushman_bharat", "pmsby_suraksha"))
+                    or (
+                        occ == "unemployed youth"
+                        and fid in ("pmkvy_naps", "national_scholarship")
+                    )
+                    or (
+                        occ in ("security guard", "gig worker", "factory worker", "worker")
+                        and fid in ("pmsby_suraksha", "pm_sym_eshram", "atal_pension")
+                    )
+                    or (
+                        not occ
+                        and fid in {"ayushman_bharat", "pmay_g_u", "atal_pension", "pm_mudra"}
+                    )
                 )
                 if is_rel:
                     top_candidates.append(dict(flagship))
@@ -932,6 +1273,15 @@ def match_schemes_with_gap_analysis(
 
         if not info_keys:
             elig_text = str(cand.get("eligibility") or "").lower()
+            max_inc = cand.get("max_annual_income")
+            if max_inc and not profile.get("annual_income"):
+                try:
+                    inc_val = float(max_inc)
+                    lacking_info_items.append(
+                        f"Family annual income declaration (< ₹{inc_val:,.0f})"
+                    )
+                except Exception:
+                    lacking_info_items.append("Family annual income declaration")
             if "income" in elig_text and not profile.get("annual_income"):
                 lacking_info_items.append("Annual income declaration")
             if ("farmer" in elig_text or "land" in elig_text) and not profile.get("occupation"):

@@ -1,0 +1,1501 @@
+Age,Annual_Income_INR,State,Category,Eligible_Scheme
+36,133297,West Bengal,OBC,PM Kisan
+70,1102158,Tamil Nadu,ST,Atal Pension Yojana
+37,986785,Rajasthan,General,National Scholarship
+60,430781,Madhya Pradesh,General,Atal Pension Yojana
+27,958272,Uttar Pradesh,SC,Mudra Loan
+44,1142232,Bihar,ST,Stand Up India
+42,265958,West Bengal,ST,Ayushman Bharat
+32,779173,Gujarat,EWS,Mudra Loan
+55,921266,Tamil Nadu,EWS,PM Kisan
+49,96490,Gujarat,SC,PM Awas Yojana
+44,745272,Maharashtra,ST,PM Kisan
+33,666413,Rajasthan,General,PM Kisan
+25,557646,Uttar Pradesh,EWS,Mudra Loan
+57,75502,Gujarat,OBC,Ayushman Bharat
+54,559108,Karnataka,EWS,National Scholarship
+54,114737,Madhya Pradesh,ST,PM Kisan
+41,755793,Karnataka,General,Atal Pension Yojana
+52,687784,Karnataka,EWS,PM Kisan
+57,1108448,Madhya Pradesh,OBC,Atal Pension Yojana
+26,867679,Karnataka,ST,Mudra Loan
+35,1154726,Gujarat,ST,Ayushman Bharat
+40,765532,Madhya Pradesh,OBC,Ayushman Bharat
+45,134661,Gujarat,General,PM Awas Yojana
+29,849519,Uttar Pradesh,SC,National Scholarship
+38,95628,Madhya Pradesh,ST,Ayushman Bharat
+24,1127303,Madhya Pradesh,EWS,National Scholarship
+20,145093,Uttar Pradesh,SC,PM Awas Yojana
+35,486435,Gujarat,SC,Mudra Loan
+18,1009287,Karnataka,SC,Mudra Loan
+27,1185054,Madhya Pradesh,ST,Mudra Loan
+63,1006457,Gujarat,OBC,Atal Pension Yojana
+67,111137,Uttar Pradesh,ST,PM Awas Yojana
+48,1067429,Uttar Pradesh,SC,Ayushman Bharat
+36,307677,Karnataka,OBC,PM Awas Yojana
+63,1120327,Bihar,General,Atal Pension Yojana
+59,761470,Uttar Pradesh,ST,Atal Pension Yojana
+37,961657,Tamil Nadu,OBC,PM Awas Yojana
+42,190097,Karnataka,EWS,PM Kisan
+71,1072649,Maharashtra,SC,Atal Pension Yojana
+56,807708,Rajasthan,SC,Atal Pension Yojana
+52,1021419,Maharashtra,EWS,Atal Pension Yojana
+28,1082910,Gujarat,EWS,Mudra Loan
+73,515158,West Bengal,General,Atal Pension Yojana
+50,982059,Madhya Pradesh,General,Atal Pension Yojana
+48,117143,Bihar,OBC,Ayushman Bharat
+31,921567,Tamil Nadu,EWS,Stand Up India
+27,146446,Uttar Pradesh,General,PM Kisan
+53,941544,Maharashtra,EWS,National Scholarship
+44,801594,Gujarat,OBC,Ayushman Bharat
+71,552277,Maharashtra,SC,Atal Pension Yojana
+63,68797,Tamil Nadu,EWS,PM Awas Yojana
+26,1064673,Bihar,General,Mudra Loan
+76,341636,Uttar Pradesh,ST,Atal Pension Yojana
+46,449191,Maharashtra,General,Mudra Loan
+26,869260,Gujarat,OBC,Mudra Loan
+60,198559,Uttar Pradesh,SC,PM Awas Yojana
+39,178386,Uttar Pradesh,General,PM Kisan
+27,734843,Karnataka,OBC,National Scholarship
+54,511231,Rajasthan,SC,Mudra Loan
+48,51382,Rajasthan,General,PM Kisan
+75,187344,Bihar,EWS,Ayushman Bharat
+19,1037303,Madhya Pradesh,ST,Mudra Loan
+69,437275,Rajasthan,SC,Atal Pension Yojana
+54,603043,Gujarat,General,Atal Pension Yojana
+74,1047661,West Bengal,SC,Atal Pension Yojana
+38,852943,Maharashtra,General,PM Kisan
+72,860561,Madhya Pradesh,General,Atal Pension Yojana
+40,353784,Bihar,General,Stand Up India
+80,706343,Karnataka,OBC,Atal Pension Yojana
+34,285836,Bihar,General,Ayushman Bharat
+42,488737,Madhya Pradesh,General,Stand Up India
+28,1112684,Bihar,EWS,National Scholarship
+63,483101,Gujarat,EWS,Atal Pension Yojana
+36,358989,Karnataka,General,PM Kisan
+53,696577,Maharashtra,General,National Scholarship
+41,597574,Rajasthan,SC,Stand Up India
+20,702305,Gujarat,SC,Mudra Loan
+40,1049206,Karnataka,General,PM Awas Yojana
+54,1000349,Gujarat,OBC,Mudra Loan
+33,574613,Gujarat,SC,Atal Pension Yojana
+26,204715,West Bengal,OBC,Mudra Loan
+57,51211,West Bengal,EWS,Ayushman Bharat
+26,305080,Tamil Nadu,SC,National Scholarship
+65,1082885,Bihar,OBC,Atal Pension Yojana
+80,1109785,Rajasthan,EWS,Atal Pension Yojana
+70,1012222,Madhya Pradesh,General,Atal Pension Yojana
+77,1019794,Rajasthan,OBC,Atal Pension Yojana
+62,198480,West Bengal,ST,PM Awas Yojana
+75,82751,Rajasthan,OBC,PM Kisan
+70,1183649,Karnataka,General,Atal Pension Yojana
+21,1035627,Gujarat,General,Mudra Loan
+31,390044,Karnataka,General,Ayushman Bharat
+58,784598,Gujarat,ST,Atal Pension Yojana
+34,359988,Tamil Nadu,OBC,National Scholarship
+27,962277,Rajasthan,General,National Scholarship
+21,683183,West Bengal,SC,Mudra Loan
+62,1019060,West Bengal,ST,Atal Pension Yojana
+62,702354,Bihar,General,Atal Pension Yojana
+36,720493,Bihar,OBC,Mudra Loan
+79,1158129,Maharashtra,SC,Atal Pension Yojana
+36,326417,West Bengal,OBC,Atal Pension Yojana
+57,325108,Maharashtra,ST,Atal Pension Yojana
+79,849224,Madhya Pradesh,ST,Atal Pension Yojana
+72,228245,Tamil Nadu,ST,Atal Pension Yojana
+42,844333,Madhya Pradesh,EWS,Ayushman Bharat
+33,1180595,Karnataka,SC,Mudra Loan
+77,793127,West Bengal,ST,Atal Pension Yojana
+38,825225,Karnataka,SC,National Scholarship
+24,691144,Rajasthan,General,Mudra Loan
+55,716538,Gujarat,EWS,National Scholarship
+20,700711,West Bengal,ST,Mudra Loan
+80,752663,Rajasthan,EWS,Atal Pension Yojana
+57,285598,Madhya Pradesh,OBC,Atal Pension Yojana
+80,867324,Maharashtra,OBC,Atal Pension Yojana
+46,244176,Karnataka,General,Atal Pension Yojana
+60,570275,Uttar Pradesh,EWS,Atal Pension Yojana
+20,582760,Bihar,EWS,Mudra Loan
+18,441831,West Bengal,SC,Mudra Loan
+70,460597,Gujarat,EWS,Atal Pension Yojana
+39,183303,West Bengal,OBC,PM Awas Yojana
+35,191755,Uttar Pradesh,General,Ayushman Bharat
+43,299610,West Bengal,SC,Ayushman Bharat
+68,253560,West Bengal,ST,Atal Pension Yojana
+46,919789,West Bengal,OBC,Atal Pension Yojana
+67,284318,West Bengal,EWS,Atal Pension Yojana
+35,538389,Tamil Nadu,OBC,Ayushman Bharat
+35,507139,Maharashtra,OBC,Stand Up India
+57,1106418,Gujarat,EWS,Atal Pension Yojana
+75,173271,Uttar Pradesh,EWS,Ayushman Bharat
+63,475832,Tamil Nadu,OBC,Atal Pension Yojana
+34,910449,West Bengal,SC,Stand Up India
+61,624347,West Bengal,OBC,Atal Pension Yojana
+67,934409,West Bengal,General,Atal Pension Yojana
+72,382988,Uttar Pradesh,OBC,Atal Pension Yojana
+28,107657,Tamil Nadu,ST,PM Awas Yojana
+45,612299,Rajasthan,General,National Scholarship
+62,754020,Gujarat,SC,Atal Pension Yojana
+31,1062852,Karnataka,SC,Mudra Loan
+36,337993,Rajasthan,General,PM Awas Yojana
+28,137533,Tamil Nadu,OBC,Ayushman Bharat
+70,1012180,Gujarat,EWS,Atal Pension Yojana
+61,826018,Uttar Pradesh,OBC,Atal Pension Yojana
+37,1190010,West Bengal,EWS,Ayushman Bharat
+61,1131832,Bihar,EWS,Atal Pension Yojana
+22,1107623,Tamil Nadu,OBC,Mudra Loan
+21,279899,Karnataka,OBC,National Scholarship
+33,1025747,Rajasthan,General,Atal Pension Yojana
+47,722709,Tamil Nadu,General,Stand Up India
+32,876431,Maharashtra,General,Ayushman Bharat
+24,382357,Bihar,EWS,National Scholarship
+24,626061,Bihar,OBC,Mudra Loan
+73,199540,Uttar Pradesh,EWS,PM Awas Yojana
+76,1016843,Karnataka,SC,Atal Pension Yojana
+55,337667,Tamil Nadu,SC,PM Awas Yojana
+37,513279,Madhya Pradesh,ST,PM Awas Yojana
+59,180451,Uttar Pradesh,SC,Ayushman Bharat
+53,221845,Rajasthan,General,PM Awas Yojana
+59,253602,Tamil Nadu,General,Atal Pension Yojana
+80,207316,Rajasthan,SC,Atal Pension Yojana
+46,269333,Madhya Pradesh,ST,PM Awas Yojana
+22,80398,Madhya Pradesh,SC,Ayushman Bharat
+65,273040,Bihar,OBC,Atal Pension Yojana
+37,171911,Bihar,SC,Ayushman Bharat
+46,538539,Gujarat,General,PM Kisan
+53,427662,Gujarat,OBC,Stand Up India
+32,843307,West Bengal,OBC,Atal Pension Yojana
+48,1023930,Karnataka,SC,Stand Up India
+74,803012,West Bengal,ST,Atal Pension Yojana
+28,220244,West Bengal,ST,National Scholarship
+76,199431,Maharashtra,SC,PM Awas Yojana
+18,441796,Uttar Pradesh,OBC,Mudra Loan
+49,808285,Uttar Pradesh,SC,Atal Pension Yojana
+21,965080,Uttar Pradesh,EWS,Mudra Loan
+37,1076052,Gujarat,SC,Atal Pension Yojana
+20,498084,Tamil Nadu,OBC,National Scholarship
+44,682436,Tamil Nadu,OBC,Atal Pension Yojana
+53,1073748,Maharashtra,SC,Ayushman Bharat
+39,226528,Bihar,ST,PM Kisan
+78,81271,Tamil Nadu,SC,PM Awas Yojana
+77,1169829,Tamil Nadu,ST,Atal Pension Yojana
+44,58160,Rajasthan,General,PM Kisan
+25,404838,Rajasthan,ST,Mudra Loan
+53,843052,Tamil Nadu,SC,Ayushman Bharat
+52,654193,West Bengal,ST,Ayushman Bharat
+22,318772,Maharashtra,EWS,Mudra Loan
+78,828059,Maharashtra,OBC,Atal Pension Yojana
+63,471396,Gujarat,SC,Atal Pension Yojana
+24,378074,West Bengal,General,National Scholarship
+77,615192,Maharashtra,ST,Atal Pension Yojana
+53,690416,Uttar Pradesh,General,National Scholarship
+24,743613,Karnataka,SC,National Scholarship
+52,438969,Rajasthan,SC,Atal Pension Yojana
+71,785235,Bihar,SC,Atal Pension Yojana
+73,855572,Karnataka,EWS,Atal Pension Yojana
+41,253955,Rajasthan,General,PM Kisan
+46,224984,Uttar Pradesh,SC,Mudra Loan
+57,191999,West Bengal,SC,PM Awas Yojana
+43,158612,West Bengal,EWS,PM Awas Yojana
+67,511033,Karnataka,SC,Atal Pension Yojana
+20,1176906,West Bengal,EWS,Mudra Loan
+59,1196547,Uttar Pradesh,General,Atal Pension Yojana
+38,852610,Rajasthan,OBC,Atal Pension Yojana
+79,1167617,Uttar Pradesh,EWS,Atal Pension Yojana
+71,231846,Uttar Pradesh,ST,Atal Pension Yojana
+77,881816,Maharashtra,SC,Atal Pension Yojana
+51,1044895,Uttar Pradesh,OBC,Atal Pension Yojana
+30,951413,Rajasthan,SC,PM Kisan
+38,589186,Uttar Pradesh,General,Ayushman Bharat
+76,1109269,West Bengal,General,Atal Pension Yojana
+20,188516,Madhya Pradesh,ST,PM Kisan
+33,133719,Gujarat,EWS,PM Kisan
+34,1070148,Uttar Pradesh,ST,National Scholarship
+44,283374,Madhya Pradesh,OBC,National Scholarship
+77,515164,Maharashtra,ST,Atal Pension Yojana
+33,912352,Madhya Pradesh,OBC,Ayushman Bharat
+51,232417,Tamil Nadu,SC,PM Awas Yojana
+23,79865,Rajasthan,EWS,Ayushman Bharat
+44,1173692,Gujarat,SC,Stand Up India
+78,417149,Rajasthan,OBC,Atal Pension Yojana
+52,563046,Rajasthan,EWS,Ayushman Bharat
+66,1179372,Madhya Pradesh,General,Atal Pension Yojana
+44,97605,Tamil Nadu,EWS,PM Awas Yojana
+71,615840,West Bengal,OBC,Atal Pension Yojana
+41,281876,Rajasthan,OBC,Mudra Loan
+34,842624,Maharashtra,EWS,Mudra Loan
+64,705079,West Bengal,General,Atal Pension Yojana
+48,664653,Maharashtra,General,Ayushman Bharat
+46,967733,Gujarat,General,Ayushman Bharat
+61,697533,Tamil Nadu,ST,Atal Pension Yojana
+45,260441,Rajasthan,General,Stand Up India
+38,932746,Rajasthan,EWS,Atal Pension Yojana
+62,858154,Maharashtra,SC,Atal Pension Yojana
+28,116935,Bihar,ST,PM Awas Yojana
+29,139748,Madhya Pradesh,General,Ayushman Bharat
+44,639643,Rajasthan,SC,National Scholarship
+74,939894,Rajasthan,OBC,Atal Pension Yojana
+54,1176465,Madhya Pradesh,General,Stand Up India
+69,1123450,Bihar,EWS,Atal Pension Yojana
+24,256718,Gujarat,EWS,Mudra Loan
+60,541101,Madhya Pradesh,OBC,Atal Pension Yojana
+18,410992,Tamil Nadu,EWS,Mudra Loan
+52,427433,Uttar Pradesh,OBC,Stand Up India
+28,277591,Madhya Pradesh,OBC,National Scholarship
+24,401180,West Bengal,SC,Mudra Loan
+50,527938,Madhya Pradesh,OBC,PM Awas Yojana
+25,145489,Madhya Pradesh,OBC,Ayushman Bharat
+45,1084727,Tamil Nadu,ST,National Scholarship
+80,627325,Gujarat,General,Atal Pension Yojana
+80,950328,Uttar Pradesh,SC,Atal Pension Yojana
+53,724377,Karnataka,EWS,Ayushman Bharat
+67,421398,Rajasthan,ST,Atal Pension Yojana
+24,1052721,Uttar Pradesh,ST,National Scholarship
+25,1149489,Madhya Pradesh,OBC,Mudra Loan
+19,505810,West Bengal,General,Mudra Loan
+48,983853,Karnataka,OBC,PM Kisan
+42,496285,Maharashtra,General,National Scholarship
+37,174967,Rajasthan,General,PM Awas Yojana
+66,721795,Bihar,ST,Atal Pension Yojana
+60,1191002,Bihar,SC,Atal Pension Yojana
+61,79006,West Bengal,SC,PM Kisan
+41,410298,Maharashtra,OBC,Mudra Loan
+40,89053,Uttar Pradesh,OBC,Ayushman Bharat
+58,502438,Maharashtra,EWS,Atal Pension Yojana
+22,203416,Bihar,OBC,National Scholarship
+60,1056936,Karnataka,EWS,Atal Pension Yojana
+19,1055281,Uttar Pradesh,ST,Mudra Loan
+29,81180,Madhya Pradesh,General,Ayushman Bharat
+37,1033098,Madhya Pradesh,EWS,PM Kisan
+32,95212,Maharashtra,General,PM Kisan
+47,665281,Madhya Pradesh,ST,PM Awas Yojana
+62,752215,Gujarat,OBC,Atal Pension Yojana
+75,763971,Karnataka,General,Atal Pension Yojana
+70,602566,Gujarat,OBC,Atal Pension Yojana
+70,1192366,Bihar,OBC,Atal Pension Yojana
+68,590427,Karnataka,OBC,Atal Pension Yojana
+48,162558,Madhya Pradesh,General,PM Awas Yojana
+28,401752,Gujarat,EWS,National Scholarship
+34,259698,Madhya Pradesh,EWS,National Scholarship
+71,879295,Madhya Pradesh,EWS,Atal Pension Yojana
+80,53107,Maharashtra,ST,Ayushman Bharat
+34,616634,Uttar Pradesh,OBC,Atal Pension Yojana
+32,870208,Gujarat,EWS,Ayushman Bharat
+38,497871,Rajasthan,SC,Atal Pension Yojana
+27,622341,Maharashtra,General,National Scholarship
+68,548115,Madhya Pradesh,SC,Atal Pension Yojana
+68,127407,Rajasthan,General,PM Kisan
+21,1066217,Maharashtra,ST,National Scholarship
+39,167602,Tamil Nadu,OBC,Ayushman Bharat
+60,578328,Uttar Pradesh,OBC,Atal Pension Yojana
+46,664127,Madhya Pradesh,General,Mudra Loan
+28,1037042,Bihar,SC,National Scholarship
+40,373622,Karnataka,ST,Atal Pension Yojana
+48,936818,West Bengal,OBC,Mudra Loan
+76,579133,Uttar Pradesh,EWS,Atal Pension Yojana
+33,86141,Tamil Nadu,SC,PM Kisan
+68,603633,Gujarat,General,Atal Pension Yojana
+30,1069825,Gujarat,ST,Ayushman Bharat
+40,959017,Maharashtra,General,Stand Up India
+75,883349,Uttar Pradesh,EWS,Atal Pension Yojana
+74,410579,Karnataka,General,Atal Pension Yojana
+64,954021,Bihar,EWS,Atal Pension Yojana
+68,764940,Bihar,General,Atal Pension Yojana
+45,424315,Gujarat,OBC,PM Kisan
+77,1006748,Bihar,ST,Atal Pension Yojana
+62,570944,Rajasthan,General,Atal Pension Yojana
+29,504051,Uttar Pradesh,ST,Mudra Loan
+34,395633,Rajasthan,General,National Scholarship
+40,1071906,Tamil Nadu,General,Ayushman Bharat
+27,265644,Uttar Pradesh,SC,National Scholarship
+60,758732,Madhya Pradesh,General,Atal Pension Yojana
+44,861987,Madhya Pradesh,EWS,Atal Pension Yojana
+59,829541,Maharashtra,EWS,Atal Pension Yojana
+20,1122014,Madhya Pradesh,EWS,Mudra Loan
+53,1186507,Karnataka,EWS,Stand Up India
+35,964103,Maharashtra,EWS,Stand Up India
+52,923518,Bihar,OBC,Mudra Loan
+21,808067,Tamil Nadu,General,Mudra Loan
+57,192832,Uttar Pradesh,SC,PM Awas Yojana
+80,736371,Bihar,ST,Atal Pension Yojana
+49,422450,West Bengal,General,National Scholarship
+43,598399,West Bengal,General,Atal Pension Yojana
+38,248994,Madhya Pradesh,ST,Atal Pension Yojana
+30,773271,Karnataka,ST,Mudra Loan
+62,1000031,Madhya Pradesh,ST,Atal Pension Yojana
+50,242900,Gujarat,SC,National Scholarship
+65,111191,Uttar Pradesh,SC,PM Kisan
+48,356737,Maharashtra,OBC,Stand Up India
+20,459222,Rajasthan,General,Mudra Loan
+63,1116948,Tamil Nadu,General,Atal Pension Yojana
+43,371859,Uttar Pradesh,SC,Atal Pension Yojana
+57,323479,West Bengal,OBC,Atal Pension Yojana
+39,182003,Maharashtra,General,PM Kisan
+45,759375,Bihar,OBC,Ayushman Bharat
+26,583422,West Bengal,ST,National Scholarship
+69,503549,Bihar,ST,Atal Pension Yojana
+27,457646,Uttar Pradesh,OBC,Mudra Loan
+57,482168,Bihar,General,Atal Pension Yojana
+48,822228,Maharashtra,General,PM Kisan
+42,450088,Madhya Pradesh,SC,Stand Up India
+21,344124,West Bengal,General,National Scholarship
+35,223978,West Bengal,ST,PM Kisan
+60,869196,Tamil Nadu,SC,Atal Pension Yojana
+48,975640,Madhya Pradesh,EWS,PM Kisan
+79,548656,Uttar Pradesh,SC,Atal Pension Yojana
+28,85130,West Bengal,General,PM Awas Yojana
+55,661755,Madhya Pradesh,ST,Stand Up India
+24,1063386,Tamil Nadu,EWS,National Scholarship
+40,85051,Maharashtra,EWS,Ayushman Bharat
+50,654245,Tamil Nadu,EWS,Mudra Loan
+33,717674,Uttar Pradesh,ST,Ayushman Bharat
+59,96659,West Bengal,General,PM Awas Yojana
+49,1086846,Rajasthan,General,PM Kisan
+39,353511,Uttar Pradesh,ST,Stand Up India
+49,168627,Gujarat,ST,PM Kisan
+38,913325,Rajasthan,EWS,PM Kisan
+59,416338,Karnataka,SC,Atal Pension Yojana
+32,128962,Bihar,SC,PM Awas Yojana
+47,1043719,Rajasthan,EWS,Atal Pension Yojana
+46,1173870,Madhya Pradesh,SC,Ayushman Bharat
+61,824078,Tamil Nadu,ST,Atal Pension Yojana
+30,963730,Karnataka,SC,Ayushman Bharat
+70,230629,Madhya Pradesh,SC,Atal Pension Yojana
+67,358187,Gujarat,SC,Atal Pension Yojana
+57,281744,Rajasthan,EWS,Atal Pension Yojana
+57,441773,West Bengal,OBC,Atal Pension Yojana
+65,1140666,Tamil Nadu,EWS,Atal Pension Yojana
+21,1020061,Uttar Pradesh,EWS,National Scholarship
+71,503488,Tamil Nadu,EWS,Atal Pension Yojana
+37,157555,Rajasthan,EWS,PM Kisan
+53,121133,Madhya Pradesh,SC,Ayushman Bharat
+26,164837,Bihar,General,PM Kisan
+21,103038,Rajasthan,General,Ayushman Bharat
+64,567853,Maharashtra,General,Atal Pension Yojana
+44,674827,Gujarat,OBC,National Scholarship
+48,340828,Uttar Pradesh,General,PM Awas Yojana
+69,1178325,Gujarat,OBC,Atal Pension Yojana
+67,226630,Maharashtra,OBC,Atal Pension Yojana
+75,418573,Tamil Nadu,OBC,Atal Pension Yojana
+38,161324,Karnataka,ST,PM Kisan
+58,303286,Maharashtra,General,Atal Pension Yojana
+20,129665,Madhya Pradesh,ST,Ayushman Bharat
+73,165318,Rajasthan,General,PM Kisan
+29,308631,Madhya Pradesh,ST,National Scholarship
+70,598613,Uttar Pradesh,ST,Atal Pension Yojana
+28,972983,Gujarat,SC,Mudra Loan
+54,496011,Madhya Pradesh,SC,National Scholarship
+21,857983,West Bengal,OBC,Mudra Loan
+72,378592,Madhya Pradesh,OBC,Atal Pension Yojana
+18,548311,Maharashtra,General,National Scholarship
+62,452214,Uttar Pradesh,ST,Atal Pension Yojana
+30,790296,Uttar Pradesh,EWS,Mudra Loan
+23,60140,West Bengal,OBC,PM Kisan
+36,151365,Rajasthan,General,Ayushman Bharat
+66,452213,Maharashtra,SC,Atal Pension Yojana
+27,680624,Gujarat,EWS,National Scholarship
+71,223005,Madhya Pradesh,SC,Atal Pension Yojana
+56,695384,Rajasthan,ST,Atal Pension Yojana
+35,76664,Maharashtra,ST,Ayushman Bharat
+79,195733,Gujarat,OBC,PM Awas Yojana
+58,282219,Bihar,General,Atal Pension Yojana
+25,436008,Uttar Pradesh,OBC,National Scholarship
+26,289236,West Bengal,OBC,National Scholarship
+59,497084,West Bengal,ST,Atal Pension Yojana
+35,631633,Tamil Nadu,EWS,Stand Up India
+44,515860,Gujarat,SC,National Scholarship
+74,859516,West Bengal,EWS,Atal Pension Yojana
+22,1010718,Uttar Pradesh,General,National Scholarship
+21,260260,Maharashtra,EWS,National Scholarship
+45,183721,West Bengal,SC,Ayushman Bharat
+62,514305,Rajasthan,SC,Atal Pension Yojana
+53,786740,Karnataka,SC,Stand Up India
+47,1111363,Maharashtra,SC,National Scholarship
+43,356833,Uttar Pradesh,SC,PM Kisan
+65,1191699,Uttar Pradesh,OBC,Atal Pension Yojana
+35,1108567,Rajasthan,OBC,Atal Pension Yojana
+27,985292,Karnataka,ST,Mudra Loan
+28,1075493,Karnataka,SC,National Scholarship
+34,531937,Tamil Nadu,General,Ayushman Bharat
+49,413492,West Bengal,General,Mudra Loan
+38,1041699,West Bengal,General,Stand Up India
+45,261002,Madhya Pradesh,SC,Mudra Loan
+29,613456,Karnataka,EWS,Mudra Loan
+73,196384,Gujarat,ST,PM Kisan
+80,653966,Tamil Nadu,OBC,Atal Pension Yojana
+51,630360,Rajasthan,EWS,Mudra Loan
+61,660665,Rajasthan,General,Atal Pension Yojana
+42,366289,Uttar Pradesh,General,Stand Up India
+43,523171,Karnataka,OBC,Mudra Loan
+31,816513,Uttar Pradesh,EWS,PM Kisan
+53,337964,Maharashtra,OBC,Ayushman Bharat
+59,70258,Rajasthan,OBC,PM Kisan
+74,82620,Rajasthan,OBC,PM Kisan
+23,868987,Gujarat,OBC,National Scholarship
+18,364871,Uttar Pradesh,General,Mudra Loan
+58,741458,Karnataka,SC,Atal Pension Yojana
+80,159244,Rajasthan,General,PM Awas Yojana
+52,1071510,Maharashtra,EWS,PM Awas Yojana
+41,67005,West Bengal,OBC,PM Awas Yojana
+56,531829,Madhya Pradesh,OBC,Atal Pension Yojana
+30,940039,Bihar,SC,Atal Pension Yojana
+56,1036174,Madhya Pradesh,General,Atal Pension Yojana
+64,1055414,Rajasthan,ST,Atal Pension Yojana
+78,240573,Uttar Pradesh,ST,Atal Pension Yojana
+80,1169969,Rajasthan,OBC,Atal Pension Yojana
+20,653626,West Bengal,SC,National Scholarship
+27,764040,Tamil Nadu,ST,Mudra Loan
+18,1071387,Tamil Nadu,General,National Scholarship
+31,249307,Maharashtra,SC,Stand Up India
+63,944047,West Bengal,SC,Atal Pension Yojana
+27,129308,Maharashtra,SC,PM Kisan
+46,702892,Rajasthan,ST,National Scholarship
+65,1104065,Uttar Pradesh,OBC,Atal Pension Yojana
+42,240794,Bihar,General,National Scholarship
+47,617029,Gujarat,ST,Ayushman Bharat
+71,547227,Uttar Pradesh,General,Atal Pension Yojana
+28,643354,Bihar,OBC,Mudra Loan
+28,1041999,Tamil Nadu,EWS,National Scholarship
+22,184161,Rajasthan,ST,PM Kisan
+18,670712,Tamil Nadu,SC,Mudra Loan
+69,111584,Tamil Nadu,ST,PM Awas Yojana
+22,445368,Karnataka,General,Mudra Loan
+27,712847,Karnataka,General,National Scholarship
+44,697220,Bihar,OBC,Ayushman Bharat
+54,649954,West Bengal,OBC,Ayushman Bharat
+67,861748,Rajasthan,EWS,Atal Pension Yojana
+37,730745,Rajasthan,EWS,Ayushman Bharat
+54,884644,Karnataka,ST,PM Kisan
+76,218577,Maharashtra,ST,Atal Pension Yojana
+39,664967,Madhya Pradesh,ST,Mudra Loan
+41,432630,West Bengal,EWS,Atal Pension Yojana
+67,650882,West Bengal,EWS,Atal Pension Yojana
+31,129227,Bihar,OBC,Ayushman Bharat
+53,366595,Madhya Pradesh,SC,Ayushman Bharat
+46,381037,Gujarat,SC,Mudra Loan
+49,826993,West Bengal,SC,Mudra Loan
+20,212553,Karnataka,ST,Mudra Loan
+62,1141231,Karnataka,ST,Atal Pension Yojana
+32,746431,Uttar Pradesh,ST,National Scholarship
+75,239440,Bihar,General,Atal Pension Yojana
+54,589110,West Bengal,EWS,Ayushman Bharat
+47,641122,Tamil Nadu,SC,Ayushman Bharat
+42,1027943,Gujarat,SC,National Scholarship
+22,482385,Madhya Pradesh,OBC,National Scholarship
+42,888818,Madhya Pradesh,EWS,Ayushman Bharat
+69,635364,Gujarat,EWS,Atal Pension Yojana
+47,209740,Tamil Nadu,General,National Scholarship
+56,1114978,Bihar,ST,Atal Pension Yojana
+28,1000852,Karnataka,ST,National Scholarship
+22,711779,Bihar,OBC,National Scholarship
+65,411592,Tamil Nadu,OBC,Atal Pension Yojana
+32,220880,Karnataka,OBC,Ayushman Bharat
+52,550013,Uttar Pradesh,SC,Ayushman Bharat
+41,231728,Gujarat,ST,PM Kisan
+58,959666,West Bengal,OBC,Atal Pension Yojana
+18,175948,Gujarat,SC,PM Kisan
+75,697331,Rajasthan,General,Atal Pension Yojana
+32,390656,Uttar Pradesh,General,PM Kisan
+66,131933,Tamil Nadu,EWS,Ayushman Bharat
+29,386770,Tamil Nadu,General,Mudra Loan
+63,309693,Uttar Pradesh,EWS,Atal Pension Yojana
+21,882983,Karnataka,EWS,National Scholarship
+44,653208,West Bengal,ST,Mudra Loan
+64,191017,Tamil Nadu,SC,PM Kisan
+47,597759,Gujarat,SC,Atal Pension Yojana
+44,1110294,Maharashtra,SC,PM Kisan
+22,756049,Gujarat,OBC,National Scholarship
+34,1127073,Rajasthan,OBC,Atal Pension Yojana
+70,758812,Uttar Pradesh,OBC,Atal Pension Yojana
+51,991154,Tamil Nadu,SC,National Scholarship
+55,987681,Uttar Pradesh,ST,PM Kisan
+76,464940,Uttar Pradesh,General,Atal Pension Yojana
+49,800828,Rajasthan,OBC,PM Awas Yojana
+40,962780,Bihar,General,Mudra Loan
+38,824334,Karnataka,SC,PM Kisan
+73,907232,Tamil Nadu,OBC,Atal Pension Yojana
+32,797248,Karnataka,ST,Atal Pension Yojana
+41,925187,Karnataka,OBC,Ayushman Bharat
+20,1164245,Rajasthan,SC,Mudra Loan
+56,574147,West Bengal,General,Atal Pension Yojana
+36,871602,Karnataka,General,National Scholarship
+56,1132776,Karnataka,SC,Atal Pension Yojana
+70,768543,Maharashtra,EWS,Atal Pension Yojana
+63,864966,Maharashtra,OBC,Atal Pension Yojana
+52,614507,Bihar,OBC,National Scholarship
+53,466374,Tamil Nadu,SC,National Scholarship
+28,468949,Maharashtra,EWS,Mudra Loan
+27,502020,Tamil Nadu,SC,National Scholarship
+56,148965,Tamil Nadu,EWS,PM Awas Yojana
+72,908607,Rajasthan,EWS,Atal Pension Yojana
+37,538357,West Bengal,OBC,Mudra Loan
+25,199008,Tamil Nadu,OBC,PM Kisan
+63,827361,Karnataka,EWS,Atal Pension Yojana
+66,827125,Karnataka,OBC,Atal Pension Yojana
+26,145812,Bihar,OBC,Ayushman Bharat
+65,660450,Rajasthan,OBC,Atal Pension Yojana
+50,836407,Karnataka,General,Ayushman Bharat
+50,660431,Maharashtra,General,PM Kisan
+62,232655,Madhya Pradesh,OBC,Atal Pension Yojana
+46,1058841,Maharashtra,SC,PM Awas Yojana
+59,323978,West Bengal,General,Atal Pension Yojana
+61,203271,Bihar,OBC,Atal Pension Yojana
+54,172000,Bihar,SC,PM Kisan
+68,727729,Uttar Pradesh,General,Atal Pension Yojana
+39,1036229,Gujarat,ST,Atal Pension Yojana
+51,533719,Uttar Pradesh,ST,National Scholarship
+24,750586,Tamil Nadu,SC,National Scholarship
+32,169043,Tamil Nadu,EWS,Ayushman Bharat
+30,1093672,Rajasthan,EWS,Atal Pension Yojana
+74,413354,Rajasthan,General,Atal Pension Yojana
+31,444968,Madhya Pradesh,OBC,PM Awas Yojana
+77,1064291,Maharashtra,EWS,Atal Pension Yojana
+36,817105,Madhya Pradesh,EWS,PM Awas Yojana
+32,51867,Bihar,EWS,Ayushman Bharat
+24,744405,Tamil Nadu,ST,Mudra Loan
+34,622990,Karnataka,General,Stand Up India
+28,112564,Karnataka,EWS,PM Awas Yojana
+31,359378,Madhya Pradesh,EWS,Mudra Loan
+37,1080933,West Bengal,SC,PM Kisan
+65,334464,Rajasthan,OBC,Atal Pension Yojana
+57,198972,Bihar,SC,Ayushman Bharat
+44,831532,Uttar Pradesh,General,PM Kisan
+71,206879,Rajasthan,EWS,Atal Pension Yojana
+50,594541,Rajasthan,OBC,PM Awas Yojana
+37,740618,Bihar,OBC,PM Awas Yojana
+51,904720,Rajasthan,General,PM Kisan
+22,1072876,Uttar Pradesh,General,Mudra Loan
+25,986228,Uttar Pradesh,EWS,Mudra Loan
+63,179360,Rajasthan,EWS,Ayushman Bharat
+53,1088006,Madhya Pradesh,General,PM Kisan
+52,492587,Gujarat,SC,Atal Pension Yojana
+69,1157330,Rajasthan,OBC,Atal Pension Yojana
+73,767839,Madhya Pradesh,EWS,Atal Pension Yojana
+71,1125378,West Bengal,ST,Atal Pension Yojana
+48,559022,Karnataka,OBC,Atal Pension Yojana
+39,932786,Uttar Pradesh,SC,Atal Pension Yojana
+38,1171206,Bihar,ST,Mudra Loan
+56,275935,Gujarat,General,Atal Pension Yojana
+18,1141979,Gujarat,OBC,Mudra Loan
+79,359233,Uttar Pradesh,EWS,Atal Pension Yojana
+75,95854,Bihar,EWS,PM Awas Yojana
+64,109175,Maharashtra,ST,PM Kisan
+47,410735,Bihar,EWS,Atal Pension Yojana
+45,1146850,Uttar Pradesh,General,National Scholarship
+51,150700,Gujarat,SC,PM Kisan
+35,1030844,Bihar,OBC,Stand Up India
+69,166013,Maharashtra,EWS,PM Kisan
+54,714092,Rajasthan,SC,Stand Up India
+48,963080,Gujarat,OBC,Mudra Loan
+36,54777,Bihar,OBC,PM Awas Yojana
+66,418938,Uttar Pradesh,General,Atal Pension Yojana
+49,288727,Bihar,EWS,Mudra Loan
+51,1136879,Maharashtra,General,PM Awas Yojana
+30,370880,Uttar Pradesh,OBC,National Scholarship
+21,632694,Bihar,SC,National Scholarship
+59,932261,Rajasthan,General,Atal Pension Yojana
+28,85630,Madhya Pradesh,SC,PM Kisan
+67,404765,West Bengal,SC,Atal Pension Yojana
+43,201194,Rajasthan,EWS,National Scholarship
+26,813828,West Bengal,General,National Scholarship
+55,238003,Tamil Nadu,General,Stand Up India
+56,591885,West Bengal,General,Atal Pension Yojana
+40,1062202,Bihar,EWS,National Scholarship
+56,512822,Uttar Pradesh,General,Atal Pension Yojana
+64,197835,Karnataka,OBC,PM Kisan
+62,513375,Bihar,ST,Atal Pension Yojana
+73,316248,Bihar,General,Atal Pension Yojana
+45,933263,Madhya Pradesh,General,Mudra Loan
+64,863210,West Bengal,EWS,Atal Pension Yojana
+36,907602,Rajasthan,EWS,Stand Up India
+35,122305,Gujarat,OBC,Ayushman Bharat
+44,1054330,Rajasthan,SC,PM Kisan
+45,1144949,Tamil Nadu,ST,PM Kisan
+72,111674,Tamil Nadu,ST,PM Kisan
+59,207347,Gujarat,OBC,Atal Pension Yojana
+40,407222,Karnataka,SC,PM Awas Yojana
+73,888148,Uttar Pradesh,OBC,Atal Pension Yojana
+80,478733,Karnataka,SC,Atal Pension Yojana
+77,236869,West Bengal,SC,Atal Pension Yojana
+80,232856,Rajasthan,ST,Atal Pension Yojana
+72,1025177,Maharashtra,EWS,Atal Pension Yojana
+37,1173832,Gujarat,OBC,PM Kisan
+71,966521,West Bengal,SC,Atal Pension Yojana
+22,1161272,Maharashtra,SC,Mudra Loan
+21,921975,Madhya Pradesh,General,Mudra Loan
+54,803602,Madhya Pradesh,EWS,Atal Pension Yojana
+28,628401,Madhya Pradesh,EWS,National Scholarship
+78,947956,Rajasthan,SC,Atal Pension Yojana
+60,243483,West Bengal,EWS,Atal Pension Yojana
+59,963932,Karnataka,General,Atal Pension Yojana
+48,169181,Maharashtra,General,Ayushman Bharat
+35,559112,Karnataka,General,Atal Pension Yojana
+76,208284,Tamil Nadu,EWS,Atal Pension Yojana
+23,317346,Rajasthan,SC,Mudra Loan
+21,222768,Maharashtra,EWS,Mudra Loan
+51,886964,Gujarat,SC,Atal Pension Yojana
+42,1087042,Karnataka,OBC,Stand Up India
+49,675281,Karnataka,ST,National Scholarship
+54,245019,Tamil Nadu,SC,Mudra Loan
+49,423180,Madhya Pradesh,SC,Mudra Loan
+20,1067795,Gujarat,ST,National Scholarship
+34,1098667,Tamil Nadu,General,Stand Up India
+19,1083491,Maharashtra,EWS,Mudra Loan
+75,226019,Gujarat,SC,Atal Pension Yojana
+64,151330,West Bengal,ST,PM Awas Yojana
+62,762162,Tamil Nadu,EWS,Atal Pension Yojana
+23,1099551,Madhya Pradesh,ST,Mudra Loan
+25,1027443,Bihar,EWS,National Scholarship
+32,208441,Gujarat,OBC,National Scholarship
+24,118300,Uttar Pradesh,EWS,PM Awas Yojana
+60,503166,Maharashtra,ST,Atal Pension Yojana
+28,1072654,Maharashtra,SC,Mudra Loan
+48,792431,Gujarat,SC,National Scholarship
+72,840683,Gujarat,EWS,Atal Pension Yojana
+34,792214,Maharashtra,ST,Ayushman Bharat
+73,154386,Gujarat,SC,Ayushman Bharat
+79,1143646,Bihar,OBC,Atal Pension Yojana
+60,1004343,Karnataka,SC,Atal Pension Yojana
+60,247454,West Bengal,General,Atal Pension Yojana
+47,574102,Maharashtra,EWS,Atal Pension Yojana
+36,648754,Maharashtra,SC,Atal Pension Yojana
+40,806504,Uttar Pradesh,OBC,Ayushman Bharat
+29,1171027,Bihar,ST,Mudra Loan
+66,740436,Uttar Pradesh,SC,Atal Pension Yojana
+44,801715,Bihar,General,Atal Pension Yojana
+56,518359,Bihar,EWS,Atal Pension Yojana
+47,332450,Maharashtra,General,Atal Pension Yojana
+54,914921,Maharashtra,SC,Atal Pension Yojana
+33,95007,Uttar Pradesh,General,Ayushman Bharat
+19,686622,Gujarat,SC,Mudra Loan
+28,66668,West Bengal,SC,Ayushman Bharat
+49,802398,Rajasthan,OBC,PM Kisan
+57,1130157,Karnataka,OBC,Atal Pension Yojana
+76,290754,Maharashtra,ST,Atal Pension Yojana
+60,898868,Karnataka,General,Atal Pension Yojana
+37,211273,West Bengal,OBC,Mudra Loan
+58,1048283,Rajasthan,EWS,Atal Pension Yojana
+80,812094,Gujarat,General,Atal Pension Yojana
+42,183015,West Bengal,OBC,PM Awas Yojana
+50,1090647,Uttar Pradesh,EWS,Atal Pension Yojana
+65,542273,Bihar,General,Atal Pension Yojana
+66,238508,Uttar Pradesh,SC,Atal Pension Yojana
+23,697440,Bihar,ST,Mudra Loan
+63,536953,Maharashtra,OBC,Atal Pension Yojana
+26,908246,Uttar Pradesh,ST,Mudra Loan
+50,412072,West Bengal,SC,National Scholarship
+67,1122094,Tamil Nadu,General,Atal Pension Yojana
+55,127516,West Bengal,ST,PM Awas Yojana
+56,443683,Uttar Pradesh,ST,Atal Pension Yojana
+19,256851,Rajasthan,EWS,National Scholarship
+18,637556,Gujarat,ST,National Scholarship
+50,1039517,Tamil Nadu,SC,PM Kisan
+52,141440,Bihar,OBC,PM Kisan
+31,812254,Maharashtra,SC,Stand Up India
+23,1089790,Rajasthan,EWS,Mudra Loan
+35,665548,Bihar,EWS,PM Awas Yojana
+28,972128,Tamil Nadu,EWS,Mudra Loan
+62,478003,West Bengal,EWS,Atal Pension Yojana
+29,1196311,Rajasthan,SC,Mudra Loan
+26,982366,Gujarat,SC,Mudra Loan
+41,853841,Uttar Pradesh,SC,Mudra Loan
+32,167556,Rajasthan,OBC,PM Kisan
+27,442900,Karnataka,SC,National Scholarship
+36,1065632,Gujarat,General,Atal Pension Yojana
+67,467094,Gujarat,EWS,Atal Pension Yojana
+50,968095,Madhya Pradesh,ST,Mudra Loan
+47,1006547,Rajasthan,General,Ayushman Bharat
+27,1094637,Rajasthan,ST,National Scholarship
+63,721941,Rajasthan,ST,Atal Pension Yojana
+80,91377,Bihar,General,Ayushman Bharat
+30,811307,Maharashtra,SC,PM Awas Yojana
+71,159101,Gujarat,SC,Ayushman Bharat
+42,1140055,Tamil Nadu,General,PM Awas Yojana
+21,199749,Gujarat,EWS,PM Awas Yojana
+24,763665,Madhya Pradesh,General,National Scholarship
+28,786824,Maharashtra,General,Mudra Loan
+55,817209,Karnataka,General,PM Kisan
+20,796534,Uttar Pradesh,ST,Mudra Loan
+57,207849,West Bengal,SC,Atal Pension Yojana
+31,268768,Uttar Pradesh,General,National Scholarship
+46,1109928,Uttar Pradesh,OBC,National Scholarship
+44,753815,West Bengal,General,PM Awas Yojana
+42,218986,Gujarat,SC,Stand Up India
+72,226705,Maharashtra,General,Atal Pension Yojana
+48,761438,Gujarat,General,Stand Up India
+79,538045,Rajasthan,OBC,Atal Pension Yojana
+49,512775,Karnataka,EWS,Ayushman Bharat
+46,416748,Rajasthan,General,PM Kisan
+38,558906,Karnataka,EWS,Mudra Loan
+31,760829,Gujarat,General,Stand Up India
+68,56419,Madhya Pradesh,ST,Ayushman Bharat
+45,382769,Bihar,OBC,PM Awas Yojana
+20,247278,Madhya Pradesh,OBC,National Scholarship
+36,439761,Bihar,OBC,Stand Up India
+50,922339,West Bengal,ST,PM Kisan
+35,819062,West Bengal,ST,PM Kisan
+78,86585,Gujarat,EWS,Ayushman Bharat
+60,1066830,Maharashtra,ST,Atal Pension Yojana
+32,1154489,Rajasthan,General,Mudra Loan
+54,87757,Rajasthan,EWS,PM Awas Yojana
+19,58993,West Bengal,EWS,Ayushman Bharat
+46,682885,Tamil Nadu,OBC,Ayushman Bharat
+46,362183,Madhya Pradesh,OBC,Mudra Loan
+19,398535,Uttar Pradesh,SC,Mudra Loan
+80,1121175,Maharashtra,EWS,Atal Pension Yojana
+52,523570,Gujarat,EWS,PM Awas Yojana
+80,752951,Uttar Pradesh,SC,Atal Pension Yojana
+46,751257,Bihar,EWS,Mudra Loan
+58,932760,Gujarat,General,Atal Pension Yojana
+78,1005339,Madhya Pradesh,ST,Atal Pension Yojana
+19,842139,Tamil Nadu,ST,Mudra Loan
+73,484909,Tamil Nadu,ST,Atal Pension Yojana
+45,852325,Uttar Pradesh,ST,PM Kisan
+42,148331,Maharashtra,EWS,PM Awas Yojana
+61,963493,Madhya Pradesh,SC,Atal Pension Yojana
+42,305127,Tamil Nadu,SC,PM Kisan
+50,793037,West Bengal,EWS,National Scholarship
+34,581839,West Bengal,ST,Atal Pension Yojana
+69,989204,Gujarat,General,Atal Pension Yojana
+80,392169,Bihar,SC,Atal Pension Yojana
+61,205686,Bihar,EWS,Atal Pension Yojana
+57,493010,Maharashtra,SC,Atal Pension Yojana
+22,725297,Gujarat,General,National Scholarship
+58,788937,Madhya Pradesh,ST,Atal Pension Yojana
+54,1103056,Rajasthan,OBC,Mudra Loan
+38,635531,Uttar Pradesh,EWS,Atal Pension Yojana
+40,558805,Maharashtra,General,Ayushman Bharat
+57,391445,Uttar Pradesh,EWS,Atal Pension Yojana
+50,352408,Karnataka,ST,PM Awas Yojana
+59,1107732,Maharashtra,ST,Atal Pension Yojana
+44,827118,Gujarat,OBC,Mudra Loan
+70,536092,Gujarat,OBC,Atal Pension Yojana
+70,797591,Madhya Pradesh,General,Atal Pension Yojana
+25,173631,Madhya Pradesh,EWS,PM Kisan
+73,445367,Rajasthan,ST,Atal Pension Yojana
+66,1188601,Rajasthan,ST,Atal Pension Yojana
+44,958045,Maharashtra,SC,PM Kisan
+69,841521,Rajasthan,SC,Atal Pension Yojana
+53,573093,West Bengal,OBC,Stand Up India
+48,943108,Tamil Nadu,ST,National Scholarship
+63,484253,Tamil Nadu,OBC,Atal Pension Yojana
+63,953477,Tamil Nadu,SC,Atal Pension Yojana
+46,423383,Madhya Pradesh,General,PM Kisan
+23,206329,Madhya Pradesh,EWS,National Scholarship
+24,789925,Madhya Pradesh,General,National Scholarship
+69,694077,Bihar,General,Atal Pension Yojana
+57,800667,West Bengal,ST,Atal Pension Yojana
+25,986645,Rajasthan,SC,Mudra Loan
+43,300732,Maharashtra,OBC,Ayushman Bharat
+27,191609,Gujarat,OBC,Ayushman Bharat
+30,509621,Rajasthan,SC,PM Kisan
+23,887191,Gujarat,General,Mudra Loan
+62,552874,West Bengal,ST,Atal Pension Yojana
+56,444080,Bihar,ST,Atal Pension Yojana
+34,263519,Maharashtra,EWS,PM Awas Yojana
+52,959026,Maharashtra,ST,PM Kisan
+36,802681,Karnataka,EWS,Mudra Loan
+40,360586,Gujarat,General,PM Kisan
+30,509565,Bihar,EWS,PM Awas Yojana
+22,399812,Uttar Pradesh,SC,Mudra Loan
+57,537346,Karnataka,ST,Atal Pension Yojana
+58,706263,Gujarat,EWS,Atal Pension Yojana
+80,805808,Uttar Pradesh,General,Atal Pension Yojana
+39,739371,Madhya Pradesh,ST,Atal Pension Yojana
+40,330669,West Bengal,General,Ayushman Bharat
+64,276753,Madhya Pradesh,ST,Atal Pension Yojana
+41,1124369,Tamil Nadu,SC,PM Kisan
+57,189977,Rajasthan,OBC,PM Kisan
+21,1053402,Gujarat,General,National Scholarship
+67,277670,Gujarat,SC,Atal Pension Yojana
+72,794400,Maharashtra,SC,Atal Pension Yojana
+42,553505,Bihar,General,Mudra Loan
+58,237891,West Bengal,SC,Atal Pension Yojana
+31,502095,Bihar,EWS,PM Awas Yojana
+78,83169,Tamil Nadu,OBC,PM Awas Yojana
+75,870701,Karnataka,SC,Atal Pension Yojana
+58,1157318,Karnataka,ST,Atal Pension Yojana
+55,955984,Karnataka,ST,Stand Up India
+20,1055755,Karnataka,OBC,National Scholarship
+33,437873,Madhya Pradesh,General,Atal Pension Yojana
+61,431710,Maharashtra,ST,Atal Pension Yojana
+33,207314,West Bengal,ST,Mudra Loan
+24,796333,Rajasthan,General,Mudra Loan
+65,258303,Maharashtra,OBC,Atal Pension Yojana
+41,961137,Bihar,OBC,Atal Pension Yojana
+43,115196,West Bengal,EWS,PM Kisan
+71,165837,Rajasthan,SC,PM Awas Yojana
+20,779175,Bihar,OBC,National Scholarship
+45,85949,West Bengal,OBC,Ayushman Bharat
+54,55927,Bihar,ST,PM Kisan
+80,1191265,Gujarat,OBC,Atal Pension Yojana
+18,242010,Karnataka,OBC,National Scholarship
+72,1099642,Maharashtra,SC,Atal Pension Yojana
+58,1121346,West Bengal,OBC,Atal Pension Yojana
+26,487509,Madhya Pradesh,OBC,National Scholarship
+43,553742,Bihar,SC,Ayushman Bharat
+71,611718,Tamil Nadu,ST,Atal Pension Yojana
+36,953364,Uttar Pradesh,General,Atal Pension Yojana
+35,1057260,Tamil Nadu,OBC,National Scholarship
+44,727730,Madhya Pradesh,General,Mudra Loan
+65,371825,West Bengal,General,Atal Pension Yojana
+53,131598,Bihar,OBC,PM Kisan
+52,1152811,Karnataka,ST,Mudra Loan
+25,1185795,Bihar,EWS,Mudra Loan
+40,83683,Tamil Nadu,EWS,PM Awas Yojana
+55,399784,West Bengal,OBC,Stand Up India
+29,263876,Rajasthan,ST,Mudra Loan
+28,1022102,Uttar Pradesh,ST,National Scholarship
+69,761394,Madhya Pradesh,OBC,Atal Pension Yojana
+47,407663,West Bengal,General,PM Kisan
+25,969054,Uttar Pradesh,SC,Mudra Loan
+60,530466,Tamil Nadu,EWS,Atal Pension Yojana
+65,918120,Bihar,EWS,Atal Pension Yojana
+30,689878,Rajasthan,SC,National Scholarship
+30,205630,Gujarat,EWS,Atal Pension Yojana
+22,581867,West Bengal,SC,National Scholarship
+69,262695,Tamil Nadu,ST,Atal Pension Yojana
+29,993098,Maharashtra,OBC,Mudra Loan
+47,927338,Rajasthan,EWS,Ayushman Bharat
+23,223798,Tamil Nadu,ST,Mudra Loan
+49,211487,Karnataka,ST,Mudra Loan
+71,812077,Maharashtra,General,Atal Pension Yojana
+67,71409,West Bengal,SC,PM Kisan
+60,424649,Maharashtra,EWS,Atal Pension Yojana
+61,947980,Karnataka,OBC,Atal Pension Yojana
+50,1171684,Madhya Pradesh,General,PM Kisan
+59,440525,West Bengal,EWS,Atal Pension Yojana
+25,251583,Tamil Nadu,EWS,Mudra Loan
+53,519354,West Bengal,General,Atal Pension Yojana
+55,1091143,Madhya Pradesh,EWS,Ayushman Bharat
+38,149065,Gujarat,OBC,PM Awas Yojana
+41,515719,Gujarat,General,Mudra Loan
+68,495158,Gujarat,SC,Atal Pension Yojana
+72,259355,Gujarat,General,Atal Pension Yojana
+22,377616,Madhya Pradesh,ST,National Scholarship
+60,283085,Maharashtra,General,Atal Pension Yojana
+37,737105,Maharashtra,ST,Atal Pension Yojana
+69,488488,Bihar,SC,Atal Pension Yojana
+58,744014,Gujarat,EWS,Atal Pension Yojana
+41,532172,Madhya Pradesh,ST,Stand Up India
+35,1140705,Uttar Pradesh,ST,Stand Up India
+37,1137297,Gujarat,General,Ayushman Bharat
+58,803107,Maharashtra,OBC,Atal Pension Yojana
+24,423951,Uttar Pradesh,General,Mudra Loan
+45,253304,Tamil Nadu,OBC,Ayushman Bharat
+20,171453,Gujarat,SC,Ayushman Bharat
+48,838627,Maharashtra,SC,Stand Up India
+72,62481,Tamil Nadu,General,PM Awas Yojana
+67,1010554,Maharashtra,ST,Atal Pension Yojana
+23,905503,Tamil Nadu,EWS,Mudra Loan
+29,471380,Tamil Nadu,ST,National Scholarship
+55,149711,Rajasthan,OBC,PM Kisan
+32,497011,Uttar Pradesh,General,PM Kisan
+45,764315,Rajasthan,ST,PM Awas Yojana
+70,849821,Madhya Pradesh,OBC,Atal Pension Yojana
+63,753303,Karnataka,OBC,Atal Pension Yojana
+39,143899,Maharashtra,OBC,PM Awas Yojana
+47,611690,West Bengal,ST,Stand Up India
+33,246658,Gujarat,OBC,Stand Up India
+48,365175,West Bengal,OBC,National Scholarship
+22,520157,Bihar,General,Mudra Loan
+32,124624,Madhya Pradesh,SC,Ayushman Bharat
+59,154090,Maharashtra,General,PM Awas Yojana
+51,1044958,Maharashtra,General,Mudra Loan
+65,529070,Uttar Pradesh,General,Atal Pension Yojana
+27,59988,Gujarat,OBC,Ayushman Bharat
+72,1167030,Rajasthan,General,Atal Pension Yojana
+65,694177,Uttar Pradesh,SC,Atal Pension Yojana
+52,85870,Tamil Nadu,ST,PM Awas Yojana
+64,335113,Maharashtra,EWS,Atal Pension Yojana
+43,632007,Rajasthan,SC,PM Awas Yojana
+20,216782,Karnataka,General,National Scholarship
+60,738546,Rajasthan,OBC,Atal Pension Yojana
+51,118399,Maharashtra,EWS,PM Kisan
+61,677916,Gujarat,SC,Atal Pension Yojana
+70,968846,Madhya Pradesh,EWS,Atal Pension Yojana
+19,540749,West Bengal,General,Mudra Loan
+70,193416,West Bengal,EWS,PM Kisan
+31,387929,Madhya Pradesh,OBC,PM Kisan
+48,846009,Karnataka,General,Ayushman Bharat
+51,1102363,Bihar,ST,Atal Pension Yojana
+32,354967,Maharashtra,EWS,Mudra Loan
+53,557523,Madhya Pradesh,SC,National Scholarship
+56,1101242,Uttar Pradesh,OBC,Atal Pension Yojana
+36,300307,Gujarat,EWS,Atal Pension Yojana
+37,811113,Gujarat,EWS,Ayushman Bharat
+72,911567,Bihar,General,Atal Pension Yojana
+37,922168,Gujarat,SC,Atal Pension Yojana
+34,336501,Gujarat,OBC,Stand Up India
+35,778448,Gujarat,ST,Atal Pension Yojana
+80,129904,Karnataka,SC,PM Awas Yojana
+25,541924,Maharashtra,OBC,National Scholarship
+78,164122,Tamil Nadu,OBC,PM Kisan
+57,113722,Rajasthan,EWS,Ayushman Bharat
+63,672921,Tamil Nadu,SC,Atal Pension Yojana
+50,603540,Tamil Nadu,General,National Scholarship
+76,1137186,Uttar Pradesh,SC,Atal Pension Yojana
+77,1026463,Tamil Nadu,General,Atal Pension Yojana
+36,1028550,Bihar,OBC,National Scholarship
+26,194463,Karnataka,OBC,PM Awas Yojana
+71,324042,West Bengal,EWS,Atal Pension Yojana
+24,1088934,Rajasthan,EWS,Mudra Loan
+32,856266,Madhya Pradesh,ST,Atal Pension Yojana
+60,890922,Madhya Pradesh,EWS,Atal Pension Yojana
+43,245609,West Bengal,OBC,Mudra Loan
+32,803506,Karnataka,OBC,PM Awas Yojana
+25,826223,West Bengal,General,Mudra Loan
+32,248589,Uttar Pradesh,EWS,Ayushman Bharat
+58,841967,Uttar Pradesh,EWS,Atal Pension Yojana
+57,725741,Madhya Pradesh,EWS,Atal Pension Yojana
+51,501575,Gujarat,EWS,Ayushman Bharat
+80,142512,Tamil Nadu,ST,PM Awas Yojana
+56,1065718,West Bengal,ST,Atal Pension Yojana
+42,324781,Maharashtra,EWS,PM Awas Yojana
+45,67960,Tamil Nadu,ST,PM Awas Yojana
+70,358206,Tamil Nadu,ST,Atal Pension Yojana
+34,783521,Maharashtra,ST,Stand Up India
+66,240933,Tamil Nadu,EWS,Atal Pension Yojana
+23,771494,Madhya Pradesh,SC,Mudra Loan
+33,164700,Rajasthan,ST,PM Awas Yojana
+23,497728,Bihar,OBC,Mudra Loan
+33,839240,Bihar,OBC,National Scholarship
+61,1116438,Bihar,ST,Atal Pension Yojana
+25,314021,Rajasthan,SC,Mudra Loan
+20,1000301,Tamil Nadu,OBC,Mudra Loan
+54,1138728,Rajasthan,OBC,PM Awas Yojana
+68,1038683,Uttar Pradesh,General,Atal Pension Yojana
+19,1114336,Maharashtra,SC,Mudra Loan
+72,56401,Rajasthan,General,Ayushman Bharat
+56,265421,Tamil Nadu,SC,Atal Pension Yojana
+20,924722,West Bengal,EWS,Mudra Loan
+29,289234,Bihar,ST,Mudra Loan
+58,448104,Rajasthan,SC,Atal Pension Yojana
+47,122023,Maharashtra,OBC,Ayushman Bharat
+33,510799,Uttar Pradesh,OBC,Mudra Loan
+30,345607,West Bengal,OBC,PM Kisan
+35,411962,Uttar Pradesh,General,PM Kisan
+74,601203,Rajasthan,General,Atal Pension Yojana
+43,54058,Madhya Pradesh,SC,PM Awas Yojana
+34,1103507,Gujarat,OBC,Stand Up India
+67,731864,Uttar Pradesh,ST,Atal Pension Yojana
+26,531689,Maharashtra,OBC,National Scholarship
+27,509412,Uttar Pradesh,SC,Mudra Loan
+63,1160301,West Bengal,SC,Atal Pension Yojana
+27,187098,Gujarat,General,PM Awas Yojana
+18,210437,Bihar,General,National Scholarship
+77,98976,Karnataka,OBC,PM Kisan
+60,806444,Rajasthan,EWS,Atal Pension Yojana
+59,1073141,Uttar Pradesh,OBC,Atal Pension Yojana
+51,441052,Madhya Pradesh,EWS,Stand Up India
+63,357530,West Bengal,EWS,Atal Pension Yojana
+33,931357,Uttar Pradesh,OBC,Ayushman Bharat
+56,943954,Madhya Pradesh,EWS,Atal Pension Yojana
+47,320701,Maharashtra,SC,National Scholarship
+29,579543,Maharashtra,ST,Mudra Loan
+73,245402,Karnataka,General,Atal Pension Yojana
+77,962343,Karnataka,EWS,Atal Pension Yojana
+45,309744,Karnataka,General,PM Kisan
+20,855596,Uttar Pradesh,ST,Mudra Loan
+76,659458,Uttar Pradesh,EWS,Atal Pension Yojana
+59,71747,Rajasthan,OBC,PM Kisan
+62,732158,West Bengal,OBC,Atal Pension Yojana
+79,445346,Maharashtra,SC,Atal Pension Yojana
+39,463767,Karnataka,General,Stand Up India
+36,817214,Karnataka,EWS,Mudra Loan
+44,753334,Bihar,General,Ayushman Bharat
+52,425174,Tamil Nadu,OBC,PM Awas Yojana
+30,678535,Uttar Pradesh,OBC,Ayushman Bharat
+27,988622,Gujarat,EWS,National Scholarship
+49,737433,Rajasthan,General,Ayushman Bharat
+62,1187074,Karnataka,OBC,Atal Pension Yojana
+43,845401,Gujarat,General,Mudra Loan
+68,645746,Karnataka,EWS,Atal Pension Yojana
+80,893601,Bihar,ST,Atal Pension Yojana
+58,534663,Tamil Nadu,ST,Atal Pension Yojana
+21,707053,Rajasthan,OBC,National Scholarship
+39,146695,Madhya Pradesh,OBC,PM Kisan
+69,797166,Madhya Pradesh,SC,Atal Pension Yojana
+35,373284,Rajasthan,SC,National Scholarship
+27,454225,Karnataka,ST,National Scholarship
+68,395019,Maharashtra,General,Atal Pension Yojana
+29,862118,Uttar Pradesh,OBC,National Scholarship
+65,357939,West Bengal,General,Atal Pension Yojana
+52,380595,Tamil Nadu,EWS,PM Kisan
+80,185326,Gujarat,EWS,Ayushman Bharat
+80,756640,West Bengal,SC,Atal Pension Yojana
+27,1174714,Tamil Nadu,EWS,Mudra Loan
+21,76231,West Bengal,General,PM Kisan
+72,823312,Madhya Pradesh,ST,Atal Pension Yojana
+39,695713,Bihar,EWS,PM Awas Yojana
+36,461056,Uttar Pradesh,General,Mudra Loan
+28,1031204,West Bengal,ST,National Scholarship
+24,176142,Karnataka,OBC,Ayushman Bharat
+37,1015937,Gujarat,ST,Atal Pension Yojana
+46,232216,Uttar Pradesh,ST,Mudra Loan
+72,895035,West Bengal,ST,Atal Pension Yojana
+26,532694,West Bengal,ST,National Scholarship
+19,947620,Uttar Pradesh,SC,National Scholarship
+73,1071893,Bihar,General,Atal Pension Yojana
+24,1045056,Gujarat,General,National Scholarship
+79,874769,Maharashtra,OBC,Atal Pension Yojana
+76,93053,West Bengal,General,Ayushman Bharat
+32,1042713,Rajasthan,EWS,Stand Up India
+76,524435,Gujarat,ST,Atal Pension Yojana
+21,461135,Tamil Nadu,EWS,National Scholarship
+37,431484,Karnataka,ST,PM Awas Yojana
+42,334146,Gujarat,OBC,Ayushman Bharat
+62,609264,Tamil Nadu,ST,Atal Pension Yojana
+39,423678,Uttar Pradesh,EWS,Ayushman Bharat
+79,1123476,Tamil Nadu,ST,Atal Pension Yojana
+54,848163,Uttar Pradesh,General,National Scholarship
+59,711550,Maharashtra,OBC,Atal Pension Yojana
+34,520987,Karnataka,SC,PM Kisan
+66,1134396,Maharashtra,General,Atal Pension Yojana
+47,102962,Madhya Pradesh,EWS,Ayushman Bharat
+65,1084817,Madhya Pradesh,EWS,Atal Pension Yojana
+44,704848,Bihar,EWS,Stand Up India
+37,815339,Maharashtra,General,Mudra Loan
+58,195047,Karnataka,OBC,PM Kisan
+18,342535,West Bengal,General,National Scholarship
+42,1102527,Gujarat,OBC,PM Kisan
+69,995900,Karnataka,General,Atal Pension Yojana
+23,669915,Karnataka,SC,National Scholarship
+21,952940,West Bengal,SC,National Scholarship
+50,92497,Uttar Pradesh,EWS,PM Kisan
+60,63132,Maharashtra,ST,PM Kisan
+41,986943,Gujarat,EWS,Atal Pension Yojana
+49,916246,West Bengal,EWS,PM Kisan
+21,638020,Bihar,General,National Scholarship
+57,1056484,Gujarat,EWS,Atal Pension Yojana
+69,436740,Gujarat,ST,Atal Pension Yojana
+36,308530,West Bengal,SC,PM Kisan
+49,220321,Tamil Nadu,SC,Mudra Loan
+73,985327,West Bengal,EWS,Atal Pension Yojana
+66,629067,Bihar,EWS,Atal Pension Yojana
+80,417397,Rajasthan,SC,Atal Pension Yojana
+72,442074,Bihar,SC,Atal Pension Yojana
+65,568171,Rajasthan,ST,Atal Pension Yojana
+72,290098,Tamil Nadu,General,Atal Pension Yojana
+65,481400,Madhya Pradesh,ST,Atal Pension Yojana
+21,850481,West Bengal,SC,National Scholarship
+68,187329,Uttar Pradesh,SC,Ayushman Bharat
+69,319964,Madhya Pradesh,OBC,Atal Pension Yojana
+28,1113184,Karnataka,EWS,Mudra Loan
+66,931594,Maharashtra,ST,Atal Pension Yojana
+24,466684,Uttar Pradesh,General,Mudra Loan
+39,352591,Maharashtra,SC,Stand Up India
+63,615677,Madhya Pradesh,ST,Atal Pension Yojana
+64,857869,Tamil Nadu,OBC,Atal Pension Yojana
+32,490895,Madhya Pradesh,SC,Mudra Loan
+38,497259,Bihar,SC,Stand Up India
+38,683584,Bihar,EWS,Stand Up India
+25,591742,Karnataka,OBC,National Scholarship
+71,1080728,West Bengal,ST,Atal Pension Yojana
+48,298739,Gujarat,ST,Mudra Loan
+69,1000398,Madhya Pradesh,EWS,Atal Pension Yojana
+59,134533,West Bengal,ST,PM Awas Yojana
+43,772050,West Bengal,ST,National Scholarship
+64,1014077,West Bengal,General,Atal Pension Yojana
+57,783118,Bihar,OBC,Atal Pension Yojana
+29,246986,Maharashtra,SC,National Scholarship
+45,1142495,Uttar Pradesh,ST,Atal Pension Yojana
+78,978201,Gujarat,SC,Atal Pension Yojana
+46,396218,Karnataka,OBC,Mudra Loan
+64,1181146,Rajasthan,SC,Atal Pension Yojana
+43,146775,West Bengal,ST,Ayushman Bharat
+43,702892,Tamil Nadu,OBC,Mudra Loan
+48,63820,Gujarat,OBC,PM Kisan
+65,810384,Rajasthan,EWS,Atal Pension Yojana
+66,125089,West Bengal,OBC,Ayushman Bharat
+41,1165602,Rajasthan,EWS,PM Kisan
+61,116540,Bihar,General,Ayushman Bharat
+52,264435,Karnataka,ST,Atal Pension Yojana
+18,759871,Madhya Pradesh,SC,Mudra Loan
+39,215305,Rajasthan,EWS,PM Kisan
+38,273135,Karnataka,General,National Scholarship
+38,451252,Gujarat,OBC,Mudra Loan
+46,953244,Uttar Pradesh,General,Mudra Loan
+62,857909,Gujarat,ST,Atal Pension Yojana
+33,499981,Bihar,EWS,PM Awas Yojana
+22,1138587,Madhya Pradesh,SC,National Scholarship
+34,833426,Gujarat,ST,Stand Up India
+33,1144121,Maharashtra,OBC,PM Kisan
+48,303668,Tamil Nadu,ST,PM Awas Yojana
+48,140157,Madhya Pradesh,SC,PM Awas Yojana
+23,296511,Karnataka,SC,National Scholarship
+26,624770,Rajasthan,ST,Mudra Loan
+64,837386,Bihar,ST,Atal Pension Yojana
+30,764585,Madhya Pradesh,OBC,Ayushman Bharat
+23,67244,Bihar,OBC,PM Kisan
+41,1112408,Karnataka,OBC,PM Awas Yojana
+57,611390,Maharashtra,ST,Atal Pension Yojana
+35,425391,Tamil Nadu,SC,Atal Pension Yojana
+69,221398,Rajasthan,ST,Atal Pension Yojana
+32,729325,Rajasthan,EWS,PM Kisan
+68,1062720,Gujarat,SC,Atal Pension Yojana
+46,1028293,Uttar Pradesh,General,Ayushman Bharat
+75,452960,Bihar,OBC,Atal Pension Yojana
+76,854027,West Bengal,EWS,Atal Pension Yojana
+76,1185617,Madhya Pradesh,ST,Atal Pension Yojana
+24,65014,Uttar Pradesh,ST,Ayushman Bharat
+49,396441,Maharashtra,EWS,National Scholarship
+74,945720,Bihar,SC,Atal Pension Yojana
+46,456578,Bihar,ST,Stand Up India
+38,924270,Rajasthan,SC,National Scholarship
+25,818502,Madhya Pradesh,SC,National Scholarship
+19,896053,Madhya Pradesh,EWS,Mudra Loan
+38,1006528,Maharashtra,OBC,National Scholarship
+26,345309,Karnataka,ST,National Scholarship
+76,518605,Uttar Pradesh,OBC,Atal Pension Yojana
+59,543229,Karnataka,OBC,Atal Pension Yojana
+24,1007960,Rajasthan,SC,National Scholarship
+68,788401,Gujarat,EWS,Atal Pension Yojana
+62,322774,Gujarat,EWS,Atal Pension Yojana
+79,826814,Uttar Pradesh,ST,Atal Pension Yojana
+21,464525,Karnataka,SC,National Scholarship
+32,858298,Tamil Nadu,OBC,National Scholarship
+55,1036150,Gujarat,General,Ayushman Bharat
+80,1109490,Rajasthan,EWS,Atal Pension Yojana
+35,776896,Rajasthan,EWS,Atal Pension Yojana
+30,231136,Rajasthan,SC,National Scholarship
+29,122425,Tamil Nadu,EWS,Ayushman Bharat
+19,693630,Maharashtra,OBC,National Scholarship
+56,656671,Tamil Nadu,General,Atal Pension Yojana
+46,1145061,Uttar Pradesh,General,PM Kisan
+51,1008273,Gujarat,SC,PM Awas Yojana
+52,1055181,Madhya Pradesh,SC,Ayushman Bharat
+62,746533,Karnataka,General,Atal Pension Yojana
+31,802934,Rajasthan,General,Ayushman Bharat
+39,133351,West Bengal,SC,Ayushman Bharat
+52,723712,Uttar Pradesh,General,Mudra Loan
+28,1023774,Madhya Pradesh,EWS,Mudra Loan
+64,894133,Madhya Pradesh,SC,Atal Pension Yojana
+32,237183,Rajasthan,General,Stand Up India
+43,828713,Tamil Nadu,ST,Mudra Loan
+67,949072,Maharashtra,OBC,Atal Pension Yojana
+70,863205,Tamil Nadu,OBC,Atal Pension Yojana
+50,462439,Rajasthan,EWS,National Scholarship
+75,227158,Gujarat,EWS,Atal Pension Yojana
+62,66677,Uttar Pradesh,SC,PM Awas Yojana
+68,928696,Bihar,OBC,Atal Pension Yojana
+44,983150,Gujarat,SC,Atal Pension Yojana
+77,62414,Tamil Nadu,SC,PM Awas Yojana
+19,1065926,Bihar,SC,Mudra Loan
+67,431565,West Bengal,ST,Atal Pension Yojana
+71,289823,Maharashtra,SC,Atal Pension Yojana
+64,183871,Maharashtra,ST,Ayushman Bharat
+52,1035605,Maharashtra,OBC,National Scholarship
+36,118812,Gujarat,EWS,PM Kisan
+50,307708,Tamil Nadu,ST,Stand Up India
+23,729996,Uttar Pradesh,ST,National Scholarship
+38,429919,Karnataka,OBC,Atal Pension Yojana
+36,736065,Bihar,ST,National Scholarship
+74,819222,West Bengal,EWS,Atal Pension Yojana
+52,1039284,Rajasthan,EWS,Mudra Loan
+36,1080481,Gujarat,ST,Atal Pension Yojana
+20,498119,Bihar,EWS,National Scholarship
+61,649419,Karnataka,EWS,Atal Pension Yojana
+66,436799,Rajasthan,ST,Atal Pension Yojana
+41,829670,Madhya Pradesh,EWS,PM Awas Yojana
+75,224582,Uttar Pradesh,EWS,Atal Pension Yojana
+56,519458,Bihar,OBC,Atal Pension Yojana
+63,1199206,Bihar,SC,Atal Pension Yojana
+22,61111,Madhya Pradesh,OBC,PM Kisan
+28,282506,Gujarat,General,National Scholarship
+61,495968,Bihar,SC,Atal Pension Yojana
+22,1195642,Bihar,ST,National Scholarship
+79,794647,Madhya Pradesh,ST,Atal Pension Yojana
+67,389895,Gujarat,General,Atal Pension Yojana
+69,162090,Bihar,SC,PM Kisan
+28,411098,Gujarat,EWS,National Scholarship
+29,142740,Tamil Nadu,ST,PM Awas Yojana
+73,952047,Uttar Pradesh,ST,Atal Pension Yojana
+64,1135901,Uttar Pradesh,OBC,Atal Pension Yojana
+58,216919,Uttar Pradesh,EWS,Atal Pension Yojana
+35,751934,West Bengal,EWS,Ayushman Bharat
+25,1159944,Karnataka,EWS,National Scholarship
+72,354192,Karnataka,EWS,Atal Pension Yojana
+41,956919,Gujarat,ST,PM Awas Yojana
+53,1049854,Madhya Pradesh,EWS,Stand Up India
+77,378406,Tamil Nadu,ST,Atal Pension Yojana
+74,334329,Tamil Nadu,General,Atal Pension Yojana
+66,688358,Madhya Pradesh,ST,Atal Pension Yojana
+74,942877,Gujarat,OBC,Atal Pension Yojana
+73,805926,Gujarat,SC,Atal Pension Yojana
+32,352631,Uttar Pradesh,General,PM Kisan
+48,605482,West Bengal,EWS,Stand Up India
+43,878097,Karnataka,SC,Mudra Loan
+61,556352,Rajasthan,ST,Atal Pension Yojana
+78,476162,Gujarat,General,Atal Pension Yojana
+49,226291,Bihar,OBC,Atal Pension Yojana
+68,747082,Gujarat,OBC,Atal Pension Yojana
+46,573092,Uttar Pradesh,EWS,PM Awas Yojana
+52,93490,West Bengal,EWS,PM Awas Yojana
+64,1011115,Maharashtra,ST,Atal Pension Yojana
+65,1023826,Uttar Pradesh,ST,Atal Pension Yojana
+39,102554,Karnataka,EWS,PM Awas Yojana
+40,85508,Madhya Pradesh,EWS,Ayushman Bharat
+25,1093165,Maharashtra,General,Mudra Loan
+76,685110,Tamil Nadu,General,Atal Pension Yojana
+72,175829,Tamil Nadu,EWS,PM Kisan
+68,298227,Maharashtra,ST,Atal Pension Yojana
+28,347013,Karnataka,SC,Mudra Loan
+77,868980,Maharashtra,EWS,Atal Pension Yojana
+46,92293,Karnataka,EWS,PM Awas Yojana
+21,1117132,Rajasthan,SC,National Scholarship
+47,89088,Karnataka,ST,Ayushman Bharat
+51,514931,Tamil Nadu,OBC,PM Awas Yojana
+50,93029,Bihar,OBC,Ayushman Bharat
+23,810312,Bihar,SC,National Scholarship
+74,215406,Gujarat,General,Atal Pension Yojana
+25,610115,Madhya Pradesh,SC,National Scholarship
+71,217067,Bihar,EWS,Atal Pension Yojana
+44,142459,Karnataka,EWS,PM Awas Yojana
+58,412438,Maharashtra,ST,Atal Pension Yojana
+19,868836,Tamil Nadu,EWS,National Scholarship
+46,932629,Uttar Pradesh,SC,PM Awas Yojana
+74,1194731,Gujarat,EWS,Atal Pension Yojana
+20,225404,Madhya Pradesh,EWS,Mudra Loan
+77,658800,Karnataka,General,Atal Pension Yojana
+65,672174,Maharashtra,OBC,Atal Pension Yojana
+66,744193,Uttar Pradesh,OBC,Atal Pension Yojana
+37,872622,West Bengal,General,National Scholarship
+29,936338,Karnataka,ST,Mudra Loan
+41,99782,Maharashtra,OBC,Ayushman Bharat
+77,411193,Madhya Pradesh,General,Atal Pension Yojana
+62,700276,Madhya Pradesh,EWS,Atal Pension Yojana
+35,74508,Tamil Nadu,EWS,PM Awas Yojana
+39,590865,Maharashtra,ST,Ayushman Bharat
+40,1023595,Maharashtra,SC,PM Kisan
+49,351886,Madhya Pradesh,SC,Ayushman Bharat
+69,985556,Rajasthan,ST,Atal Pension Yojana
+36,947502,Karnataka,General,PM Kisan
+36,277649,Madhya Pradesh,SC,PM Kisan
+62,889595,Bihar,EWS,Atal Pension Yojana
+48,259111,Karnataka,General,PM Awas Yojana
+63,733423,Uttar Pradesh,General,Atal Pension Yojana
+50,139100,Tamil Nadu,ST,Ayushman Bharat
+69,663274,Tamil Nadu,SC,Atal Pension Yojana
+29,341751,Karnataka,SC,National Scholarship
+50,374092,Karnataka,EWS,Mudra Loan
+63,335616,Bihar,EWS,Atal Pension Yojana
+40,590674,Uttar Pradesh,ST,PM Kisan
+72,1166309,Rajasthan,SC,Atal Pension Yojana
+26,293451,West Bengal,SC,National Scholarship
+67,188091,West Bengal,OBC,PM Kisan
+39,608961,Maharashtra,SC,Stand Up India
+62,407511,Madhya Pradesh,OBC,Atal Pension Yojana
+29,174590,Maharashtra,ST,PM Kisan
+20,135085,Bihar,SC,Ayushman Bharat
+31,1069511,Rajasthan,OBC,PM Kisan
+53,885368,Madhya Pradesh,SC,National Scholarship
+42,99249,Tamil Nadu,General,PM Awas Yojana
+65,551808,Madhya Pradesh,OBC,Atal Pension Yojana
+43,894100,Madhya Pradesh,ST,Mudra Loan
+38,1043026,Karnataka,ST,Atal Pension Yojana
+41,917405,Uttar Pradesh,ST,Ayushman Bharat
+46,422950,Gujarat,ST,PM Kisan
+44,191597,Rajasthan,SC,PM Kisan
+44,1044759,Tamil Nadu,SC,Stand Up India
+71,1195015,Rajasthan,EWS,Atal Pension Yojana
+79,657877,Bihar,ST,Atal Pension Yojana
+27,300971,Gujarat,ST,National Scholarship
+69,854014,Gujarat,EWS,Atal Pension Yojana
+78,105966,Maharashtra,OBC,PM Awas Yojana
+30,391537,Maharashtra,SC,PM Awas Yojana
+57,1134011,Uttar Pradesh,OBC,Atal Pension Yojana
+48,705466,Rajasthan,SC,Ayushman Bharat
+28,1180300,Rajasthan,General,National Scholarship
+38,904060,Bihar,ST,Ayushman Bharat
+32,349341,Karnataka,OBC,PM Kisan
+55,834058,Uttar Pradesh,OBC,Mudra Loan
+64,1144079,Uttar Pradesh,OBC,Atal Pension Yojana
+36,241203,Gujarat,General,National Scholarship
+58,584958,Uttar Pradesh,General,Atal Pension Yojana
+76,899486,Maharashtra,SC,Atal Pension Yojana
+71,725559,Bihar,EWS,Atal Pension Yojana
+51,760252,Rajasthan,SC,Mudra Loan
+50,965790,Gujarat,ST,Ayushman Bharat
+42,432526,Maharashtra,SC,Atal Pension Yojana
+32,622771,Maharashtra,SC,PM Awas Yojana
+19,187524,Tamil Nadu,SC,PM Awas Yojana
+25,395905,Maharashtra,ST,National Scholarship
+43,817373,Madhya Pradesh,SC,Stand Up India
+30,293140,Karnataka,ST,Stand Up India
+29,981663,Karnataka,OBC,National Scholarship
+49,836735,Gujarat,OBC,PM Kisan
+57,325229,Tamil Nadu,OBC,Atal Pension Yojana
+23,400460,Karnataka,General,National Scholarship
+79,63517,Tamil Nadu,ST,Ayushman Bharat
+28,93238,Bihar,General,Ayushman Bharat
+74,99497,Maharashtra,ST,PM Kisan
+68,939103,Uttar Pradesh,ST,Atal Pension Yojana
+34,573318,Karnataka,General,National Scholarship
+29,104930,Maharashtra,EWS,PM Kisan
+41,213638,Bihar,ST,Ayushman Bharat
+71,665703,West Bengal,SC,Atal Pension Yojana
+39,942569,Rajasthan,SC,Stand Up India
+41,319546,West Bengal,ST,PM Awas Yojana
+45,1032425,Maharashtra,EWS,National Scholarship
+65,890950,Maharashtra,SC,Atal Pension Yojana
+52,755396,Bihar,EWS,Atal Pension Yojana
+71,525504,Karnataka,ST,Atal Pension Yojana
+43,520280,Bihar,ST,Atal Pension Yojana
+35,449274,Tamil Nadu,SC,Stand Up India
+74,738400,Madhya Pradesh,SC,Atal Pension Yojana
+19,383239,Rajasthan,OBC,Mudra Loan
+56,1015785,Rajasthan,OBC,Atal Pension Yojana
+49,728849,Madhya Pradesh,ST,Ayushman Bharat
+32,640532,Rajasthan,EWS,Stand Up India
+19,361114,Gujarat,EWS,Mudra Loan
+65,885874,Uttar Pradesh,General,Atal Pension Yojana
+66,104976,Rajasthan,OBC,Ayushman Bharat
+22,923514,Rajasthan,SC,Mudra Loan
+25,334557,West Bengal,SC,National Scholarship
+49,977684,Karnataka,General,Atal Pension Yojana
+73,335239,Karnataka,OBC,Atal Pension Yojana
+29,311356,Bihar,OBC,Mudra Loan
+40,1108578,Gujarat,OBC,National Scholarship
+19,855512,Madhya Pradesh,OBC,National Scholarship
+24,875231,Rajasthan,General,Mudra Loan
+45,631296,Madhya Pradesh,General,Mudra Loan
+74,269473,Madhya Pradesh,SC,Atal Pension Yojana
+59,447292,Gujarat,OBC,Atal Pension Yojana
+58,163210,Uttar Pradesh,General,Ayushman Bharat
+50,608608,West Bengal,ST,Ayushman Bharat
+71,662509,Maharashtra,ST,Atal Pension Yojana
+66,959161,Bihar,SC,Atal Pension Yojana
+67,824387,Gujarat,EWS,Atal Pension Yojana
+59,1126816,West Bengal,SC,Atal Pension Yojana
+24,231786,West Bengal,General,National Scholarship
+77,249365,Bihar,ST,Atal Pension Yojana
+60,230231,Gujarat,SC,Atal Pension Yojana
+53,723224,West Bengal,General,Ayushman Bharat
+72,1115222,Tamil Nadu,OBC,Atal Pension Yojana
+73,294126,Uttar Pradesh,EWS,Atal Pension Yojana
+40,394263,Bihar,ST,Ayushman Bharat
+35,1011871,Madhya Pradesh,OBC,Stand Up India
+46,227450,Gujarat,OBC,National Scholarship
+77,258104,Karnataka,ST,Atal Pension Yojana
+24,927061,Tamil Nadu,SC,Mudra Loan
+21,1070702,Tamil Nadu,EWS,National Scholarship
+31,294987,Uttar Pradesh,ST,Atal Pension Yojana
+29,160459,Rajasthan,SC,PM Kisan
+63,1076931,Gujarat,General,Atal Pension Yojana
+64,275475,Tamil Nadu,OBC,Atal Pension Yojana
+75,1105272,West Bengal,SC,Atal Pension Yojana
+30,539753,Bihar,EWS,National Scholarship
+60,1092016,West Bengal,SC,Atal Pension Yojana
+21,1151534,Madhya Pradesh,EWS,National Scholarship
+27,1119866,Madhya Pradesh,SC,Mudra Loan
+24,1048256,Maharashtra,EWS,National Scholarship
+43,1187488,Gujarat,ST,Ayushman Bharat
+75,445032,Rajasthan,ST,Atal Pension Yojana
+26,860173,Uttar Pradesh,OBC,National Scholarship
+57,82845,Maharashtra,General,PM Kisan
+76,700613,Uttar Pradesh,SC,Atal Pension Yojana
+52,1097362,Uttar Pradesh,General,Atal Pension Yojana
+40,452261,West Bengal,OBC,National Scholarship
+35,433199,Uttar Pradesh,General,Stand Up India
+54,439562,Gujarat,ST,Mudra Loan
+80,1106141,Madhya Pradesh,SC,Atal Pension Yojana
+74,288456,Uttar Pradesh,General,Atal Pension Yojana
+33,89742,West Bengal,EWS,Ayushman Bharat
+65,183358,Karnataka,SC,Ayushman Bharat
+35,841806,Rajasthan,ST,PM Kisan
+63,166659,West Bengal,SC,PM Kisan
+18,685409,Uttar Pradesh,ST,National Scholarship
+72,207739,Maharashtra,ST,Atal Pension Yojana
+27,831446,Maharashtra,SC,Mudra Loan
+54,152492,Madhya Pradesh,SC,PM Kisan
+60,1043150,Bihar,SC,Atal Pension Yojana
+40,836885,Uttar Pradesh,General,Atal Pension Yojana
+65,905043,Uttar Pradesh,General,Atal Pension Yojana
+60,262759,Maharashtra,OBC,Atal Pension Yojana
+59,703266,Maharashtra,General,Atal Pension Yojana
+34,605627,Madhya Pradesh,EWS,National Scholarship
+51,138601,Tamil Nadu,General,PM Awas Yojana
+62,560381,Maharashtra,EWS,Atal Pension Yojana
+76,611572,Karnataka,OBC,Atal Pension Yojana
+22,1047149,Maharashtra,EWS,Mudra Loan
+76,982801,Karnataka,EWS,Atal Pension Yojana
+52,499097,Rajasthan,ST,PM Awas Yojana
+48,834854,Uttar Pradesh,EWS,PM Kisan
+58,504224,Uttar Pradesh,OBC,Atal Pension Yojana
+48,494117,Madhya Pradesh,EWS,PM Awas Yojana
+67,999957,Gujarat,EWS,Atal Pension Yojana
+57,812603,Uttar Pradesh,SC,Atal Pension Yojana
+78,1143067,Gujarat,EWS,Atal Pension Yojana
+52,993843,Bihar,EWS,National Scholarship
+45,748765,Bihar,EWS,Mudra Loan
+44,127332,Uttar Pradesh,SC,Ayushman Bharat
+29,997611,Uttar Pradesh,SC,Mudra Loan
+67,80951,West Bengal,EWS,Ayushman Bharat
+59,789414,Bihar,EWS,Atal Pension Yojana
+80,525735,Maharashtra,EWS,Atal Pension Yojana
+46,562824,Maharashtra,SC,Stand Up India
+78,950320,Uttar Pradesh,SC,Atal Pension Yojana
+59,999530,Rajasthan,OBC,Atal Pension Yojana
+79,376825,West Bengal,SC,Atal Pension Yojana
+55,587254,Karnataka,General,Stand Up India
+38,189389,Bihar,EWS,PM Awas Yojana
+75,163310,Rajasthan,OBC,PM Kisan
+28,727862,Madhya Pradesh,ST,National Scholarship
+69,1016757,Maharashtra,ST,Atal Pension Yojana
+65,623002,Maharashtra,EWS,Atal Pension Yojana
+30,654126,Gujarat,General,Ayushman Bharat
+46,645561,Uttar Pradesh,SC,PM Kisan
+26,186133,Karnataka,General,PM Awas Yojana
+49,806852,Uttar Pradesh,EWS,Ayushman Bharat
+40,359438,Rajasthan,SC,PM Awas Yojana
+20,315693,Gujarat,OBC,Mudra Loan
+33,238564,Uttar Pradesh,ST,Mudra Loan
+21,948342,Madhya Pradesh,EWS,Mudra Loan
+66,1159767,Karnataka,ST,Atal Pension Yojana
+44,243273,West Bengal,ST,PM Awas Yojana
+66,266387,Rajasthan,OBC,Atal Pension Yojana
+55,989419,Karnataka,OBC,PM Kisan
+73,117992,West Bengal,SC,Ayushman Bharat
+36,636076,Rajasthan,ST,PM Kisan
+50,471913,Uttar Pradesh,EWS,PM Kisan
+72,1013694,Uttar Pradesh,OBC,Atal Pension Yojana
+44,125297,West Bengal,OBC,Ayushman Bharat
+60,489828,West Bengal,SC,Atal Pension Yojana
+53,501177,Karnataka,SC,Ayushman Bharat
+76,486628,Rajasthan,General,Atal Pension Yojana
+60,487537,West Bengal,OBC,Atal Pension Yojana
+59,635649,Bihar,ST,Atal Pension Yojana
+42,897013,Madhya Pradesh,ST,PM Kisan
+18,819807,Uttar Pradesh,EWS,Mudra Loan
+67,1075647,Bihar,EWS,Atal Pension Yojana
+18,1070023,Rajasthan,EWS,National Scholarship
+78,173704,Gujarat,EWS,PM Kisan
+49,1014332,West Bengal,OBC,Ayushman Bharat
+62,234386,Gujarat,General,Atal Pension Yojana
+77,879661,Gujarat,OBC,Atal Pension Yojana
+46,666027,Rajasthan,OBC,Stand Up India
+42,202042,Gujarat,SC,Stand Up India
+51,264498,Maharashtra,EWS,Mudra Loan
+27,319671,Gujarat,SC,Mudra Loan
+32,397444,Gujarat,General,PM Kisan
+56,1114598,Uttar Pradesh,ST,Atal Pension Yojana
+27,164458,Uttar Pradesh,General,PM Awas Yojana
+41,268858,West Bengal,EWS,PM Kisan
+28,557273,Tamil Nadu,OBC,Mudra Loan
+24,50245,Uttar Pradesh,ST,PM Awas Yojana
+75,417269,Gujarat,OBC,Atal Pension Yojana
+59,79552,Maharashtra,ST,PM Kisan
+76,737112,Maharashtra,EWS,Atal Pension Yojana
+46,251977,Madhya Pradesh,General,Stand Up India
+54,390848,West Bengal,ST,PM Awas Yojana
+27,774516,West Bengal,SC,National Scholarship
+37,349208,Madhya Pradesh,SC,PM Awas Yojana
+37,922762,Tamil Nadu,ST,PM Awas Yojana
+69,602892,Uttar Pradesh,SC,Atal Pension Yojana
+41,324903,Karnataka,EWS,PM Kisan
+33,555059,Karnataka,EWS,Atal Pension Yojana
+48,694845,Uttar Pradesh,OBC,PM Kisan
+36,832405,Maharashtra,EWS,Mudra Loan
+55,190593,Tamil Nadu,General,PM Kisan
+59,760678,West Bengal,OBC,Atal Pension Yojana
