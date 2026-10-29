@@ -333,6 +333,24 @@ ADHIKAAR_AI/
 
 ---
 
+## 📱 Demo Output
+
+Live interaction with **@Adhikaar013bot** on Telegram demonstrating conversational welfare entitlement intake, privacy notice consent, student scholarship inquiry, real-time OCR and LLM fact extraction, and deterministic document gap analysis:
+
+<p align="center">
+  <img src="docs/assets/demo_output_1.jpg" width="45%" alt="ADHIKAAR AI Telegram Bot Intake and Privacy Consent" />
+  &nbsp;&nbsp;
+  <img src="docs/assets/demo_output_2.jpg" width="45%" alt="ADHIKAAR AI Telegram Bot Real-Time Evaluation and Missing Document Gap Analysis" />
+</p>
+
+*Key Highlights Demonstrated:*
+- **DPDP Act 2023 Consent & Guidance**: Explicit consent recording and clear 3-step citizen instructions.
+- **Natural Language Inquiry**: Seamless understanding of student queries (*"I am a student and I need to know the scholarship asking provided by the government"*).
+- **Multi-Step Processing & Evaluation**: Real-time progress updates while OCR and Llama 3.1 8B extract facts.
+- **Deterministic Gap Analysis**: Accurately matched **State Pre-Matric Scholarship** (₹4,000/yr) and specifically identified the exact missing document (`bonafide_certificate`) required to finalize eligibility.
+
+---
+
 <div align="center">
 
 ADHIKAAR is open-source software licensed under the **[MIT License](file:///c:/Users/banks/ADHIKAAR_AI/LICENSE)**.
