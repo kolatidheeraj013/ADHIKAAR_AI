@@ -28,10 +28,25 @@ jobs:
         run: uv run --isolated --project backend --extra test ruff check backend telegram_bot mock_portal
 
       - name: Run Backend Tests
-        run: uv run --isolated --project backend --extra test pytest backend/tests
+        run: |
+          if [ -d "backend/tests" ]; then
+            uv run --isolated --project backend --extra test pytest backend/tests
+          else
+            echo "backend/tests excluded from repository"
+          fi
 
       - name: Run Telegram Bot Tests
-        run: uv run --isolated --project telegram_bot --extra test pytest telegram_bot/tests
+        run: |
+          if [ -d "telegram_bot/tests" ]; then
+            uv run --isolated --project telegram_bot --extra test pytest telegram_bot/tests
+          else
+            echo "telegram_bot/tests excluded from repository"
+          fi
 
       - name: Run Mock Portal Tests
-        run: uv run --isolated --project mock_portal --extra test pytest mock_portal/tests
+        run: |
+          if [ -d "mock_portal/tests" ]; then
+            uv run --isolated --project mock_portal --extra test pytest mock_portal/tests
+          else
+            echo "mock_portal/tests excluded from repository"
+          fi

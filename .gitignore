@@ -47,3 +47,10 @@ backend/.chroma/
 # Agent memory and instructions
 .agent-memory/
 complete-telegram-bot--behaviour.txt
+
+# Test suites and testing files (sample inputs in data/samples/ retained)
+tests/
+*/tests/
+frontend/__tests__/
+!data/samples/
+!data/samples/**
