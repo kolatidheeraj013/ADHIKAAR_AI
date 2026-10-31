@@ -12,9 +12,24 @@ try {
     $modelId = $lms.data[0].id
     Write-Host "  [OK] LM Studio is running. Active model: $modelId" -ForegroundColor Green
 } catch {
-    Write-Host "  [WARN] LM Studio server is not detected on port 1234." -ForegroundColor Red
-    Write-Host "         Please run: lms server start" -ForegroundColor Yellow
-    Write-Host "         and load your model: lms load adhikaar-llama3.1-8b-v3" -ForegroundColor Yellow
+    if (Get-Command "lms" -ErrorAction SilentlyContinue) {
+        Write-Host "  [INFO] Auto-starting LM Studio server on port 1234..." -ForegroundColor Cyan
+        & lms server start | Out-Null
+        Start-Sleep -Seconds 2
+        Write-Host "  [INFO] Auto-loading fine-tuned model adhikaar-llama3.1-8b-v3..." -ForegroundColor Cyan
+        Start-Process -FilePath "lms" -ArgumentList "load adhikaar-llama3.1-8b-v3" -WindowStyle Hidden
+        Start-Sleep -Seconds 3
+        try {
+            $lms = Invoke-RestMethod -Uri "http://127.0.0.1:1234/v1/models" -TimeoutSec 3 -ErrorAction Stop
+            Write-Host "  [OK] LM Studio server started and ready." -ForegroundColor Green
+        } catch {
+            Write-Host "  [WARN] LM Studio server starting in background. Model will be ready shortly." -ForegroundColor Yellow
+        }
+    } else {
+        Write-Host "  [WARN] LM Studio server is not detected on port 1234." -ForegroundColor Red
+        Write-Host "         Please run: lms server start" -ForegroundColor Yellow
+        Write-Host "         and load your model: lms load adhikaar-llama3.1-8b-v3" -ForegroundColor Yellow
+    }
 }
 
 # 2. Start Mock Portal on Port 8100
