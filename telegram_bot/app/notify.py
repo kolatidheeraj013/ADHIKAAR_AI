@@ -106,7 +106,13 @@ def question_keyboard(
 
 
 def format_citizen_notification_text(
-    raw_text: str, language: str = "en", kind: str = "result"
+    raw_text: str,
+    language: str = "en",
+    kind: str = "result",
+    *,
+    target_scheme: str | None = None,
+    target_benefit: str | None = None,
+    target_docs: list[str] | None = None,
 ) -> str:
     """Format backend notification text into a clean, human, citizen-friendly message."""
     if not raw_text or kind not in {"result", "info"}:
@@ -159,21 +165,39 @@ def format_citizen_notification_text(
         elif "reference:" in line_s.lower() or "portal_ref" in line_s.lower():
             portal_ref = line_s
 
+    if target_scheme:
+        scheme = target_scheme
+    if target_benefit:
+        benefit = target_benefit
+    if target_docs:
+        missing_docs = target_docs
+
     doc_display_names = {
         "aadhaar": "🪪 Aadhaar Card",
         "land_record": "🌾 Land Record / Patta",
         "bank_passbook": "🏦 Bank Passbook",
         "income_certificate": "📜 Income Certificate",
         "marksheet": "🎓 Marksheet",
+        "bonafide_certificate": "📜 Bonafide Certificate",
+        "vending_certificate": "🛒 Vending Certificate",
+        "artisan_card": "🔨 Artisan / Skill Card",
+        "bocw_card": "🏗️ Labour / BOCW Card",
+        "driving_license": "🪪 Driving License",
+        "fisherman_card": "🐟 Fisherman ID Card",
+        "sanitation_id": "🧹 Safai Karamchari / Worker ID",
+        "security_id": "🛡️ Security Guard ID",
+        "health_worker_id": "🩺 ASHA / Health Worker ID",
+        "gig_platform_id": "📱 Delivery / Gig Partner Profile / ID",
+        "factory_id": "🏭 Factory / Industrial Worker ID",
+        "trade_proof": "💼 Trade / Business Proof",
+        "pension_id": "📜 Pension / Age Proof",
+        "other": "📄 Other Document",
     }
 
     if outcome == "ELIGIBLE":
         out_lines = [
-            "🎉 ELIGIBILITY RESULT: ELIGIBLE",
-            f"Scheme: {scheme}",
-            "Outcome: ELIGIBLE",
-            "Case status: COMPLETED",
-            f"Benefit: {benefit}",
+            f"🎉 Congratulations! You qualify for {scheme}",
+            f"💰 Verified Benefit: {benefit}",
         ]
         if confidence_line:
             out_lines.append("Confidence: High (Verified)")
@@ -189,38 +213,36 @@ def format_citizen_notification_text(
             out_lines.append(f"\n🏛️ Government Portal: Submitted ({ref_clean})")
         else:
             out_lines.append("\n🏛️ Government Portal: Ready for submission")
-        out_lines.append("\nCongratulations! You qualify for assistance under this scheme.")
+        out_lines.append("\nYour application has been verified successfully under this scheme.")
         return "\n".join(out_lines)
 
     if outcome == "NOT_ELIGIBLE":
         out_lines = [
-            "📋 ELIGIBILITY RESULT: NOT ELIGIBLE",
-            f"Scheme: {scheme}",
-            "Outcome: NOT_ELIGIBLE",
-            "Case status: NOT_ELIGIBLE",
+            f"📋 Application Assessment: {scheme}",
+            "Status: Not Eligible Based on Current Details",
         ]
         if reasons:
             out_lines.append("\nReason:")
             for r in reasons:
                 out_lines.append(f"• {r}")
-        out_lines.append("\nTo apply with updated documents, send /start anytime.")
+        out_lines.append(
+            "\nYou can apply for other matching welfare schemes or send /start anytime."
+        )
         return "\n".join(out_lines)
 
     # NEEDS_DOCUMENTS or UNDETERMINED
     out_lines = [
-        f"📋 APPLICATION UPDATE: {scheme}",
-        "Outcome: UNDETERMINED",
-        "Case status: NEEDS_DOCUMENTS",
-        f"Benefit: {benefit}",
+        f"📋 Application Status: {scheme}",
+        f"💰 Entitlement / Benefit: {benefit}",
     ]
     if missing_docs:
         friendly_missing = [doc_display_names.get(d, d) for d in missing_docs]
         missing_str = ", ".join(friendly_missing)
         out_lines.append(f"\n⚠️ Missing Document Required:\n👉 {missing_str}")
         out_lines.append(
-            f"\nWe verified your other documents. Please upload your {missing_str} photo."
+            f"\nPlease upload a clear photo of your {missing_str}."
         )
-        out_lines.append("\nOnce uploaded, tap [✅ Check eligibility] to get your result!")
+        out_lines.append("\nOnce uploaded, tap [✅ Check eligibility] to get your verified result!")
     else:
         out_lines.append("\n⚠️ Additional document or information needed.")
         out_lines.append(
@@ -262,7 +284,17 @@ def render_notification(
     raw_text = str(payload.get("text", ""))
     kind = str(payload.get("kind", ""))
     language = str(payload.get("language", "en"))
-    formatted_text = format_citizen_notification_text(raw_text, language=language, kind=kind)
+    target_scheme = payload.get("target_scheme")
+    target_benefit = payload.get("target_benefit")
+    target_docs = payload.get("target_docs")
+    formatted_text = format_citizen_notification_text(
+        raw_text,
+        language=language,
+        kind=kind,
+        target_scheme=target_scheme,
+        target_benefit=target_benefit,
+        target_docs=target_docs,
+    )
     chunks = split_text(formatted_text)
     return [
         (chunk, keyboard if index == len(chunks) - 1 else None)

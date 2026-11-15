@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import os
 import re
+import sys
 from collections.abc import Awaitable, Callable
 from datetime import UTC
 from io import BytesIO
@@ -35,6 +37,8 @@ from .live_schemes import (
 )
 from .notify import AnswerTarget, CallbackStore, question_keyboard, render_notification
 from .onboarding import OnboardingStore
+
+logger = logging.getLogger(__name__)
 
 MAX_VOICE_SECONDS = int(os.getenv("MAX_VOICE_SECONDS", "30"))
 MAX_UPLOAD_BYTES = min(
@@ -179,20 +183,11 @@ def _status_text(language: str, case: dict[str, Any]) -> str:
         recent_lines.append(f"• Documents uploaded: {len(documents)}")
     if status.upper() == "NEEDS_DOCUMENTS":
         uploaded_types = {d.get("doc_type") for d in documents if isinstance(d, dict)}
-        type_labels = {
-            "aadhaar": t(language, "doc_tag_aadhaar"),
-            "land_record": t(language, "doc_tag_land"),
-            "bank_passbook": t(language, "doc_tag_passbook"),
-            "income_certificate": t(language, "doc_tag_income"),
-            "marksheet": t(language, "doc_tag_marksheet"),
-            "other": t(language, "doc_tag_other"),
-        }
-        missing = [
-            dt for dt in ("aadhaar", "land_record", "bank_passbook")
-            if dt not in uploaded_types
-        ]
+        type_labels = _type_labels(language)
+        _, _, req_docs = _get_target_scheme_info(case)
+        missing = [dt for dt in req_docs if dt not in uploaded_types]
         if missing:
-            missing_names = [type_labels.get(dt, dt) for dt in missing]
+            missing_names = [type_labels.get(dt, dt.replace("_", " ").title()) for dt in missing]
             recent_lines.append(f"• ⚠️ Missing Document Required: {', '.join(missing_names)}")
     for message in messages[-3:]:
         if not isinstance(message, dict):
@@ -698,15 +693,22 @@ def _output_action_keyboard(
         return InlineKeyboardMarkup(buttons)
     if key == "NEEDS_DOCUMENTS":
         # O3 Missing documents: Check eligibility button once uploaded
-        return InlineKeyboardMarkup(
+        # plus browse schemes if docs exist
+        buttons = [
             [
-                [
-                    InlineKeyboardButton(
-                        "✅ Check eligibility", callback_data=callbacks.add_action("case:check")
-                    )
-                ]
+                InlineKeyboardButton(
+                    "✅ Check eligibility", callback_data=callbacks.add_action("case:check")
+                )
             ]
-        )
+        ]
+        if case and _has_understood_documents(case):
+            buttons.append([
+                InlineKeyboardButton(
+                    f"🏛️ {t(language, 'menu_schemes')}",
+                    callback_data=callbacks.add_action("case:browse_schemes"),
+                )
+            ])
+        return InlineKeyboardMarkup(buttons)
     if key == "NEEDS_INFO":
         # O4 Question: Only the question options buttons
         if options:
@@ -991,7 +993,42 @@ async def start_new_application(update: Update, context: ContextTypes.DEFAULT_TY
     await _begin_onboarding(update, context)
 
 
+def _notify_owner_bot_started(update: Update) -> None:
+    """Notify the owner whenever a citizen starts using @Adhikaar013bot (Requirement 7)."""
+    user = update.effective_user
+    chat = update.effective_chat
+    user_str = (
+        f"@{user.username} (name: {user.full_name}, id: {chat.id if chat else 'unknown'})"
+        if user
+        else "Unknown citizen"
+    )
+    logger.warning(
+        "\n" + "=" * 65 + "\n"
+        f"🔔 [ADHIKAAR ALERT] Citizen started @Adhikaar013bot!\n"
+        f"   Citizen: {user_str}\n"
+        f"   To run local services if stopped: .\\scripts\\start_all.ps1\n"
+        + "=" * 65 + "\n"
+    )
+    if sys.platform == "win32":
+        try:
+            import subprocess
+
+            cmd = (
+                f"[System.Console]::Beep(1000, 250); "
+                f"[System.Console]::Beep(1300, 250); "
+                f'Write-Host "🔔 ADHIKAAR BOT STARTED BY: {user_str}"'
+            )
+            subprocess.Popen(
+                ["powershell", "-NoProfile", "-WindowStyle", "Hidden", "-Command", cmd],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+        except Exception:
+            pass
+
+
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    _notify_owner_bot_started(update)
     try:
         active = await _active_case(update, context)
     except Exception as exc:
@@ -1064,6 +1101,250 @@ async def submit_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     await _submit_case(update, context, _language(update, context))
 
 
+def _type_labels(language: str = "en") -> dict[str, str]:
+    return {
+        "aadhaar": t(language, "doc_tag_aadhaar"),
+        "land_record": t(language, "doc_tag_land"),
+        "bank_passbook": t(language, "doc_tag_passbook"),
+        "income_certificate": t(language, "doc_tag_income"),
+        "marksheet": t(language, "doc_tag_marksheet"),
+        "bonafide_certificate": t(language, "doc_tag_bonafide"),
+        "vending_certificate": t(language, "doc_tag_vending"),
+        "artisan_card": t(language, "doc_tag_artisan"),
+        "bocw_card": t(language, "doc_tag_bocw"),
+        "driving_license": t(language, "doc_tag_driving"),
+        "fisherman_card": t(language, "doc_tag_fisherman"),
+        "sanitation_id": t(language, "doc_tag_sanitation"),
+        "security_id": t(language, "doc_tag_security"),
+        "health_worker_id": t(language, "doc_tag_health"),
+        "gig_platform_id": t(language, "doc_tag_gig"),
+        "factory_id": t(language, "doc_tag_factory"),
+        "trade_proof": t(language, "doc_tag_trade"),
+        "pension_id": t(language, "doc_tag_pension"),
+        "other": t(language, "doc_tag_other"),
+    }
+
+
+def _get_target_scheme_info(
+    active: dict[str, Any] | None = None,
+    user_info: dict[str, Any] | None = None,
+) -> tuple[str, str, list[str]]:
+    """Determine target scheme name, benefit description, and required document keys.
+
+    Prioritizes the citizen's stated profession and intent over generic fallbacks.
+    """
+    text_corpus = ""
+    if active and active.get("intent_text"):
+        text_corpus += " " + str(active.get("intent_text")).lower()
+    if user_info:
+        text_corpus += " " + " ".join(f"{k} {v}" for k, v in user_info.items()).lower()
+
+    occ = (user_info.get("occupation") or "").lower() if user_info else ""
+    if not occ and text_corpus:
+        from .chat_memory import ChatMemory
+        probe_mem = ChatMemory()
+        probe_mem.add_message("probe", "user", text_corpus)
+        occ = probe_mem.extract_personal_info("probe").get("occupation", "").lower()
+
+    # Priority 1: Direct profession match
+    if occ == "student" or any(
+        k in text_corpus
+        for k in (
+            "student", "scholar", "scholarship", "study", "education",
+            "school", "college", "marksheet", "bonafide", "university",
+        )
+    ):
+        return (
+            "State Pre-Matric Scholarship",
+            "₹4,000 per academic year",
+            ["bonafide_certificate", "marksheet", "income_certificate", "aadhaar"],
+        )
+
+    if occ == "street vendor" or any(
+        k in text_corpus
+        for k in (
+            "vendor", "street vendor", "hawker", "thela", "cart",
+            "pushcart", "svanidhi", "tea stall", "chaiwala", "sabziwala",
+        )
+    ):
+        return (
+            "PM SVANidhi",
+            "₹10,000 - ₹50,000 working capital loan",
+            ["vending_certificate", "aadhaar", "bank_passbook"],
+        )
+
+    if occ == "artisan" or any(
+        k in text_corpus
+        for k in (
+            "artisan", "vishwakarma", "carpenter", "potter", "weaver",
+            "craftsman", "tailor", "cobbler", "blacksmith", "goldsmith",
+            "barber", "handloom", "karigar", "bunkar",
+        )
+    ):
+        return (
+            "PM Vishwakarma",
+            "₹15,000 toolkit + collateral-free credit",
+            ["artisan_card", "aadhaar", "bank_passbook"],
+        )
+
+    if occ == "construction worker" or any(
+        k in text_corpus
+        for k in (
+            "construction", "bocw", "labour", "mazdoor", "building",
+            "mason", "painter", "plumber", "electrician", "shramik",
+        )
+    ):
+        return (
+            "BOCW Welfare Scheme",
+            "₹5,000 - ₹50,000 welfare grant",
+            ["bocw_card", "aadhaar", "bank_passbook"],
+        )
+
+    if occ == "driver" or any(
+        k in text_corpus
+        for k in (
+            "driver", "auto", "taxi", "cab", "rickshaw", "transport",
+            "lorry", "tempo", "truck", "commercial vehicle", "chalak",
+        )
+    ):
+        return (
+            "PM-SYM (Pradhan Mantri Shram Yogi Maandhan)",
+            "₹3,000 per month pension + accident insurance",
+            ["driving_license", "aadhaar", "bank_passbook"],
+        )
+
+    if occ == "gig worker" or any(
+        k in text_corpus
+        for k in (
+            "delivery", "gig", "zomato", "swiggy", "dunzo", "zepto",
+            "blinkit", "rider", "courier", "platform worker",
+        )
+    ):
+        return (
+            "PM-SYM (Pradhan Mantri Shram Yogi Maandhan)",
+            "₹3,000 per month pension + accident insurance",
+            ["gig_platform_id", "aadhaar", "bank_passbook"],
+        )
+
+    if occ == "small business" or any(
+        k in text_corpus
+        for k in (
+            "business", "shopkeeper", "shop", "trader", "merchant",
+            "kirana", "dukaan", "mudra", "msme", "store",
+        )
+    ):
+        return (
+            "PM MUDRA Yojana",
+            "₹50,000 - ₹10,00,000 collateral-free business loan",
+            ["trade_proof", "aadhaar", "bank_passbook"],
+        )
+
+    if occ == "fisherman" or any(
+        k in text_corpus
+        for k in ("fish", "fisher", "fisherman", "matsya", "boat", "machhuara", "meenavar")
+    ):
+        return (
+            "PM Matsya Sampada Yojana",
+            "Up to 60% government subsidy on boats & equipment",
+            ["fisherman_card", "aadhaar", "bank_passbook"],
+        )
+
+    if occ in ("sanitation worker", "domestic worker") or any(
+        k in text_corpus
+        for k in (
+            "sanitation", "safai", "sweeper", "cleaning", "cleaner",
+            "maid", "domestic worker", "namaste", "househelp",
+        )
+    ):
+        return (
+            "NAMASTE Scheme for Sanitation Workers",
+            "Capital subsidy up to ₹5 lakh + health insurance",
+            ["sanitation_id", "aadhaar", "bank_passbook"],
+        )
+
+    if occ == "security guard" or any(
+        k in text_corpus for k in ("security", "guard", "watchman", "chowkidar")
+    ):
+        return (
+            "PMSBY & PM-SYM Welfare Scheme",
+            "₹2,00,000 insurance + ₹3,000 monthly pension",
+            ["security_id", "aadhaar", "bank_passbook"],
+        )
+
+    if occ == "health worker" or any(
+        k in text_corpus for k in ("asha", "anganwadi", "nurse", "health worker", "arogya")
+    ):
+        return (
+            "Ayushman Bharat (PM-JAY)",
+            "₹5,00,000 annual family health coverage",
+            ["health_worker_id", "aadhaar", "bank_passbook"],
+        )
+
+    if occ == "factory worker" or any(
+        k in text_corpus
+        for k in (
+            "factory", "plant", "manufacturing", "industrial",
+            "textile", "garment", "mill", "powerloom", "beedi",
+        )
+    ):
+        return (
+            "Factory & Industrial Workers Welfare Scheme",
+            "₹3,000 monthly pension + provident fund assistance",
+            ["factory_id", "aadhaar", "bank_passbook"],
+        )
+
+    if occ == "unemployed youth" or any(
+        k in text_corpus
+        for k in ("unemployed", "job seeker", "berozgar", "kaushal", "skill", "training", "fresher")
+    ):
+        return (
+            "PMKVY 4.0 Skill & Livelihood Scheme",
+            "Free skill training, certification + ₹8,000 stipend",
+            ["marksheet", "aadhaar", "bank_passbook"],
+        )
+
+    if any(
+        k in text_corpus
+        for k in (
+            "pension", "widow", "vidhwa", "elderly", "old age",
+            "senior citizen", "vridha", "divyang", "disabled",
+        )
+    ):
+        return (
+            "National Social Assistance Programme (NSAP Pension)",
+            "₹1,000 - ₹3,000 per month",
+            ["pension_id", "income_certificate", "aadhaar", "bank_passbook"],
+        )
+
+    if occ == "farmer" or any(
+        k in text_corpus
+        for k in (
+            "farmer", "kisan", "cultivator", "agriculture",
+            "khet", "kheti", "crop", "landowner", "land",
+        )
+    ):
+        return (
+            "PM-Kisan Samman Nidhi",
+            "₹6,000 per year",
+            ["aadhaar", "land_record", "bank_passbook"],
+        )
+
+    # Priority 2: Explicit scheme_id if no profession identified
+    scheme_id = (active.get("scheme_id") or "") if active else ""
+    if scheme_id == "state_scholarship_mock" or "scholar" in scheme_id.lower():
+        return (
+            "State Pre-Matric Scholarship",
+            "₹4,000 per academic year",
+            ["bonafide_certificate", "marksheet", "income_certificate", "aadhaar"],
+        )
+
+    return (
+        "PM-Kisan Samman Nidhi",
+        "₹6,000 per year",
+        ["aadhaar", "land_record", "bank_passbook"],
+    )
+
+
 async def checklist_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     try:
         active = await _active_case(update, context)
@@ -1075,15 +1356,7 @@ async def checklist_command(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         await _send(update, t(language, "no_active"), language=language)
         return
     docs = active.get("documents") or []
-    type_labels = {
-        "aadhaar": t(language, "doc_tag_aadhaar"),
-        "land_record": t(language, "doc_tag_land"),
-        "bank_passbook": t(language, "doc_tag_passbook"),
-        "income_certificate": t(language, "doc_tag_income"),
-        "marksheet": t(language, "doc_tag_marksheet"),
-        "bonafide_certificate": "📜 Bonafide Certificate",
-        "other": t(language, "doc_tag_other"),
-    }
+    type_labels = _type_labels(language)
     lines = [t(language, "checklist_header", count=len(docs)), "━━━━━━━━━━━━━━━━━━━━"]
     uploaded_types = set()
     for idx, d in enumerate(docs, 1):
@@ -1094,8 +1367,13 @@ async def checklist_command(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     if not docs:
         lines.append("No documents attached yet.")
     lines.append("━━━━━━━━━━━━━━━━━━━━")
-    lines.append("Target Scheme: PM-Kisan")
-    missing = [dt for dt in ("aadhaar", "land_record", "bank_passbook") if dt not in uploaded_types]
+
+    chat_id = str(_chat_id(update))
+    chat_mem: ChatMemory = _data(context, "chat_memory", ChatMemory())
+    user_info = chat_mem.extract_personal_info(chat_id)
+    scheme_name, benefit_desc, req_docs = _get_target_scheme_info(active, user_info)
+    lines.append(f"Target Scheme: {scheme_name}")
+    missing = [dt for dt in req_docs if dt not in uploaded_types]
     if missing:
         missing_names = [type_labels.get(dt, dt) for dt in missing]
         lines.append(f"⚠️ Still needed: {', '.join(missing_names)}")
@@ -1209,7 +1487,8 @@ async def schemes_command(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         need_docs_msg = (
             "ℹ️ To find and recommend the right government welfare schemes "
             "tailored to your exact eligibility:\n\n"
-            "Please upload your documents (such as Aadhaar Card, Land Record, or Bank Passbook) "
+            "Please upload your documents "
+            "(such as Aadhaar Card, Student ID, Income Certificate, or Bank Passbook) "
             "or share your requirement first by starting an application.\n\n"
             "👉 Tap [Start new application] below to begin!"
         )
@@ -1672,9 +1951,22 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             )
         except Exception:
             pass
+        active = await _active_case(update, context)
+        chat_mem: ChatMemory = _data(context, "chat_memory", ChatMemory())
+        user_info = chat_mem.extract_personal_info(chat_id)
+        scheme_name, _, req_docs = _get_target_scheme_info(active, user_info)
+        type_labels = _type_labels(language)
+        doc_names = [type_labels.get(d, d) for d in req_docs]
+
+        guidance_text = (
+            f"📸 STEP 2 — Upload Documents ({scheme_name})\n\n"
+            f"Please send clear photos of your required documents:\n"
+            f"👉 {', '.join(doc_names)}\n\n"
+            f"When you have attached your photos, choose [{t(language, 'menu_done')}] below."
+        )
         await _edit_callback(
             query,
-            t(language, "document_guidance"),
+            guidance_text,
             reply_markup=_done_keyboard(language, callbacks),
         )
         return
@@ -1737,24 +2029,20 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         status = str(active.get("status") or "").upper()
         docs = active.get("documents") or []
         uploaded_types = {d.get("doc_type") for d in docs if isinstance(d, dict)}
-        type_labels = {
-            "aadhaar": t(language, "doc_tag_aadhaar"),
-            "land_record": t(language, "doc_tag_land"),
-            "bank_passbook": t(language, "doc_tag_passbook"),
-            "income_certificate": t(language, "doc_tag_income"),
-            "marksheet": t(language, "doc_tag_marksheet"),
-            "other": t(language, "doc_tag_other"),
-        }
+        type_labels = _type_labels(language)
+        chat_mem: ChatMemory = _data(context, "chat_memory", ChatMemory())
+        user_info = chat_mem.extract_personal_info(chat_id)
+        scheme_name, benefit_desc, req_docs = _get_target_scheme_info(active, user_info)
 
         if status == "NEEDS_DOCUMENTS":
             missing = [
-                dt for dt in ("aadhaar", "land_record", "bank_passbook")
+                dt for dt in req_docs
                 if dt not in uploaded_types
             ]
             missing_names = [type_labels.get(dt, dt) for dt in missing]
             missing_str = ", ".join(missing_names) if missing_names else "required documents"
             lines = [
-                "📋 Continuing Active Application (PM-Kisan)",
+                f"📋 Continuing Active Application ({scheme_name})",
                 "",
                 f"✅ Verified documents ({len(docs)}):",
             ]
@@ -1777,7 +2065,7 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             await _edit_callback(query, text, reply_markup=question_markup)
             return
         if status == "COLLECTING":
-            text = f"📋 Active Application (PM-Kisan)\n\n{t(language, 'step_guide')}"
+            text = f"📋 Active Application ({scheme_name})\n\n{t(language, 'step_guide')}"
             await _edit_callback(query, text, reply_markup=_done_keyboard(language, callbacks))
             return
 
@@ -2036,6 +2324,37 @@ async def text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             return
 
         user_info = chat_mem.extract_personal_info(chat_id)
+        callbacks = _callbacks(context)
+        # Check if citizen is asking about schemes or describing their profession
+        matched = match_schemes_with_gap_analysis(user_profile=user_info, query=text, limit=3)
+        keywords = (
+            "scholar", "student", "kisan", "farmer", "scheme",
+            "benefit", "yojana", "pension", "loan", "vendor", "artisan",
+        )
+        if matched and (user_info or any(w in text.lower() for w in keywords)):
+            lines = ["🏛️ Government Welfare Schemes Matching Your Query:\n"]
+            for s in matched[:3]:
+                name = s.get("name") or "Government Scheme"
+                bene = s.get("benefit") or "Financial support / entitlement"
+                req_d = s.get("required_docs")
+                doc_str = (
+                    ", ".join(req_d)
+                    if isinstance(req_d, list)
+                    else str(req_d or "Aadhaar, Bank Passbook")
+                )
+                lines.append(f"📌 {name}\n💰 Benefit: {bene}\n📄 Documents: {doc_str}\n")
+            lines.append("👉 Tap [Start new application] below to check your eligibility or apply!")
+            reply = "\n".join(lines)
+            chat_mem.add_message(chat_id, "bot", reply)
+            await _send(
+                update,
+                reply,
+                language=language,
+                has_active_case=False,
+                reply_markup=_start_action_keyboard(language, callbacks),
+            )
+            return
+
         if user_info:
             summary = ", ".join(f"{k}: {v}" for k, v in user_info.items())
             reply = (
@@ -2090,8 +2409,8 @@ async def text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         return
 
     case_status = str(active.get("status") or "").upper() if active else "COLLECTING"
+    callbacks = _callbacks(context)
     if case_status == "NEEDS_DOCUMENTS":
-        callbacks = _callbacks(context)
         await _send(
             update,
             t(language, "received_text_need_docs"),
@@ -2100,9 +2419,42 @@ async def text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             reply_markup=_done_keyboard(language, callbacks),
         )
     else:
+        user_info = chat_mem.extract_personal_info(chat_id)
+        scheme_name, benefit_desc, req_docs = _get_target_scheme_info(active, user_info)
+        labels = _type_labels(language)
+        missing_names = [labels.get(d, d) for d in req_docs]
+
+        matched = match_schemes_with_gap_analysis(
+            user_profile=user_info,
+            query=text,
+            uploaded_docs=active.get("documents") if active else None,
+            limit=3,
+        )
+
+        lines = [
+            "✅ STEP 1 complete! Requirement noted.\n",
+            f"🏛️ Target Scheme: {scheme_name}",
+            f"💰 Benefit: {benefit_desc}\n",
+        ]
+        if matched:
+            lines.append("📋 Top Matching Welfare Schemes for Your Profile:")
+            for idx, s in enumerate(matched[:3], 1):
+                s_name = s.get("name") or "Government Scheme"
+                s_bene = s.get("benefit") or "Welfare assistance"
+                if len(s_bene) > 100:
+                    s_bene = s_bene[:100] + "..."
+                lines.append(f"{idx}️⃣ {s_name}\n   💰 Benefit: {s_bene}")
+            lines.append("")
+
+        lines.extend([
+            "📸 STEP 2 — Please upload your document photos:",
+            f"👉 {', '.join(missing_names)}\n",
+            f"💡 When you have attached your photos, choose [{t(language, 'menu_done')}] below.",
+        ])
+        reply_text = "\n".join(lines)
         await _send(
             update,
-            t(language, "received_text"),
+            reply_text,
             language=language,
             active_state=case_status if active else "COLLECTING",
         )
@@ -2140,9 +2492,23 @@ async def voice_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     except Exception as exc:
         await _send_backend_error(update, language, exc, action="send voice")
         return
+    chat_mem: ChatMemory = _data(context, "chat_memory", ChatMemory())
+    user_info = chat_mem.extract_personal_info(str(_chat_id(update)))
+    scheme_name, benefit_desc, req_docs = _get_target_scheme_info(active, user_info)
+    labels = _type_labels(language)
+    missing_names = [labels.get(d, d) for d in req_docs]
+    docs_str = ", ".join(missing_names)
+    voice_msg = (
+        f"✅ STEP 1 complete! Voice note received.\n\n"
+        f"🏛️ Target Scheme: {scheme_name}\n"
+        f"💰 Benefit: {benefit_desc}\n\n"
+        f"📸 STEP 2 — Please upload your document photos:\n"
+        f"👉 {docs_str}\n\n"
+        f"💡 When you have attached your photos, choose [{t(language, 'menu_done')}] below."
+    )
     await _send(
         update,
-        t(language, "received_voice"),
+        voice_msg,
         language=language,
         active_state=active.get("status") if active else "COLLECTING",
     )
@@ -2238,8 +2604,70 @@ def _detect_doc_type(text: str) -> str | None:
         return "bank_passbook"
     if any(k in text_lower for k in ("income", "aay", "வருமானம்", "ఆదాయం", "आय")):
         return "income_certificate"
-    if any(k in text_lower for k in ("marksheet", "mark", "10th", "12th", "10", "12")):
+    if any(
+        k in text_lower
+        for k in ("marksheet", "mark", "10th", "12th", "10", "12", "மதிப்பெண்", "మార్కులు")
+    ):
         return "marksheet"
+    if any(
+        k in text_lower
+        for k in ("bonafide", "student", "study", "college", "school id", "மாணவர்", "విద్యార్థి")
+    ):
+        return "bonafide_certificate"
+    if any(k in text_lower for k in ("vending", "vendor", "hawker", "thela", "விற்பனையாளர்")):
+        return "vending_certificate"
+    if any(k in text_lower for k in ("artisan", "vishwakarma", "craft", "கைவினைஞர்")):
+        return "artisan_card"
+    if any(k in text_lower for k in ("bocw", "labour", "construction", "தொழிலாளர்", "కార్మిక")):
+        return "bocw_card"
+    if any(
+        k in text_lower
+        for k in ("driving", "driver", "license", "licence", "dl", "चालक", "ஓட்டுநர்", "డ్రైవింగ్")
+    ):
+        return "driving_license"
+    if any(
+        k in text_lower
+        for k in ("fish", "fisher", "matsya", "மீனவர்", "మత్స్యకార", "मछुआरा")
+    ):
+        return "fisherman_card"
+    if any(
+        k in text_lower
+        for k in ("sanitation", "safai", "sweeper", "cleaning", "தூய்மை", "సఫాయి", "सफाई")
+    ):
+        return "sanitation_id"
+    if any(
+        k in text_lower
+        for k in ("security", "guard", "பாதுகாவலர்", "రక్షక", "सुरक्षा")
+    ):
+        return "security_id"
+    if any(
+        k in text_lower
+        for k in ("asha", "anganwadi", "nurse", "health", "ஆஷா", "ఆశా", "आशा")
+    ):
+        return "health_worker_id"
+    if any(
+        k in text_lower
+        for k in ("swiggy", "zomato", "delivery", "gig", "zepto", "blinkit")
+    ):
+        return "gig_platform_id"
+    if any(
+        k in text_lower
+        for k in ("factory", "industrial", "mill", "தொழிற்சாலை", "ఫ్యాక్టరీ", "कारखाना")
+    ):
+        return "factory_id"
+    if any(
+        k in text_lower
+        for k in ("trade", "gst", "shop", "dukan", "udyam", "வணிகம்", "వ్యాపార", "व्यापार")
+    ):
+        return "trade_proof"
+    if any(
+        k in text_lower
+        for k in (
+            "pension", "age proof", "senior", "vidhwa", "widow",
+            "vridha", "ஓய்வூதியம்", "పింఛను", "पेंशन"
+        )
+    ):
+        return "pension_id"
     return None
 
 
@@ -2402,6 +2830,20 @@ async def handle_notification(payload: dict[str, Any], application: Application)
     try:
         raw_text = str(payload.get("text", ""))
         language = str(payload.get("language", "en"))
+        case = payload.get("case")
+        chat_id = payload.get("chat_id")
+        chat_mem: ChatMemory = application.bot_data.get("chat_memory", ChatMemory())
+        user_info = chat_mem.extract_personal_info(chat_id) if chat_id else {}
+        scheme_name, benefit_desc, req_docs = _get_target_scheme_info(case, user_info)
+
+        payload["target_scheme"] = scheme_name
+        payload["target_benefit"] = benefit_desc
+        uploaded_docs = (case.get("documents") or []) if case else []
+        uploaded_types = {d.get("doc_type") for d in uploaded_docs if isinstance(d, dict)}
+        target_missing = [d for d in req_docs if d not in uploaded_types]
+        if target_missing:
+            payload["target_docs"] = target_missing
+
         output_key = None
         if "ELIGIBLE" in raw_text and "NOT_ELIGIBLE" not in raw_text:
             output_key = "COMPLETED"

@@ -233,6 +233,59 @@ def classify_docs(state: CaseState, runtime: GraphDependencies) -> CaseState:
     return state
 
 
+def _infer_doc_type_from_ocr(text: str) -> tuple[str, float] | None:
+    t = text.lower()
+    if any(
+        k in t
+        for k in (
+            "unique identification authority", "aadhaar", "uidai",
+            "enrolment no", "mera aadhaar", "आधार",
+        )
+    ):
+        return "aadhaar", 0.95
+    if any(
+        k in t
+        for k in (
+            "bonafide", "bonafide certificate", "regular student",
+            "student of class", "bonafide student", "conduct certificate",
+        )
+    ):
+        return "bonafide_certificate", 0.92
+    if any(
+        k in t
+        for k in (
+            "marksheet", "statement of marks", "secondary school examination",
+            "higher secondary", "marks obtained", "grade sheet", "board of secondary",
+        )
+    ):
+        return "marksheet", 0.92
+    if any(
+        k in t
+        for k in (
+            "income certificate", "annual income", "family income",
+            "tahsildar", "revenue department", "caste and income", "आय प्रमाण",
+        )
+    ):
+        return "income_certificate", 0.92
+    if any(
+        k in t
+        for k in (
+            "passbook", "account number", "account no", "ifsc code",
+            "savings bank", "branch code", "bank of", "state bank",
+        )
+    ):
+        return "bank_passbook", 0.92
+    if any(
+        k in t
+        for k in (
+            "patta", "chitta", "khasra", "khatauni", "ror",
+            "land record", "jamabandi", "7/12", "satbara", "survey number",
+        )
+    ):
+        return "land_record", 0.92
+    return None
+
+
 def ocr(state: CaseState, runtime: GraphDependencies) -> CaseState:
     for document in state.documents:
         if document.ocr_text:
@@ -240,6 +293,10 @@ def ocr(state: CaseState, runtime: GraphDependencies) -> CaseState:
         result = runtime.ocr.ocr(document.path)
         document.ocr_text = str(result.get("text", ""))
         document.ocr_conf = float(result.get("confidence", 0.0))
+        if (document.doc_type == "other" or document.doc_type_conf < 0.6) and document.ocr_text:
+            inferred = _infer_doc_type_from_ocr(document.ocr_text)
+            if inferred:
+                document.doc_type, document.doc_type_conf = inferred
     return state
 
 

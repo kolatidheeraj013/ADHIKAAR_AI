@@ -93,12 +93,29 @@ class FakeLLMClient:
 
 class FakeRetriever:
     def retrieve(self, query: str, k: int = 4) -> list[dict[str, Any]]:
-        scholarship_words = ("scholar", "student", "education")
-        scheme_id = (
-            "state_scholarship_mock"
-            if any(word in query.lower() for word in scholarship_words)
-            else "pm_kisan_mock"
-        )
+        q = query.lower()
+        if any(
+            w in q
+            for w in ("scholar", "student", "education", "study", "marksheet", "school", "college")
+        ):
+            scheme_id = "state_scholarship_mock"
+        elif any(
+            w in q for w in ("vendor", "street vendor", "hawker", "thela", "cart", "svanidhi")
+        ):
+            scheme_id = "pm_svanidhi_mock"
+        elif any(
+            w in q
+            for w in ("artisan", "vishwakarma", "carpenter", "potter", "weaver", "craftsman")
+        ):
+            scheme_id = "pm_vishwakarma_mock"
+        elif any(w in q for w in ("construction", "bocw", "labour", "mazdoor", "building")):
+            scheme_id = "bocw_mock"
+        elif any(w in q for w in ("driver", "auto", "taxi", "delivery", "gig", "unorganized")):
+            scheme_id = "pm_sym_mock"
+        elif any(w in q for w in ("business", "shopkeeper", "trader", "kirana", "dukaan", "mudra")):
+            scheme_id = "pm_mudra_mock"
+        else:
+            scheme_id = "pm_kisan_mock"
         return [
             {
                 "scheme_id": scheme_id,

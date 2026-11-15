@@ -24,6 +24,36 @@ REQUIRED_FIELDS: dict[str, tuple[str, ...]] = {
         "bank_account_number",
         "bank_ifsc",
     ),
+    "pm_svanidhi_mock": (
+        "applicant_name",
+        "aadhaar_last4",
+        "bank_account_number",
+        "bank_ifsc",
+    ),
+    "pm_vishwakarma_mock": (
+        "applicant_name",
+        "aadhaar_last4",
+        "bank_account_number",
+        "bank_ifsc",
+    ),
+    "bocw_mock": (
+        "applicant_name",
+        "aadhaar_last4",
+        "bank_account_number",
+        "bank_ifsc",
+    ),
+    "pm_sym_mock": (
+        "applicant_name",
+        "aadhaar_last4",
+        "bank_account_number",
+        "bank_ifsc",
+    ),
+    "pm_mudra_mock": (
+        "applicant_name",
+        "aadhaar_last4",
+        "bank_account_number",
+        "bank_ifsc",
+    ),
 }
 
 

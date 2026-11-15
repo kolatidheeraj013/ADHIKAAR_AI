@@ -301,11 +301,35 @@ class _ServiceState:
             and metadata[d.storage_path].get("doc_type") != "other"
         }
         candidate_reqs = ["aadhaar", "land_record", "bank_passbook"]
-        if case.intent_text and any(
-            w in case.intent_text.lower()
-            for w in ("scholar", "study", "education", "school", "college")
+        intent_lower = (case.intent_text or "").lower()
+        if any(
+            w in intent_lower
+            for w in ("scholar", "study", "education", "school", "college", "student")
         ):
             candidate_reqs = ["aadhaar", "income_certificate", "marksheet", "bonafide_certificate"]
+        elif any(
+            w in intent_lower
+            for w in ("vendor", "street vendor", "hawker", "thela", "cart", "svanidhi")
+        ):
+            candidate_reqs = ["aadhaar", "vending_certificate", "bank_passbook"]
+        elif any(
+            w in intent_lower
+            for w in ("artisan", "vishwakarma", "carpenter", "potter", "weaver", "craftsman")
+        ):
+            candidate_reqs = ["aadhaar", "artisan_card", "bank_passbook"]
+        elif any(
+            w in intent_lower
+            for w in ("construction", "bocw", "labour", "mazdoor", "building")
+        ):
+            candidate_reqs = ["aadhaar", "bocw_card", "bank_passbook"]
+        elif any(
+            w in intent_lower
+            for w in (
+                "driver", "auto", "taxi", "delivery", "gig",
+                "unorganized", "business", "shop", "kirana", "mudra",
+            )
+        ):
+            candidate_reqs = ["aadhaar", "bank_passbook"]
         needed = [req for req in candidate_reqs if req not in existing_types]
         for document in documents:
             if not document.storage_path:
