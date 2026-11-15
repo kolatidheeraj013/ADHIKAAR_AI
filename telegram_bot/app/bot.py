@@ -469,8 +469,7 @@ async def _watch_for_case_result(
                     reasons = decision.get("reasons") or ["Eligibility criteria not met"]
                     r_str = "\n".join(f"- {r}" for r in reasons)
                     result_text = (
-                        f"Scheme: {scheme_id}\nOutcome: NOT_ELIGIBLE\n"
-                        f"Rule reasons:\n{r_str}"
+                        f"Scheme: {scheme_id}\nOutcome: NOT_ELIGIBLE\nRule reasons:\n{r_str}"
                     )
                 else:
                     result_text = _status_text(language, case)
@@ -604,12 +603,14 @@ def _case_choice_keyboard(
         ],
     ]
     if has_documents:
-        buttons.append([
-            InlineKeyboardButton(
-                f"🏛️ {t(language, 'menu_schemes')}",
-                callback_data=callbacks.add_action("case:browse_schemes"),
-            )
-        ])
+        buttons.append(
+            [
+                InlineKeyboardButton(
+                    f"🏛️ {t(language, 'menu_schemes')}",
+                    callback_data=callbacks.add_action("case:browse_schemes"),
+                )
+            ]
+        )
     return InlineKeyboardMarkup(buttons)
 
 
@@ -699,12 +700,14 @@ def _output_action_keyboard(
             ]
         ]
         if case and _has_understood_documents(case):
-            buttons.append([
-                InlineKeyboardButton(
-                    f"🏛️ {t(language, 'menu_schemes')}",
-                    callback_data=callbacks.add_action("case:browse_schemes"),
-                )
-            ])
+            buttons.append(
+                [
+                    InlineKeyboardButton(
+                        f"🏛️ {t(language, 'menu_schemes')}",
+                        callback_data=callbacks.add_action("case:browse_schemes"),
+                    )
+                ]
+            )
         return InlineKeyboardMarkup(buttons)
     if key == "NEEDS_DOCUMENTS":
         # O3 Missing documents: Check eligibility button once uploaded
@@ -717,12 +720,14 @@ def _output_action_keyboard(
             ]
         ]
         if case and _has_understood_documents(case):
-            buttons.append([
-                InlineKeyboardButton(
-                    f"🏛️ {t(language, 'menu_schemes')}",
-                    callback_data=callbacks.add_action("case:browse_schemes"),
-                )
-            ])
+            buttons.append(
+                [
+                    InlineKeyboardButton(
+                        f"🏛️ {t(language, 'menu_schemes')}",
+                        callback_data=callbacks.add_action("case:browse_schemes"),
+                    )
+                ]
+            )
         return InlineKeyboardMarkup(buttons)
     if key == "NEEDS_INFO":
         # O4 Question: Only the question options buttons
@@ -964,21 +969,24 @@ async def _begin_onboarding(
     update: Update, context: ContextTypes.DEFAULT_TYPE, language: str | None = None
 ) -> None:
     language = language or _language(update, context)
+    chat_id = _chat_id(update)
+    if chat_id:
+        chat_mem: ChatMemory = _data(context, "chat_memory", ChatMemory())
+        chat_mem.clear(chat_id)
     admin_id = os.getenv("ADMIN_CHAT_ID", "").strip()
     if admin_id and context.bot:
         try:
             user = update.effective_user
-            u_id = user.id if user else 'Unknown'
+            u_id = user.id if user else "Unknown"
             user_desc = f"@{user.username}" if (user and user.username) else f"User ID {u_id}"
             if str(u_id) != admin_id:
                 import asyncio
+
                 alert_msg = (
                     f"🔔 [ADHIKAAR 013 Bot Alert]\nA citizen ({user_desc}) has started using "
                     "@Adhikaar013bot!\nLaunch application if offline: .\\scripts\\start_all.ps1"
                 )
-                asyncio.create_task(
-                    context.bot.send_message(chat_id=int(admin_id), text=alert_msg)
-                )
+                asyncio.create_task(context.bot.send_message(chat_id=int(admin_id), text=alert_msg))
         except Exception:
             pass
     await _send(update, t(language, "privacy"), language=language)
@@ -1021,8 +1029,7 @@ def _notify_owner_bot_started(update: Update) -> None:
         "\n" + "=" * 65 + "\n"
         f"🔔 [ADHIKAAR ALERT] Citizen started @Adhikaar013bot!\n"
         f"   Citizen: {user_str}\n"
-        f"   To run local services if stopped: .\\scripts\\start_all.ps1\n"
-        + "=" * 65 + "\n"
+        f"   To run local services if stopped: .\\scripts\\start_all.ps1\n" + "=" * 65 + "\n"
     )
     if sys.platform == "win32":
         try:
@@ -1155,30 +1162,52 @@ def _type_labels(language: str = "en") -> dict[str, str]:
 def _get_target_scheme_info(
     active: dict[str, Any] | None = None,
     user_info: dict[str, Any] | None = None,
+    query_text: str = "",
 ) -> tuple[str, str, list[str]]:
     """Determine target scheme name, benefit description, and required document keys.
 
     Prioritizes the citizen's stated profession and intent over generic fallbacks.
     """
-    text_corpus = ""
-    if active and active.get("intent_text"):
-        text_corpus += " " + str(active.get("intent_text")).lower()
-    if user_info:
-        text_corpus += " " + " ".join(f"{k} {v}" for k, v in user_info.items()).lower()
+    from .chat_memory import ChatMemory
 
-    occ = (user_info.get("occupation") or "").lower() if user_info else ""
-    if not occ and text_corpus:
-        from .chat_memory import ChatMemory
-        probe_mem = ChatMemory()
-        probe_mem.add_message("probe", "user", text_corpus)
-        occ = probe_mem.extract_personal_info("probe").get("occupation", "").lower()
+    probe_mem = ChatMemory()
+
+    occ = ""
+    probe_text = (query_text or "").strip()
+    if not probe_text and active and active.get("intent_text"):
+        probe_text = str(active.get("intent_text")).strip()
+    if not probe_text and user_info:
+        probe_text = " ".join(f"{k} {v}" for k, v in user_info.items())
+
+    if probe_text:
+        occ = (
+            probe_mem.extract_personal_info("probe", text=probe_text).get("occupation", "").lower()
+        )
+    if not occ and user_info:
+        occ = (user_info.get("occupation") or "").lower()
+
+    text_corpus = (
+        (query_text or "")
+        + " "
+        + (str(active.get("intent_text") or "") if active else "")
+        + " "
+        + (" ".join(f"{k} {v}" for k, v in user_info.items()) if user_info else "")
+    ).lower()
 
     # Priority 1: Direct profession match
     if occ == "student" or any(
         k in text_corpus
         for k in (
-            "student", "scholar", "scholarship", "study", "education",
-            "school", "college", "marksheet", "bonafide", "university",
+            "student",
+            "scholar",
+            "scholarship",
+            "study",
+            "education",
+            "school",
+            "college",
+            "marksheet",
+            "bonafide",
+            "university",
         )
     ):
         return (
@@ -1190,8 +1219,16 @@ def _get_target_scheme_info(
     if occ == "street vendor" or any(
         k in text_corpus
         for k in (
-            "vendor", "street vendor", "hawker", "thela", "cart",
-            "pushcart", "svanidhi", "tea stall", "chaiwala", "sabziwala",
+            "vendor",
+            "street vendor",
+            "hawker",
+            "thela",
+            "cart",
+            "pushcart",
+            "svanidhi",
+            "tea stall",
+            "chaiwala",
+            "sabziwala",
         )
     ):
         return (
@@ -1203,9 +1240,20 @@ def _get_target_scheme_info(
     if occ == "artisan" or any(
         k in text_corpus
         for k in (
-            "artisan", "vishwakarma", "carpenter", "potter", "weaver",
-            "craftsman", "tailor", "cobbler", "blacksmith", "goldsmith",
-            "barber", "handloom", "karigar", "bunkar",
+            "artisan",
+            "vishwakarma",
+            "carpenter",
+            "potter",
+            "weaver",
+            "craftsman",
+            "tailor",
+            "cobbler",
+            "blacksmith",
+            "goldsmith",
+            "barber",
+            "handloom",
+            "karigar",
+            "bunkar",
         )
     ):
         return (
@@ -1217,8 +1265,16 @@ def _get_target_scheme_info(
     if occ == "construction worker" or any(
         k in text_corpus
         for k in (
-            "construction", "bocw", "labour", "mazdoor", "building",
-            "mason", "painter", "plumber", "electrician", "shramik",
+            "construction",
+            "bocw",
+            "labour",
+            "mazdoor",
+            "building",
+            "mason",
+            "painter",
+            "plumber",
+            "electrician",
+            "shramik",
         )
     ):
         return (
@@ -1230,8 +1286,17 @@ def _get_target_scheme_info(
     if occ == "driver" or any(
         k in text_corpus
         for k in (
-            "driver", "auto", "taxi", "cab", "rickshaw", "transport",
-            "lorry", "tempo", "truck", "commercial vehicle", "chalak",
+            "driver",
+            "auto",
+            "taxi",
+            "cab",
+            "rickshaw",
+            "transport",
+            "lorry",
+            "tempo",
+            "truck",
+            "commercial vehicle",
+            "chalak",
         )
     ):
         return (
@@ -1243,8 +1308,16 @@ def _get_target_scheme_info(
     if occ == "gig worker" or any(
         k in text_corpus
         for k in (
-            "delivery", "gig", "zomato", "swiggy", "dunzo", "zepto",
-            "blinkit", "rider", "courier", "platform worker",
+            "delivery",
+            "gig",
+            "zomato",
+            "swiggy",
+            "dunzo",
+            "zepto",
+            "blinkit",
+            "rider",
+            "courier",
+            "platform worker",
         )
     ):
         return (
@@ -1256,8 +1329,16 @@ def _get_target_scheme_info(
     if occ == "small business" or any(
         k in text_corpus
         for k in (
-            "business", "shopkeeper", "shop", "trader", "merchant",
-            "kirana", "dukaan", "mudra", "msme", "store",
+            "business",
+            "shopkeeper",
+            "shop",
+            "trader",
+            "merchant",
+            "kirana",
+            "dukaan",
+            "mudra",
+            "msme",
+            "store",
         )
     ):
         return (
@@ -1279,8 +1360,15 @@ def _get_target_scheme_info(
     if occ in ("sanitation worker", "domestic worker") or any(
         k in text_corpus
         for k in (
-            "sanitation", "safai", "sweeper", "cleaning", "cleaner",
-            "maid", "domestic worker", "namaste", "househelp",
+            "sanitation",
+            "safai",
+            "sweeper",
+            "cleaning",
+            "cleaner",
+            "maid",
+            "domestic worker",
+            "namaste",
+            "househelp",
         )
     ):
         return (
@@ -1310,8 +1398,15 @@ def _get_target_scheme_info(
     if occ == "factory worker" or any(
         k in text_corpus
         for k in (
-            "factory", "plant", "manufacturing", "industrial",
-            "textile", "garment", "mill", "powerloom", "beedi",
+            "factory",
+            "plant",
+            "manufacturing",
+            "industrial",
+            "textile",
+            "garment",
+            "mill",
+            "powerloom",
+            "beedi",
         )
     ):
         return (
@@ -1333,8 +1428,15 @@ def _get_target_scheme_info(
     if any(
         k in text_corpus
         for k in (
-            "pension", "widow", "vidhwa", "elderly", "old age",
-            "senior citizen", "vridha", "divyang", "disabled",
+            "pension",
+            "widow",
+            "vidhwa",
+            "elderly",
+            "old age",
+            "senior citizen",
+            "vridha",
+            "divyang",
+            "disabled",
         )
     ):
         return (
@@ -1346,8 +1448,15 @@ def _get_target_scheme_info(
     if occ == "farmer" or any(
         k in text_corpus
         for k in (
-            "farmer", "kisan", "cultivator", "agriculture",
-            "khet", "kheti", "crop", "landowner", "land",
+            "farmer",
+            "kisan",
+            "cultivator",
+            "agriculture",
+            "khet",
+            "kheti",
+            "crop",
+            "landowner",
+            "land",
         )
     ):
         return (
@@ -1505,10 +1614,7 @@ async def schemes_command(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
     # Requirement 1: Browse schemes only shows when docs or citizen data exist
     has_enough_data = (
-        bool(uploaded_docs)
-        or bool(user_profile)
-        or bool(query_text)
-        or bool(backend_schemes)
+        bool(uploaded_docs) or bool(user_profile) or bool(query_text) or bool(backend_schemes)
     )
     if not has_enough_data and not active_case:
         need_docs_msg = (
@@ -1562,7 +1668,7 @@ async def schemes_command(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         limit=3,
     )
 
-    # If backend has custom mock schemes (e.g. from tests), ensure they are included
+    # If backend has custom mock schemes, include them appropriately
     if backend_schemes:
         matched_ids = {s.get("scheme_id") for s in matched_schemes}
         for bs in backend_schemes:
@@ -1571,21 +1677,31 @@ async def schemes_command(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 req_keys = [normalize_doc_type(d) for d in req_raw]
                 up_keys = {normalize_doc_type(d) for d in uploaded_docs}
                 missing_keys = [k for k in req_keys if k not in up_keys]
-                matched_schemes.insert(0, {
-                    "scheme_id": bs.get("scheme_id"),
-                    "name": bs.get("name"),
-                    "benefit": bs.get("benefit"),
-                    "required_documents": req_raw,
-                    "lacking_documents_count": len(missing_keys),
-                    "lacking_documents": missing_keys or req_raw,
-                    "missing_documents_count": len(missing_keys),
-                    "missing_documents_names": missing_keys or req_raw,
-                    "lacking_user_info": ["None (All required details verified)"],
-                    "missing_user_info": ["None (All required details verified)"],
-                    "source": "Backend Scheme Store",
-                    "official_url": bs.get("official_url"),
-                })
-        matched_schemes = matched_schemes[:3]
+                matched_schemes.append(
+                    {
+                        "scheme_id": bs.get("scheme_id"),
+                        "name": bs.get("name"),
+                        "benefit": bs.get("benefit"),
+                        "required_documents": req_raw,
+                        "lacking_documents_count": len(missing_keys),
+                        "lacking_documents": missing_keys or req_raw,
+                        "missing_documents_count": len(missing_keys),
+                        "missing_documents_names": missing_keys or req_raw,
+                        "lacking_user_info": ["None (All required details verified)"],
+                        "missing_user_info": ["None (All required details verified)"],
+                        "source": "Backend Scheme Store",
+                        "official_url": bs.get("official_url"),
+                    }
+                )
+        # Prioritize backend schemes if no explicit query or profile was given
+        if not user_profile and not query_text:
+            b_ids = {bs.get("scheme_id") for bs in backend_schemes}
+            matched_schemes = (
+                [s for s in matched_schemes if s.get("scheme_id") in b_ids]
+                + [s for s in matched_schemes if s.get("scheme_id") not in b_ids]
+            )[:3]
+        else:
+            matched_schemes = matched_schemes[:3]
 
     if not matched_schemes:
         no_match_msg = (
@@ -1956,6 +2072,8 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         return
     if action == "consent:yes":
         onboarding.set_consent(chat_id, True)
+        chat_mem: ChatMemory = _data(context, "chat_memory", ChatMemory())
+        chat_mem.clear(chat_id)
         try:
             if backend is None:
                 raise BackendUnavailableError
@@ -2062,10 +2180,7 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         scheme_name, benefit_desc, req_docs = _get_target_scheme_info(active, user_info)
 
         if status == "NEEDS_DOCUMENTS":
-            missing = [
-                dt for dt in req_docs
-                if dt not in uploaded_types
-            ]
+            missing = [dt for dt in req_docs if dt not in uploaded_types]
             missing_names = [type_labels.get(dt, dt) for dt in missing]
             missing_str = ", ".join(missing_names) if missing_names else "required documents"
             lines = [
@@ -2076,13 +2191,15 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             for idx, d in enumerate(docs, 1):
                 dtype = d.get("doc_type", "other")
                 lines.append(f"{idx}. {type_labels.get(dtype, dtype)}")
-            lines.extend([
-                "",
-                f"⚠️ Missing Document Required:\n👉 {missing_str}",
-                "",
-                f"Please upload a clear photo of your {missing_str}.",
-                f"When ready, choose [{t(language, 'menu_done')}] below.",
-            ])
+            lines.extend(
+                [
+                    "",
+                    f"⚠️ Missing Document Required:\n👉 {missing_str}",
+                    "",
+                    f"Please upload a clear photo of your {missing_str}.",
+                    f"When ready, choose [{t(language, 'menu_done')}] below.",
+                ]
+            )
             text = "\n".join(lines)
             await _edit_callback(query, text, reply_markup=_done_keyboard(language, callbacks))
             return
@@ -2175,24 +2292,103 @@ def _is_unrelated_query(text: str) -> bool:
     if not clean:
         return False
     unrelated_triggers = (
-        "joke", "poem", "story", "weather", "cricket", "football", "world cup",
-        "movie", "song", "who is", "what is the capital", "recipe", "cook", "bake",
-        "code", "programming", "math", "calculate", "solve", "president",
+        "joke",
+        "poem",
+        "story",
+        "weather",
+        "cricket",
+        "football",
+        "world cup",
+        "movie",
+        "song",
+        "who is",
+        "what is the capital",
+        "recipe",
+        "cook",
+        "bake",
+        "code",
+        "programming",
+        "math",
+        "calculate",
+        "solve",
+        "president",
     )
     if any(u in clean for u in unrelated_triggers):
         return True
     scheme_keywords = (
-        "scheme", "yojana", "benefit", "subsidy", "farmer", "kisan", "crop", "land", "patta",
-        "student", "scholarship", "college", "school", "marksheet", "fee", "study",
-        "pension", "elderly", "senior", "widow", "disabled", "divyang",
-        "vendor", "svanidhi", "business", "loan", "street", "hawker",
-        "house", "awas", "pmay", "housing", "bpl", "ration", "poor",
-        "health", "ayushman", "hospital", "medical", "insurance", "card",
-        "gas", "cylinder", "ujjwala", "lpg", "electricity",
-        "document", "aadhaar", "passbook", "bank", "income", "caste", "apply",
-        "status", "eligib", "check", "verify", "help", "start", "register",
-        "tamil nadu", "andhra", "telangana", "bihar", "uttar pradesh",
-        "வணக்கம்", "திட்டம்", "விவசாயி", "నమస్కారం", "పథకం", "రైతు", "యोजना", "किसान",
+        "scheme",
+        "yojana",
+        "benefit",
+        "subsidy",
+        "farmer",
+        "kisan",
+        "crop",
+        "land",
+        "patta",
+        "student",
+        "scholarship",
+        "college",
+        "school",
+        "marksheet",
+        "fee",
+        "study",
+        "pension",
+        "elderly",
+        "senior",
+        "widow",
+        "disabled",
+        "divyang",
+        "vendor",
+        "svanidhi",
+        "business",
+        "loan",
+        "street",
+        "hawker",
+        "house",
+        "awas",
+        "pmay",
+        "housing",
+        "bpl",
+        "ration",
+        "poor",
+        "health",
+        "ayushman",
+        "hospital",
+        "medical",
+        "insurance",
+        "card",
+        "gas",
+        "cylinder",
+        "ujjwala",
+        "lpg",
+        "electricity",
+        "document",
+        "aadhaar",
+        "passbook",
+        "bank",
+        "income",
+        "caste",
+        "apply",
+        "status",
+        "eligib",
+        "check",
+        "verify",
+        "help",
+        "start",
+        "register",
+        "tamil nadu",
+        "andhra",
+        "telangana",
+        "bihar",
+        "uttar pradesh",
+        "வணக்கம்",
+        "திட்டம்",
+        "விவசாயி",
+        "నమస్కారం",
+        "పథకం",
+        "రైతు",
+        "యोजना",
+        "किसान",
     )
     if any(k in clean for k in scheme_keywords):
         return False
@@ -2261,7 +2457,10 @@ async def text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             return
 
         # Schemes / Browser / Benefits triggers (To-Do 1 & 3)
-        benefit_triggers = [
+        # Explicit scheme browsing triggers (phrases, commands, and keyword prompts)
+        # Note: Do not match bare generic words like 'benefits' or 'welfare' alone to avoid
+        # intercepting normal citizen requirement descriptions.
+        browse_phrase_triggers = [
             "browser schemes",
             "browse schemes",
             "eligible schemes",
@@ -2283,24 +2482,22 @@ async def text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             "benefits of mine",
             "know the benefits",
             "benefits of personal info",
-            "personal info",
+            "personal info benefits",
             "my benefits",
             "welfare benefits",
             "what benefits",
-            "browser",
-            "/browser",
-            "browse",
-            "/browse",
-            "schemes list",
-            "yojana",
-            "benefits",
             "browse benefits",
             "all benefits",
             "govt benefits",
-            "welfare",
             "welfare schemes",
+            "schemes list",
         ]
-        if any(trig in clean_text for trig in benefit_triggers):
+        is_browse_cmd = (
+            clean_text in {"browser", "/browser", "browse", "/browse", "schemes", "/schemes"}
+            or clean_text.startswith(("/browser", "/schemes", "/browse"))
+            or any(phrase in clean_text for phrase in browse_phrase_triggers)
+        )
+        if is_browse_cmd:
             await schemes_command(update, context)
             return
 
@@ -2355,8 +2552,17 @@ async def text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         # Check if citizen is asking about schemes or describing their profession
         matched = match_schemes_with_gap_analysis(user_profile=user_info, query=text, limit=3)
         keywords = (
-            "scholar", "student", "kisan", "farmer", "scheme",
-            "benefit", "yojana", "pension", "loan", "vendor", "artisan",
+            "scholar",
+            "student",
+            "kisan",
+            "farmer",
+            "scheme",
+            "benefit",
+            "yojana",
+            "pension",
+            "loan",
+            "vendor",
+            "artisan",
         )
         if matched and (user_info or any(w in text.lower() for w in keywords)):
             lines = ["🏛️ Government Welfare Schemes Matching Your Query:\n"]
@@ -2446,8 +2652,10 @@ async def text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             reply_markup=_done_keyboard(language, callbacks),
         )
     else:
-        user_info = chat_mem.extract_personal_info(chat_id)
-        scheme_name, benefit_desc, req_docs = _get_target_scheme_info(active, user_info)
+        user_info = chat_mem.extract_personal_info(chat_id, text=text)
+        scheme_name, benefit_desc, req_docs = _get_target_scheme_info(
+            active, user_info, query_text=text
+        )
         labels = _type_labels(language)
         missing_names = [labels.get(d, d) for d in req_docs]
 
@@ -2473,11 +2681,17 @@ async def text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
                 lines.append(f"{idx}️⃣ {s_name}\n   💰 Benefit: {s_bene}")
             lines.append("")
 
-        lines.extend([
-            "📸 STEP 2 — Please upload your document photos:",
-            f"👉 {', '.join(missing_names)}\n",
-            f"💡 When you have attached your photos, choose [{t(language, 'menu_done')}] below.",
-        ])
+        lines.extend(
+            [
+                "📸 STEP 2 — Please upload your document photos:",
+                f"👉 {', '.join(missing_names)}\n",
+                (
+                    "💡 When you have attached your photos, choose ["
+                    + t(language, "menu_done")
+                    + "] below."
+                ),
+            ]
+        )
         reply_text = "\n".join(lines)
         await _send(
             update,
@@ -2616,18 +2830,32 @@ async def _document_ack(update: Update, context: ContextTypes.DEFAULT_TYPE, coun
 
 def _detect_doc_type(text: str) -> str | None:
     text_lower = text.lower()
-    if any(k in text_lower for k in (
-        "aadhaar", "adhar", "uid", "aadhar", "adhaar", "आधार", "ஆதார்", "ఆధార్"
-    )):
+    if any(
+        k in text_lower
+        for k in ("aadhaar", "adhar", "uid", "aadhar", "adhaar", "आधार", "ஆதார்", "ఆధార్")
+    ):
         return "aadhaar"
-    if any(k in text_lower for k in (
-        "land", "patta", "chitta", "khasra", "7/12", "khatauni", "ror",
-        "భూమి", "நிலம்", "भूमि", "పట్టా"
-    )):
+    if any(
+        k in text_lower
+        for k in (
+            "land",
+            "patta",
+            "chitta",
+            "khasra",
+            "7/12",
+            "khatauni",
+            "ror",
+            "భూమి",
+            "நிலம்",
+            "भूमि",
+            "పట్టా",
+        )
+    ):
         return "land_record"
-    if any(k in text_lower for k in (
-        "bank", "passbook", "account", "statement", "बैंक", "பாஸ்புக்", "పాస్‌బుక్"
-    )):
+    if any(
+        k in text_lower
+        for k in ("bank", "passbook", "account", "statement", "बैंक", "பாஸ்புக்", "పాస్‌బుక్")
+    ):
         return "bank_passbook"
     if any(k in text_lower for k in ("income", "aay", "வருமானம்", "ఆదాయం", "आय")):
         return "income_certificate"
@@ -2652,34 +2880,21 @@ def _detect_doc_type(text: str) -> str | None:
         for k in ("driving", "driver", "license", "licence", "dl", "चालक", "ஓட்டுநர்", "డ్రైవింగ్")
     ):
         return "driving_license"
-    if any(
-        k in text_lower
-        for k in ("fish", "fisher", "matsya", "மீனவர்", "మత్స్యకార", "मछुआरा")
-    ):
+    if any(k in text_lower for k in ("fish", "fisher", "matsya", "மீனவர்", "మత్స్యకార", "मछुआरा")):
         return "fisherman_card"
     if any(
         k in text_lower
         for k in ("sanitation", "safai", "sweeper", "cleaning", "தூய்மை", "సఫాయి", "सफाई")
     ):
         return "sanitation_id"
-    if any(
-        k in text_lower
-        for k in ("security", "guard", "பாதுகாவலர்", "రక్షక", "सुरक्षा")
-    ):
+    if any(k in text_lower for k in ("security", "guard", "பாதுகாவலர்", "రక్షక", "सुरक्षा")):
         return "security_id"
-    if any(
-        k in text_lower
-        for k in ("asha", "anganwadi", "nurse", "health", "ஆஷா", "ఆశా", "आशा")
-    ):
+    if any(k in text_lower for k in ("asha", "anganwadi", "nurse", "health", "ஆஷா", "ఆశా", "आशा")):
         return "health_worker_id"
-    if any(
-        k in text_lower
-        for k in ("swiggy", "zomato", "delivery", "gig", "zepto", "blinkit")
-    ):
+    if any(k in text_lower for k in ("swiggy", "zomato", "delivery", "gig", "zepto", "blinkit")):
         return "gig_platform_id"
     if any(
-        k in text_lower
-        for k in ("factory", "industrial", "mill", "தொழிற்சாலை", "ఫ్యాక్టరీ", "कारखाना")
+        k in text_lower for k in ("factory", "industrial", "mill", "தொழிற்சாலை", "ఫ్యాక్టరీ", "कारखाना")
     ):
         return "factory_id"
     if any(
@@ -2690,8 +2905,15 @@ def _detect_doc_type(text: str) -> str | None:
     if any(
         k in text_lower
         for k in (
-            "pension", "age proof", "senior", "vidhwa", "widow",
-            "vridha", "ஓய்வூதியம்", "పింఛను", "पेंशन"
+            "pension",
+            "age proof",
+            "senior",
+            "vidhwa",
+            "widow",
+            "vridha",
+            "ஓய்வூதியம்",
+            "పింఛను",
+            "पेंशन",
         )
     ):
         return "pension_id"
