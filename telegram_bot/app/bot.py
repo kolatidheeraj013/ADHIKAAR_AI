@@ -2659,39 +2659,18 @@ async def text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         labels = _type_labels(language)
         missing_names = [labels.get(d, d) for d in req_docs]
 
-        matched = match_schemes_with_gap_analysis(
-            user_profile=user_info,
-            query=text,
-            uploaded_docs=active.get("documents") if active else None,
-            limit=3,
-        )
-
         lines = [
             "✅ STEP 1 complete! Requirement noted.\n",
             f"🏛️ Target Scheme: {scheme_name}",
             f"💰 Benefit: {benefit_desc}\n",
+            "📸 STEP 2 — Please upload your document photos:",
+            f"👉 {', '.join(missing_names)}\n",
+            (
+                "💡 When you have attached your photos, choose ["
+                + t(language, "menu_done")
+                + "] below."
+            ),
         ]
-        if matched:
-            lines.append("📋 Top Matching Welfare Schemes for Your Profile:")
-            for idx, s in enumerate(matched[:3], 1):
-                s_name = s.get("name") or "Government Scheme"
-                s_bene = s.get("benefit") or "Welfare assistance"
-                if len(s_bene) > 100:
-                    s_bene = s_bene[:100] + "..."
-                lines.append(f"{idx}️⃣ {s_name}\n   💰 Benefit: {s_bene}")
-            lines.append("")
-
-        lines.extend(
-            [
-                "📸 STEP 2 — Please upload your document photos:",
-                f"👉 {', '.join(missing_names)}\n",
-                (
-                    "💡 When you have attached your photos, choose ["
-                    + t(language, "menu_done")
-                    + "] below."
-                ),
-            ]
-        )
         reply_text = "\n".join(lines)
         await _send(
             update,

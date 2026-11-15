@@ -239,9 +239,7 @@ def format_citizen_notification_text(
         friendly_missing = [doc_display_names.get(d, d) for d in missing_docs]
         missing_str = ", ".join(friendly_missing)
         out_lines.append(f"\n⚠️ Missing Document Required:\n👉 {missing_str}")
-        out_lines.append(
-            f"\nPlease upload a clear photo of your {missing_str}."
-        )
+        out_lines.append(f"\nPlease upload a clear photo of your {missing_str}.")
         out_lines.append("\nOnce uploaded, tap [✅ Check eligibility] to get your verified result!")
     else:
         out_lines.append("\n⚠️ Additional document or information needed.")

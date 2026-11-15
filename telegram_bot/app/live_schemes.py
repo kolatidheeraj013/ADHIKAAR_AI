@@ -42,6 +42,91 @@ CANONICAL_DOC_NAMES: dict[str, str] = {
     "skill_cert": "Skill Training / Trade Certificate",
 }
 
+QUERY_STOP_WORDS: set[str] = {
+    "i",
+    "im",
+    "i'm",
+    "am",
+    "an",
+    "as",
+    "at",
+    "be",
+    "by",
+    "for",
+    "from",
+    "in",
+    "is",
+    "it",
+    "its",
+    "of",
+    "on",
+    "or",
+    "that",
+    "the",
+    "this",
+    "to",
+    "was",
+    "what",
+    "when",
+    "where",
+    "which",
+    "who",
+    "will",
+    "with",
+    "are",
+    "there",
+    "any",
+    "some",
+    "need",
+    "want",
+    "know",
+    "tell",
+    "me",
+    "my",
+    "mine",
+    "we",
+    "our",
+    "how",
+    "give",
+    "please",
+    "can",
+    "could",
+    "govt",
+    "government",
+    "scheme",
+    "schemes",
+    "yojana",
+    "yojna",
+    "help",
+    "benefit",
+    "benefits",
+    "apply",
+    "check",
+    "eligibility",
+    "eligible",
+}
+
+NICHE_DISQUALIFIERS: list[tuple[str, tuple[str, ...]]] = [
+    (
+        "marriage",
+        ("marriage", "wedding", "vivah", "shaadi", "kalyanam", "nikah", "daughter"),
+    ),
+    (
+        "death_funeral",
+        (
+            "funeral",
+            "cremation",
+            "antyeshti",
+            "gratuity in case of death",
+            "natural death",
+            "death & funeral",
+            "case of death",
+        ),
+    ),
+    ("spectacles", ("spectacle", "spectacles", "glasses", "chashma", "optical")),
+    ("maternity", ("maternity", "pregnant", "prasuti", "delivery assistance")),
+]
+
 # Verified core flagship real-world welfare schemes
 LIVE_GOVT_SCHEMES: list[dict[str, Any]] = [
     {
@@ -669,9 +754,7 @@ def load_kaggle_catalog() -> list[dict[str, Any]]:
                             row.get("source_url") or "https://www.myscheme.gov.in"
                         ).strip(),
                         "ministry": (
-                            row.get("ministry")
-                            or row.get("department")
-                            or "Government of India"
+                            row.get("ministry") or row.get("department") or "Government of India"
                         ).strip(),
                         "categories": (row.get("categories") or "").strip(),
                         "target_beneficiaries": (row.get("target_beneficiaries") or "").strip(),
@@ -727,9 +810,7 @@ def load_kaggle_catalog() -> list[dict[str, Any]]:
                             ).strip(),
                             "ministry": (row.get("department") or "Government of India").strip(),
                             "categories": (row.get("categories") or "").strip(),
-                            "target_beneficiaries": (
-                                row.get("target_beneficiaries") or ""
-                            ).strip(),
+                            "target_beneficiaries": (row.get("target_beneficiaries") or "").strip(),
                             "tags": (row.get("tags") or "").strip(),
                             "state": (row.get("state") or "").strip(),
                             "level": (row.get("level") or "Central").strip(),
@@ -937,6 +1018,20 @@ def match_schemes_with_gap_analysis(
             if k:
                 uploaded_keys.add(k)
 
+    user_corpus = ""
+    meaningful_words: list[str] = []
+    if query:
+        q_clean = query.strip().lower()
+        if q_clean and q_clean not in {"schemes", "browser", "browse"}:
+            user_corpus = q_clean
+            meaningful_words = [
+                w
+                for w in re.findall(r"[a-z0-9]+", q_clean)
+                if len(w) > 2 and w not in QUERY_STOP_WORDS
+            ]
+    if profile:
+        user_corpus += " " + " ".join(str(v).lower() for v in profile.values() if v)
+
     scored: list[tuple[int, dict[str, Any]]] = []
     for s in all_schemes:
         score = 0
@@ -948,9 +1043,7 @@ def match_schemes_with_gap_analysis(
 
         occ = str(profile.get("occupation", "")).lower()
         has_land = bool(
-            "land_record" in uploaded_keys
-            or profile.get("land_size")
-            or profile.get("land_record")
+            "land_record" in uploaded_keys or profile.get("land_size") or profile.get("land_record")
         )
         is_farmer = occ == "farmer" or (not occ and has_land)
 
@@ -974,8 +1067,7 @@ def match_schemes_with_gap_analysis(
             # If citizen has declared a specific non-farming profession, strictly penalize
             # farmer-only schemes so they NEVER displace the citizen's actual profession schemes
             if sid in ("pm_kisan", "pm_fasal_bima") or (
-                any(k in name for k in ("kisan", "fasal", "krishi"))
-                and "agriculture" in cats
+                any(k in name for k in ("kisan", "fasal", "krishi")) and "agriculture" in cats
             ):
                 score -= 60
 
@@ -1006,8 +1098,18 @@ def match_schemes_with_gap_analysis(
                 elif any(
                     k in name or k in target or k in cats
                     for k in (
-                        "vishwakarma", "artisan", "weaver", "craft", "handloom", "handicraft",
-                        "carpenter", "potter", "blacksmith", "tailor", "cobbler", "barber",
+                        "vishwakarma",
+                        "artisan",
+                        "weaver",
+                        "craft",
+                        "handloom",
+                        "handicraft",
+                        "carpenter",
+                        "potter",
+                        "blacksmith",
+                        "tailor",
+                        "cobbler",
+                        "barber",
                     )
                 ):
                     score += 50
@@ -1021,8 +1123,14 @@ def match_schemes_with_gap_analysis(
                 elif any(
                     k in name or k in target or k in cats
                     for k in (
-                        "construction", "bocw", "shram", "labour", "mazdoor",
-                        "daily wage", "building", "mason",
+                        "construction",
+                        "bocw",
+                        "shram",
+                        "labour",
+                        "mazdoor",
+                        "daily wage",
+                        "building",
+                        "mason",
                     )
                 ):
                     score += 50
@@ -1031,11 +1139,17 @@ def match_schemes_with_gap_analysis(
             elif occ == "driver":
                 if sid in ("pmsby_suraksha", "pm_sym_eshram"):
                     score += 85
+                elif sid == "mvdcws-cmsesdc":
+                    score += 70
                 elif any(
                     k in name or k in target or k in cats
                     for k in (
-                        "driver", "motor vehicle", "transport", "conductor",
-                        "suraksha bima", "accident",
+                        "driver",
+                        "motor vehicle",
+                        "transport",
+                        "conductor",
+                        "suraksha bima",
+                        "accident",
                     )
                 ):
                     score += 50
@@ -1054,8 +1168,14 @@ def match_schemes_with_gap_analysis(
                     score += 70
                 elif any(
                     k in name or k in target or k in cats
-                    for k in ("safai", "sanitation", "namaste", "domestic worker",
-                        "cleaning", "sweeper")
+                    for k in (
+                        "safai",
+                        "sanitation",
+                        "namaste",
+                        "domestic worker",
+                        "cleaning",
+                        "sweeper",
+                    )
                 ):
                     score += 50
             elif occ == "small business":
@@ -1066,8 +1186,14 @@ def match_schemes_with_gap_analysis(
                 elif any(
                     k in name or k in target or k in cats
                     for k in (
-                        "mudra", "pmegp", "msme", "business", "entrepreneur",
-                        "shopkeeper", "credit", "trader",
+                        "mudra",
+                        "pmegp",
+                        "msme",
+                        "business",
+                        "entrepreneur",
+                        "shopkeeper",
+                        "credit",
+                        "trader",
                     )
                 ):
                     score += 50
@@ -1086,8 +1212,15 @@ def match_schemes_with_gap_analysis(
             elif occ in ("security guard", "gig worker", "factory worker", "worker"):
                 if sid in ("pmsby_suraksha", "pm_sym_eshram", "atal_pension") or any(
                     k in name or k in target or k in cats
-                    for k in ("shram", "labour", "unorganized", "pension", "worker",
-                        "eshram", "suraksha")
+                    for k in (
+                        "shram",
+                        "labour",
+                        "unorganized",
+                        "pension",
+                        "worker",
+                        "eshram",
+                        "suraksha",
+                    )
                 ):
                     score += 50
                 elif sid == "ayushman_bharat":
@@ -1120,7 +1253,8 @@ def match_schemes_with_gap_analysis(
                 ):
                     score += 35
                 elif (
-                    occ in (
+                    occ
+                    in (
                         "construction worker",
                         "driver",
                         "sanitation worker",
@@ -1149,14 +1283,23 @@ def match_schemes_with_gap_analysis(
         matching_docs = uploaded_keys.intersection(req_keys)
         score += len(matching_docs) * 12
 
-        if query:
-            q_clean = query.strip().lower()
-            if q_clean and q_clean not in {"schemes", "browser", "browse"}:
-                for word in q_clean.split():
-                    if word in name:
-                        score += 15
-                    if word in cats or word in target or word in bene:
-                        score += 8
+        # Penalize niche life-event schemes (marriage, death, funeral, spectacles, etc.)
+        # unless citizen explicitly requested that specific need in query/profile
+        for _niche_name, triggers in NICHE_DISQUALIFIERS:
+            has_niche_in_scheme = any(tr in name or tr in target for tr in triggers)
+            has_niche_in_user = any(tr in user_corpus for tr in triggers)
+            if has_niche_in_scheme and not has_niche_in_user:
+                score -= 75
+
+        # Precise keyword matching with word boundaries
+        if meaningful_words:
+            combined_text = f"{name} {cats} {target} {bene}"
+            for word in meaningful_words:
+                word_pattern = r"\b" + re.escape(word) + r"\b"
+                if re.search(word_pattern, name):
+                    score += 20
+                elif re.search(word_pattern, combined_text):
+                    score += 10
 
         # Quality boost only if scheme is already relevant to the person
         if score > 0 and any(sid == f["scheme_id"] for f in LIVE_GOVT_SCHEMES):
@@ -1196,16 +1339,10 @@ def match_schemes_with_gap_analysis(
                         and fid in ("pmsby_suraksha", "pm_sym_eshram", "atal_pension")
                     )
                     or (occ == "fisherman" and fid == "pm_matsya")
-                    or (
-                        occ == "sanitation worker"
-                        and fid in ("namaste_safai", "pm_sym_eshram")
-                    )
+                    or (occ == "sanitation worker" and fid in ("namaste_safai", "pm_sym_eshram"))
                     or (occ == "small business" and fid in ("pm_mudra", "pm_svanidhi"))
                     or (occ == "health worker" and fid in ("ayushman_bharat", "pmsby_suraksha"))
-                    or (
-                        occ == "unemployed youth"
-                        and fid in ("pmkvy_naps", "national_scholarship")
-                    )
+                    or (occ == "unemployed youth" and fid in ("pmkvy_naps", "national_scholarship"))
                     or (
                         occ in ("security guard", "gig worker", "factory worker", "worker")
                         and fid in ("pmsby_suraksha", "pm_sym_eshram", "atal_pension")
@@ -1289,20 +1426,22 @@ def match_schemes_with_gap_analysis(
             if "caste" in elig_text and not profile.get("caste"):
                 lacking_info_items.append("Community category confirmation")
 
-        results.append({
-            "scheme_id": cand.get("scheme_id"),
-            "name": cand.get("name"),
-            "benefit": cand.get("benefit"),
-            "required_documents": cand.get("required_documents"),
-            "lacking_documents_count": len(lacking_doc_names),
-            "lacking_documents": lacking_doc_names,
-            "missing_documents_count": len(lacking_doc_names),
-            "missing_documents_names": lacking_doc_names,
-            "lacking_user_info": lacking_info_items or ["None (All required details verified)"],
-            "missing_user_info": lacking_info_items or ["None (All required details verified)"],
-            "source": cand.get("source") or "Official Kaggle Catalog (myScheme.gov)",
-            "official_url": cand.get("official_url"),
-        })
+        results.append(
+            {
+                "scheme_id": cand.get("scheme_id"),
+                "name": cand.get("name"),
+                "benefit": cand.get("benefit"),
+                "required_documents": cand.get("required_documents"),
+                "lacking_documents_count": len(lacking_doc_names),
+                "lacking_documents": lacking_doc_names,
+                "missing_documents_count": len(lacking_doc_names),
+                "missing_documents_names": lacking_doc_names,
+                "lacking_user_info": lacking_info_items or ["None (All required details verified)"],
+                "missing_user_info": lacking_info_items or ["None (All required details verified)"],
+                "source": cand.get("source") or "Official Kaggle Catalog (myScheme.gov)",
+                "official_url": cand.get("official_url"),
+            }
+        )
 
     return results
 
