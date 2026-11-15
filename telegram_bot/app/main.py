@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import os
 from contextlib import asynccontextmanager
 from hmac import compare_digest
@@ -32,7 +33,36 @@ try:
 except Exception:
     pass
 
-from .bot import build_application, handle_notification
+logging.basicConfig(
+    level=os.getenv("LOG_LEVEL", "INFO").upper(),
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+
+_logger = logging.getLogger(__name__)
+
+
+def _warn_if_data_stale() -> None:
+    """Log a warning if the scheme data staleness marker is older than 30 days."""
+    import datetime
+
+    marker = Path(__file__).resolve().parents[2] / "data" / "raw" / ".last_updated"
+    if marker.is_file():
+        try:
+            ts = datetime.date.fromisoformat(marker.read_text().strip())
+            age = (datetime.date.today() - ts).days
+            if age > 30:
+                _logger.warning(
+                    "Scheme data may be stale — last updated %s (%d days ago). "
+                    "Consider refreshing data/raw/.",
+                    ts,
+                    age,
+                )
+        except Exception:
+            pass
+
+
+from .bot import build_application, handle_notification  # noqa: E402
 
 
 def _mode() -> str:
@@ -42,6 +72,7 @@ def _mode() -> str:
 @asynccontextmanager
 async def lifespan(application: FastAPI):
     """Run PTB alongside FastAPI without taking over uvicorn's event loop."""
+    _warn_if_data_stale()
     token = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
     if not token:
         # Health and offline API tests deliberately run without Telegram credentials.
