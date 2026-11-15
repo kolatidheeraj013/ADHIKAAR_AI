@@ -247,7 +247,7 @@ async def _active_case(update: Update, context: ContextTypes.DEFAULT_TYPE) -> di
     if backend is None:
         return None
     case = await backend.active_case(_chat_id(update))
-    if not case:
+    if not case or not _case_id(case):
         return None
     status = str(case.get("status") or "").upper()
     if status in {"COMPLETED", "NOT_ELIGIBLE", "FAILED_ESCALATED"}:
@@ -277,7 +277,22 @@ async def _latest_case(update: Update, context: ContextTypes.DEFAULT_TYPE) -> di
     backend: BackendClient = _data(context, "backend")
     if backend is None:
         return None
-    return await backend.latest_case(_chat_id(update))
+    case = await backend.latest_case(_chat_id(update))
+    if not case or not _case_id(case):
+        return None
+    created_str = case.get("created_at") or case.get("updated_at")
+    if created_str:
+        try:
+            from datetime import datetime
+
+            dt = datetime.fromisoformat(created_str.replace("Z", "+00:00"))
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=UTC)
+            if (datetime.now(UTC) - dt).total_seconds() > ACTIVE_CASE_MAX_AGE_SECONDS:
+                return None
+        except Exception:
+            pass
+    return case
 
 
 def _case_message_ids(case: dict[str, Any] | None) -> set[str]:
@@ -1037,6 +1052,18 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     language = _language(update, context, active)
     if active:
         has_docs = _has_understood_documents(active)
+        docs = active.get("documents") or []
+        messages = active.get("messages") or []
+        status = str(active.get("status") or "").upper()
+        if status == "COLLECTING" and not docs and not messages:
+            await _send(
+                update,
+                t(language, "step_guide"),
+                language=language,
+                active_state="COLLECTING",
+            )
+            return
+
         await _send(
             update,
             _status_text(language, active),

@@ -70,9 +70,12 @@ class BackendClient:
         )
         if not payload:
             return None
-        if isinstance(payload, Mapping) and payload.get("case") is not None:
-            return dict(payload["case"])
-        return dict(payload) if isinstance(payload, Mapping) else None
+        if isinstance(payload, Mapping):
+            if "case" in payload:
+                case_val = payload.get("case")
+                return dict(case_val) if isinstance(case_val, Mapping) else None
+            return dict(payload)
+        return None
 
     async def latest_case(self, chat_id: int | str) -> dict[str, Any] | None:
         """Return the most recent case, including a completed terminal case."""
@@ -81,9 +84,12 @@ class BackendClient:
         )
         if not payload:
             return None
-        if isinstance(payload, Mapping) and payload.get("case") is not None:
-            return dict(payload["case"])
-        return dict(payload) if isinstance(payload, Mapping) else None
+        if isinstance(payload, Mapping):
+            if "case" in payload:
+                case_val = payload.get("case")
+                return dict(case_val) if isinstance(case_val, Mapping) else None
+            return dict(payload)
+        return None
 
     async def create_case(self, language: str, chat_id: int | str) -> dict[str, Any]:
         return await self._request(

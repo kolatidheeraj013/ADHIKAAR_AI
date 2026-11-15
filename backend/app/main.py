@@ -431,6 +431,8 @@ def _safe_case(case: Case, session: Session) -> dict[str, Any]:
             }
             for item in session.scalars(select(Document).where(Document.case_id == case.id)).all()
         ],
+        "created_at": case.created_at.isoformat() if case.created_at else None,
+        "updated_at": case.updated_at.isoformat() if case.updated_at else None,
         "messages": [
             {
                 "id": str(item.id),
@@ -866,6 +868,12 @@ async def latest_case(
             .where(Case.channel == channel, Case.channel_ref == channel_ref)
             .order_by(Case.created_at.desc())
         )
+        if case and case.created_at:
+            created = case.created_at
+            if created.tzinfo is None:
+                created = created.replace(tzinfo=timezone.utc)
+            if (datetime.now(timezone.utc) - created).total_seconds() > 1800:
+                case = None
         return {"case": _safe_case(case, session) if case else None}
     finally:
         session.close()
